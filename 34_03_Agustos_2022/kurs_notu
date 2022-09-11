@@ -1,0 +1,917 @@
+
+İçerik:
+
+STL : STANDART TEMPLATE LIBRARY
+neden global fonksiyonlar eklendi ? 
+İterator category
+lambda expression: (en önemli araçlardan biri !!!)
+std::copy_if : copy şarta bağlı
+closure_type
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+C++ öğrenmenin yarısı standart kütüphane iyi öğrenilmeli
+STL nedir ? Bir veri yapıları algoritmalar kütüphanesi.
+ (Bazısı C++'in standart kütüphanesidir, doğru kabul edilebilir, aslında resmi olarak olmasa da )
+
+*-----------------------------------------------------------------------------------------------------    
+
+Containerlar : veri yapılarını implemente eden sınıflar. Dinamik dizi,
+bağlı liste, ikili arama ağaçları  
+
+*-----------------------------------------------------------------------------------------------------    
+
+algoritmalar iteratörleri kullanarak container'lar üzerinde 
+genelleştirilmiş bazı işlemleri yapabiliyorlar. 
+
+*-----------------------------------------------------------------------------------------------------    
+
+STL object oriented library değil.
+programın çalışma zamanında polymorphism pek yok.
+
+*-----------------------------------------------------------------------------------------------------    
+
+çalışacak kodun efficiency'sini arttırmaya yönelik kütüphane.
+Programcı rahat etsin, kolay geliştirme yapsından ziyade kod 
+hızlı çalışsın, verimli olsuna yönelik bir kütüphane.
+
+*-----------------------------------------------------------------------------------------------------    
+
+RANGE : (aralık)
+
+[konum1 konum2)
+konum1 dahil, konum2 hariç  
+
+*-----------------------------------------------------------------------------------------------------    
+
+void Print(const int* ps, const int* pe)
+{
+	while(ps != pe){
+		printf("%d ", *ps++);
+	}
+	printf("\n");
+}
+
+int main()
+{
+	int a[10] = {1, 4, 7, 8, 9, 2, 7, 6, 3, 10};
+	Print(a, a+10);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+C++'da ve template haline getir
+
+#include <vector>
+
+template <typename Iter>
+void Print( Iter ps, Iter pe)
+{
+	while(ps != pe)
+		std::cout << *ps++ << " ";
+	}
+	std::cout("\n");
+}
+
+int main()
+{
+	std::vector<int> ivec{1, 4, 6, 8, 9, 12, 89, 91};
+	
+	Print(ivec.begin(), ivec.end());
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+çifte bağlı liste ile (düğüm içinde veri var, iki tane de pointer var)
+
+#include <list>
+
+template <typename Iter>
+void Print( Iter ps, Iter pe)
+{
+	while(ps != pe)
+		std::cout << *ps++ << " ";
+	}
+	std::cout << "\n";
+}
+
+int main()
+{
+	std::vector<int> ilist{1, 4, 6, 8, 9, 12, 89, 91};
+	
+	// list<int>::iterator
+	Print(ilist.begin(), ilist.end());
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+hem list  hem vector nesnesinde tutulan verileri de yazdırabiliyor, Nasıl oluyor bu iş ? 
+
+begin(), end() ile operatör overloading ile yazılmış. Böyle sınıflara
+iteratör sınıfları deniyor.
+
+*-----------------------------------------------------------------------------------------------------    
+
+arka planda ne oluyor onu anlamaya çalışalım.
+
+container'ların üye fonk.'ından bazıları konum tutan nesneleri döndürüyorlar.
+Bunlar da iteratör olarak isimlendirilmiş. 
+
+---------------------------------------    
+
+iterator list sınıfının nested type'ı
+
+template <typename T>
+class list{
+
+public:
+	class iterator{
+		public:
+			T& operator*();
+			operator++
+			operator!=
+	};
+	
+	iterator begin();
+	iterator end();
+};
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <list>
+
+template <typename Iter>
+void Print( Iter ps, Iter pe)
+{
+	while(ps != pe)
+		std::cout << *ps++ << " ";
+	}
+	std::cout("\n");
+}
+
+// benim yerime derleyici yazar :
+void Print(std::list<int>::iterator ps, std::list<int>::iterator pe)
+{
+	while(ps != pe){
+		std::cout << *ps++ << " ";
+	}
+	std::cout << "\n";
+}
+
+int main()
+{
+	std::vector<int> ilist{1, 4, 6, 8, 9, 12, 89, 91};
+	
+	// list<int>::iterator
+	Print(ilist.begin(), ilist.end());
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include "date.h"  // github'da var
+#include "nutility.h"   // github'da var
+
+template <typename Iter>
+void Print( Iter ps, Iter pe)
+{
+	while(ps != pe)
+		std::cout << *ps++ << " ";
+	}
+	std::cout("\n");
+}
+
+int main()
+{
+	std::vector<Date> dvec;
+	rfill(dvec, 20, &Date::random);
+	
+	// soru : Print fonk. kullanarak bu dvec'teki değerleri yazdırmak
+	Print(dvec.begin(), dvec.end());
+
+}
+
+// *ps++  aslında Date&
+
+-----------------------------------------------------------------------------------------------------    
+
+#include <algorithm>
+#include <numeric>
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include "date.h"
+#include "nutility.h"  // github'da var
+#include <string>
+
+int main()
+{
+	std::vector<string> svec;
+	
+	std::ofstream ofs{"out.txt};
+	if(!ofs){
+		std::cerr << "out.txt dosyası olusturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	rfill(svec, 200, rname);   // nutility.h'den gelir, random fill fonksiyonu
+	// svec'i rname fonksiyonunu çağırarak doldursun
+	
+	print(svec, "\n", ofs);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include "date.h"
+#include "nutility.h"  
+#include <string>
+#include <fstream>
+
+int main()
+{
+	std::vector<Date> dvec;
+	
+	std::ofstream ofs{"out.txt};
+	if(!ofs){
+		std::cerr << "out.txt dosyası olusturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	rfill(svec, 3000, Date::random);   // nutility.h'den gelir, random fill fonksiyonu, fonk. şablonu
+	print(svec, "\n", ofs);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include "date.h"
+#include "nutility.h"  
+#include <string>
+#include <fstream>
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, rtown); // rtown vilayet ismi çağırır
+	print(svec);
+	
+	sort(svec.begin(), svec.end());
+	print(svec);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+STL'i neden böyle tasarlamışlar ?
+
+fonksiyon şablonları parametreleri doğrudan container olsa idi.
+Container'in üzerinde bir işlem için fonksiyon şablonları iteratörleri kullanıyor. 
+Onun yerine doğrudan container nesnesinin kendisini fonksiyona gönderseydim 
+daha iyi olmaz mıydı ? 
+STL böyle tasarlandı,
+range kavramı ile container'da tutulan öğelerin tamamı üzerinde işlem
+yapmak zorunda değiliz. 
+
+
+C++20 ile ranges kütüphanesi ile range temsil eden nesneyi alıyorlar.
+
+*-----------------------------------------------------------------------------------------------------    
+
+copy : bir range'deki nesneleri bir range'e kopyalayabilir.
+En önemli avantajı farklı veri yapıları üzerinde işlem yapabilir. 
+Bağlı liste, dinamik liste başka veri yapıları olmasına karşı bunlar
+üzerinde işlem yapabilir. 
+
+
+algoritma bir range'e yazma yapıyorsa geri dönüş değeri her zaman
+en son yazdığı öğeden bir sonraki olur. 
+
+ InIter end : son öğeden bir sonrakini gösterir.
+
+--------------------------------------------------    
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+// kendimizin yazdığı template'siz kod
+list<string>::iterator Copy(vector<string>::iterator beg, vector<string>::iterator end, vector<string>::iterator destbeg)
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+int main()
+{
+	vector<string> svec{"eray", "cem", "deniz", "emirhan", "musa", "ferhat"};
+	list<string> slist(6);
+	
+	print(svec);
+	
+	Copy(svec.begin(), svec.end(), slist.begin());
+	// çağırılan fonksiyon template olduğuna göre derleyicinin template argument
+	// deduction yapması gerekiyor. 
+	// svec.begin()'in türü vector<string>::iterator
+	// slist.begin()'in türü list<string>::iterator
+	
+	print(svec);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+STL algoritmalarının hepsi çok basit
+STL'de koduna bakın, header file'inda
+veya cppreference'den bakın
+
+*-----------------------------------------------------------------------------------------------------    
+
+vector<const char*> svec{"eray", "cem", "deniz", "emirhan", "musa", "ferhat"};
+
+olsa da vector sınıfı ne harika bir sınıf, türlerinin de aynı olması gerekmiyor
+
+string'e const char* atanır
+double'a int atanır
+
+*-----------------------------------------------------------------------------------------------------    
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+int main()
+{
+	vector<int> ivec{1, 4, 7, 2, 3};
+	list<double> dlist(6);
+	
+	Copy(ivec.begin(), ivec.end(), ilist.begin());
+	
+	print(slist);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+int main()
+{
+	vector<int> ivec;
+	
+	auto iter_beg = ivec.begin();
+	auto iter_end = ivec.end();
+
+	cout << (iter_beg == iter_end);   // container'da birşey tutulmuyorsa ikisi eşit
+	
+	*iter_end; 
+	// container'in end fonk. asla dereference etmeyin, runtime hatası
+	// ve bir exception throw etmez !!!
+	// container boş ise begin fonk. asla dereference etmeyin
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+// boş bir container'in range'i de geçerli 
+
+*-----------------------------------------------------------------------------------------------------    
+
+Modern C++ ile global fonksiyonlar da eklendi
+
+#include <algorithm>
+
+int main()
+{
+	std::vector<int> ivec;
+	
+	ivec.begin();  // std::begin(ivec);  bu global fonksiyon, ikisi aynı, 
+}
+
+-----------------------------    
+
+#include <algorithm>
+
+int main()
+{
+	std::vector<int> ivec;
+	
+	begin(ivec);  // std kullanmadan geçerli oldu, ADL (argument dependent lookup) ile
+}
+
+-----------------------------------------------    
+
+neden global fonksiyonlar eklendi ? 
+
+int main()
+{
+	int a[]  = {12, 5, 27, 9, 81, 3, 6, 23};
+	
+	std::sort(a, a + sizeof(a)/sizeof(*a)); // yardımcı bir araç sözkonusu değilse böyle yazılır
+	// a.begin(); // hata, a bir sınıf nesnesi değil ki onun üye fonksiyonu olsun
+	
+	for(auto i : a)
+		std::cout << i << " ";
+}
+
+-------------------------------------------------    
+
+int main()
+{
+	int a[]  = {12, 5, 27, 9, 81, 3, 6, 23};
+	
+	std::sort(std::begin(a), std::end(a));  
+	// global begin ve end fonksiyonları
+	// bunlar fonk. template, diziler için partial specialization yapılmış
+	// iteratör
+	
+	for(auto i : a)
+		std::cout << i << " ";
+}
+
+diziler sınıf türü olmadığı için global fonk. dizinin ilk ve son elemanın adresini
+elde edebiliriz.
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+using Con = std::list<int>;
+
+int main()
+{
+	Con c;
+	
+	auto iter = c.begin();   // iter türü list<int>'in iteratörü
+}
+
+----------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+using Con = std::vector<int>;
+
+int main()
+{
+	Con c(5);
+	
+	auto iter = c.begin();  // iter türü vector<int>'in iteratörü
+	
+	auto x = *iter;
+	++iter;
+	
+	iter < iter; // iter'in ait olduğu tür öyle bir tür ki bu tür bütün operatör fonksiyonlarını
+	overload etmiş
+}
+
+----------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+using Con = std::list<int>;
+
+int main()
+{
+	Con c(5);
+	
+	auto iter = c.begin();  // iter türü list<int>'in iteratörü
+	
+	auto x = *iter;
+	++iter;
+	
+	iter < iter; // sentax hatası, list container'inda  <  işlemini sağlamadı
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+vector'ün iteratörü < operatörünü desteklerken, list'in iteratörü < operatörünü 
+sağlamadı. 
+iteratör pointer'ın soyutlanmış hali, bir sınıf türünden nesnelerdir. Operatör 
+overloading ile onları da pointer interface'i ile kullanabiliyorum.
+
+*-----------------------------------------------------------------------------------------------------    
+
+iterator category
+
+iteratörleri <, == , > gibi işlemlere sokabilmek için iteratör kategorisini bilmeliyiz.
+
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+
+
+con.begin(), end() 'in geri dönüş değeri iteratör verir
+
+*-----------------------------------------------------------------------------------------------------    
+
+iterator category :
+1) input iterator
+2)  output iterator
+3)  forward iterator
+4)  bidirectional iterator
+5)  random access iterator
+
+iteratörün kategorisi iteratörü hangi işlemlere sokamayacağınızı belirliyor.
+
+*-----------------------------------------------------------------------------------------------------    
+
+
+
+https://www.simplilearn.com/tutorials/cpp-tutorial/iterators-in-cpp
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+using Con = std::vector<int>;
+
+int main()
+{
+	Con c(5);
+	
+	auto iter = c.begin();  // iter türü vector<int>'in iteratörü
+	// bir pointerın yapabildiği bütün işlemleri iteratör ile yapabilirim.
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+int main()
+{
+	vector<int> ivec{1, 2, 3, 4, 5};
+	
+	cout << *(ivec.end() - 1)  << "\n" ;
+}
+
+---------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+int main()
+{
+	list<int> ivec{1, 2, 3, 4, 5};
+	
+	cout << *(ivec.end() - 1)  << "\n" ;  
+	// sentax hatası, bidirectional operator çıkarma işlemine
+	// destek vermiyor.
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+int main()
+{
+	list<int> c{1, 2, 3, 4, 5};
+	
+	auto iter = c.end();
+	
+	--iter; // ok, bidirectional operator
+}
+
+-------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+int main()
+{
+	forward_list<int> c{1, 2, 3, 4, 5};
+	
+	auto iter = c.end();  
+	
+	--iter; // sentax hatası, forward iteratör
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+
+int main()
+{
+	ostream_iterator<int> os;  // output iterator
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+iteratör sınıflarının iterator_category nested type'i var.
+
+struct output_iterator_tag
+struct input_iterator_tag
+struct forward_iterator_tag
+struct bidirectional_iterator_tag
+struct random_access_iterator_tag
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <list>
+#include <forward_list>
+#include <iterator>
+
+int main()
+{
+	std::cout << typeid(vector<int>::iterator::iterator_category).name() <<  "\n";  
+	// random_access_iterator_tag
+
+	std::cout << typeid(list<int>::iterator::iterator_category).name() <<  "\n";
+	// bidirectional_iterator_tag
+	
+	std::cout << typeid(forward_list<int>::iterator::iterator_category).name() <<  "\n";
+	// forward_iterator_tag
+	
+	std::cout << typeid(ostream_iterator<int>::iterator_category).name() <<  "\n";
+	// output iterator tag
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+kategorisine bakarak compile time'da kod seçmesini sağlayabilirsin
+
+*-----------------------------------------------------------------------------------------------------    
+
+template <typename Iter>
+void func(Iter beg, Iter end)
+{
+	typename Iter::iterator_category;
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+en yetenekli iterator kategorisi : random access iterator, bununla pointer ile yaptığım herşeyi yapabilirim.
+
+*-----------------------------------------------------------------------------------------------------    
+
+soru : Copy fonksiyonuna geçtiğim birinci ve ikinci iteratörlerin kategorisi 
+ne olabilir ?
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+cevap : forward, bidirectional, random_access iteratör olabilir
+en az input iterator olmalı
+
+Üçüncü iteratör kategori minimum output iterator olmalı,
+
+*-----------------------------------------------------------------------------------------------------    
+
+fonksiyonlarda ima edilen iteratorler
+
+int main()
+{
+	sort(); // parametreye runit ismini vermiş çünkü istediği iteratörlerin min. random access iterator
+}
+
+---------------------------------------------------    
+
+int main()
+{
+	vector<int> ivec{4, 3, 2, 1};
+	
+	sort(ivec.begin(), ivec.end());
+}
+
+--------------------------------------------------------------    
+
+int main()
+{
+	list<int> ivec{4, 3, 2, 1};
+	
+	sort(ivec.begin(), ivec.end()); // sentax hatası,sort fonk.'u minimal random access kategorisi ister !!!
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+int main()
+{
+	vector<int> ivec{4, 3, 2, 1};
+	list<int> ilist;
+	
+	copy(ivec.begin(), ivec.end(), ilist.begin()); // sentax hatası, derlerken sorun yok,
+	// neden ? 
+	
+}
+
+-----------
+
+// çünkü destbeg boş bir liste, deference ettiğimde geçerli bir iteratör olmaz
+// bizim yazdığımız Copy'e baktık ama aslında copy'e bakmalıydık, ama aynısı
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+std::copy_if : copy şarta bağlı
+
+çakmasını yazalım
+
+template <typename InIter, typename OutIter, typename Pred>
+OutIter  CopyIf(InIter beg, InIter end, OutIter destbeg, Pred f)
+{
+	while(beg != end){
+		if(f(*beg)){
+			*destbeg++ = *beg;
+		}
+		++beg;
+	}
+	
+	return destbeg;
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+bir fonksiyonun çağrılmasını sağlayan türlere callable denir
+
+*-----------------------------------------------------------------------------------------------------    
+
+// 2'ye bölünenleri listeye kopyalama
+
+bool is_even(int x)
+{
+	return x % 2 == 0;
+}
+
+int main()
+{
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{0,  1000});
+	print(ivec);
+	
+	list<int> ilist(100);
+	
+	auto iter = copy_if(ivec.begin(), ivec.end(), ilist.begin(), &is_even); 
+	// kaç tane eleman kopyalandı ?
+	// bütün yazma algoritmaları en son yazdığı konumdan sonraki konumu döndürür
+	
+	print(ilist.begin(), iter);
+}
+
+çok zahmetli, 3'e bölünenler için başka olmalı
+
+------------------------------------    
+
+class DivPred{
+public:
+	bool operator()(int x)const  
+	{
+		return x % 2 == 0;
+	}
+};
+
+int main()
+{
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{0,  1000});
+	print(ivec);
+	
+	list<int> ilist(100);
+	
+	auto iter = copy_if(ivec.begin(), ivec.end(), ilist.begin(), DivPred{}); 
+	
+	print(ilist.begin(), iter);
+}
+
+----------------------------------------------------------    
+
+fonksiyon çağrı operatörü gerçek gücünü template olunca gösterir :
+
+https://www.tutorialspoint.com/cplusplus/function_call_operator_overloading.htm#:~:text=The%20function%20call%20operator%20(),an%20arbitrary%20number%20of%20parameters.
+
+class DivPred{
+public:
+	DivPred(int val) : m_x{val}{}
+	bool operator()(int x)const  
+	{
+		return x % m_x == 0;
+	}
+private:
+	int m_x;
+};
+
+int main()
+{
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{0,  1000});
+	print(ivec);
+	
+	list<int> ilist(100);
+	
+	std::cout << "kaca tam bolunenler kopyalansın ? " << "\n";
+	int ival;
+	
+	cin >> ival;
+	auto iter = copy_if(ivec.begin(), ivec.end(), ilist.begin(), DivPred{ival}); 
+	
+	print(ilist.begin(), iter);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+// alttaki sınıfın kodunu da derleyici yazsın 
+
+lambda expression: (en önemli araçlardan biri !!!)
+
+class DivPred{
+public:
+	DivPred(int val) : m_x{val}{}
+	bool operator()(int x)const  
+	{
+		return x % m_x == 0;
+	}
+private:
+	int m_x;
+};
+
+---------------------------------------------------    
+
+// closure type (kapanış türü)
+
+int main()
+{
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{0,  1000});
+	print(ivec);
+	
+	list<int> ilist(100);
+	
+	std::cout << "kaca tam bolunenler kopyalansın ? " << "\n";
+	int ival;
+	
+	cin >> ival;
+	auto iter = copy_if(ivec.begin(), ivec.end(), ilist.begin(),  [ival](int x){return x % ival == 0;} ); 
+	
+	print(ilist.begin(), iter);
+}
+
+
+[ival](int x){return x % ival == 0;}
+derleyici bu ifade karşılığı bir sınıf tanımlıyor, bu sınıfa closure type (kapanış türü) denir.
+ayrıca bu ifadeyi tanımladığı sınıf türünden bir geçici nesneye(closure object) dönüştürür. 
+
+---------------------------------------------------------    
+
+derleyicinin yazdığı ama bize göstermediği sınıf
+
+class xyz1873q4{
+public:
+	xyz1873q4(int x) : ival{x} {};
+	auto operator()(int x)const
+	{
+		return x % ival == 0;
+	}
+private:
+	int ival;
+};
+
+*-----------------------------------------------------------------------------------------------------    
+
