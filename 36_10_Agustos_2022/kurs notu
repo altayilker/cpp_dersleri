@@ -1,0 +1,1043 @@
+
+İçerik:
+
+lambda expression: (en önemli araçlardan biri !!!)
+Farklı yollarla vector'un son elemanına erişim
+if with initializer kullanımı 
+find_if
+find_if_not
+iteratör adaptörleri 
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+stl'de ilerlemeye devam ediyoruz. 
+
+*-----------------------------------------------------------------------------------------------------    
+
+stl'de birden fazla arama algoritması var.
+sık kullanılanlara değineceğiz. find, find_if, find_if_not
+
+*-----------------------------------------------------------------------------------------------------    
+
+arama fonksiyonları adres döndürür, bulursa bulduğu yerin adresini döndürür, bulmazsa nullptr döndürür.
+string sınıfın arama fonksiyonları index döndürür. Bulursa bulduğu yerin indexi, bulamazsa sınıfın constexpr static veri elemanı npos'u döndürür. 
+Fakat algoritmalar söz konusu olunca algoritmalar iteratör döndürür. 
+
+*-----------------------------------------------------------------------------------------------------    
+
+1. begin() – Returns an iterator pointing to the first element in the vector
+2. end() – Returns an iterator pointing to the theoretical element that follows the last element in the vector
+3. rbegin() – Returns a reverse iterator pointing to the last element in the vector (reverse beginning). It moves from last to first element
+4. rend() – Returns a reverse iterator pointing to the theoretical element preceding the first element in the vector (considered as reverse end)
+
+https://en.cppreference.com/w/cpp/iterator/reverse_iterator/base
+
+--------------------------------------
+
+An iterator is any object that, pointing to some element in a range of elements (such as an array or a container), has the ability to iterate through the elements of that range using a set of operators (with at least the increment (++) and dereference (*) operators).
+
+
+The most obvious form of iterator is a pointer: A pointer can point to elements in an array, and can iterate through them using the increment operator (++). But other kinds of iterators are possible. For example, each container type (such as a list) has a specific iterator type designed to iterate through its elements.
+
+
+Notice that while a pointer is a form of iterator, not all iterators have the same functionality of pointers;
+
+https://cplusplus.com/reference/iterator/
+
+--------------------------------------
+
+<algorithm>
+
+Standard Template Library: Algorithms
+
+https://cplusplus.com/reference/algorithm/
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+template<typename InIter, typename T>  // ikinci parametre aranacak değerin türü
+InIter Find(InIter beg, InIter end, const T& tval)
+{
+	while(beg != end){
+		if(*beg == tval)  // bunların türü aynı olmak zorunda değil, önemli olan eşitlik kontrolü yapılabilir olmalı
+			return beg;
+		++beg;
+	}
+	return end;
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, rname);  // nutility
+	print(svec);  // nutility
+	string name;
+	cout << "aranacak isim girin : ";
+	cin >> name;
+	
+	
+	// eskiden vector<string>::iterator iter = find(svec.begin(), svec.end(), name);
+	auto iter = find(svec.begin(), svec.end(), name);
+	if(iter != svec.end()){
+		cout << *iter << "\n";  // vector'ün iteratörleri random acccess iteratordü, en yetenekli iteratörlerdi.
+		cout << iter - svec.begin() << " indeksi eleman\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+vector<int> ivec(10);  // container boş değil
+son ogeye erimenin bir yolu
+
+*(ivec.end() -1);  // iterator kategorisi en az random access olmalı
+
+list<int> ilist(10);  // container boş değil
+*(ilist.end() -1); // hata, random access olmalı
+
+*-----------------------------------------------------------------------------------------------------    
+
+Farklı yollarla vector'un son elemanına erişim :
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, rname);  // nutility
+	print(svec);  // nutility
+	
+	cout << svec.back() << "\n"; // son öğeye erişim
+	cout <<  svec[svec.size()-1] << "\n";  // son öğeye erişim
+	cout <<  *svec.rbegin() << "\n";  // reverse begin
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, rname);  // nutility
+	print(svec);  // nutility
+	string name;
+	cout << "aranacak isim girin : ";
+	cin >> name;
+	
+	
+	auto iter = find(svec.begin(), svec.end(), name);
+	if(iter != svec.end()){
+		cout << *iter << "\n";  // vector'ün iteratörleri random acccess iteratordü, en yetenekli iteratörlerdi.
+		cout << iter - svec.begin() << " indeksi eleman\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+	
+	++iter; // bu kod kötü kabul edilmeli, scope leakage çünkü iter'e burada erişebilirim !!!
+}
+
+scope leakage'i engellemek için if with initializer kullanılır
+-------------------------------------------------------    
+
+if with initializer kullanımı : 
+
+	if(auto iter = find(svec.begin(), svec.end(), name); iter != svec.end()){
+		cout << *iter << "\n";  // vector'ün iteratörleri random acccess iteratordü, en yetenekli iteratörlerdi.
+		cout << iter - svec.begin() << " indeksi eleman\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+
+scope leakage engellendi.
+eskiden blok içine alınırdı { }. Bu C++ 17 ile değişti
+
+*-----------------------------------------------------------------------------------------------------    
+
+stl'de sonu if ile biten algoritmalar predicate istiyor. 
+copy_if
+count_if
+remove_if
+replace_if
+find_if
+
+*-----------------------------------------------------------------------------------------------------    
+
+template<typename InIter, typename UnPred>
+InIter FindIf(InIter beg, InIter end, UnPred f)
+{
+	while( beg != end){
+		if(f(*beg)){
+			return beg;
+		}
+		++beg;
+	}
+	return end;
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+find_if örneği :
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{5'000'000, 6'000'000});
+	print(ivec);
+	
+	
+	if(auto iter = find_if(begin(ivec), end(ivec), &isprime());  iter != end(ivec)){
+		cout << "ilk asal sayi : " <<  *ivec << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+	// C'den biliyorsunuz isprime yazmak ile &isprime ile aynı
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+find_if örneği :
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{5'000'000, 6'000'000});
+	print(ivec);
+	
+	
+	if(auto iter = find_if(begin(ivec), end(ivec), &isprime());  iter != end(ivec)){
+		cout << "ilk asal sayi : " <<  *ivec << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+	// C'den biliyorsunuz isprime yazmak ile &isprime ile aynı
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+find_if örneği : 
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 100, rname);
+	print(svec);
+	char c;
+	
+	cout << "icinde hangi karakter olan : ";
+	cin >> c;
+	
+	if(auto iter = find_if(begin(svec), end(svec), [c](const string&s){s.find(c) != string::npos;} );  iter != end(svec)){
+		cout << "bulundu : " <<  *svec << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+find_if_not örneği :
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 10, Irand{ 10, 20});
+	print(ivec);
+	
+	if(auto iter = find_if_not(begin(ivec), end(ivec), &isprime());  iter != end(ivec)){
+		cout << "ilk asal olmayan sayi : " <<  *ivec << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+iteratör adaptörleri : 
+
+adaptör : uyumlandırıcı
+başka bir sınıfı kullanarak o sınıftan farklı bir interface oluşturan sınıflara denir
+örneğin : stl'de stack sınıfı  bir container adaptörü, bir container'i kullanarak kendine özel bir interface yaratır.
+
+iteratör adaptörleri:
+iteratörleri alıp daha özel amaçlı bir interface (iteratör) oluşturuyorlar.
+
+reverse iterator
+	insert iteratör adaptörleri
+	stream iteratör adaptörleri
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <vector>
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+
+template<typename InIter>
+void Print(InIter beg, InIter end, const char* psep = " ")
+{
+	while(beg != end){
+		std::cout << *beg++ << psep;
+	}
+	std::cout << "\n";
+}
+
+int main()
+{
+	using namespace std;
+	
+	vector ivec(2, 5, 6, 9, 3, 34, 76, 19);  // <int> dememe rağmen deduction, CTAD
+	
+	Print(ivec.rbegin(), ivec.rend());  // vector'ü tersten yazdırdı !!!
+}
+
+--------------------------------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector ivec(2, 5, 6, 9, 3, 34, 76, 19);  // <int> dememe rağmen deduction, CTAD
+	
+	reverse_iterator <vector<int>::iterator> iter;  // böyle yazmak yerine
+	
+	vector<int>::reverse_iterator;  // böyle yazılabilir, hile
+	
+	auto iter = ivec.rbegin();  // son öğeye erişim
+	cout << *iter << "\n";
+	++iter;
+	cout << *iter << "\n";  // sondan bir önceki öğeye erişim
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+Print(ivec.rbegin(), ivec.rend());  // vector'ü tersten yazdırdı !!!
+bunun hilesi nasıl oluyor ?
+
+
+int main()
+{
+	using namespace std;
+	
+	vector ivec(2, 5, 6, 9, 3, 5, 23, -1, 9);  // CTAD
+	
+	sort(ivec.begin(), ivec.end());
+	print(ivec);
+}
+
+-------------------------------------    
+
+// reverse iteratör
+int main()
+{
+	using namespace std;
+	
+	vector ivec(2, 5, 6, 9, 3, 5, 23, -1, 9);  // CTAD
+	
+	sort(ivec.rbegin(), ivec.rend());
+	print(ivec);
+}
+
+---------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec{"tekin", "eray", "cem", "deniz", "emirhan", "suleyman", "volkan", "samet", "nur"};  
+	
+	const auto f = [](const string& s) {return s.find('a') != string::npos; };
+	
+	if(auto iter = find_if(svec.begin(), svec.end(), f); iter != svec.end()){
+		cout << "bulundu : "<< *iter << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+	
+	
+	// reverse iteratör
+	if(auto riter = find_if(svec.rbegin(), svec.rend(), f); riter != svec.rend()){
+		cout << "bulundu : "<< *riter << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+normal iteratör :
+
+
+
+reverse iteratörde : (bir adaptör, normal bir iteratör tutuyor ama
+içerik operatör fonk. iteratör olarak tuttuğu konumdaki nesneye değil ondan bir önceki nesneye eriştiriyor)
+hile : reverse iteratörün içerik operatör fonk. eleman olarak tuttuğu iteratör konumundaki nesneye eriştirmek yerine ondan bir önceki nesneye eriştiriyor)
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec{"tekin", "eray", "cem", "deniz", "emirhan", "suleyman", "volkan", "samet", "nur"};  
+
+	const auto f = [](const string& s) {return s.find('a') != string::npos; };
+	
+	
+	
+	// reverse iteratör
+	if(auto riter = find_if(svec.rbegin(), svec.rend(), f); riter != svec.rend()){
+		
+		cout << "bulundu : "<< *riter << "\n";
+		auto iter = riter.base();
+		cout << "bulundu : "<< *iter << "\n";
+	}
+	else{
+		cout << "bulunamadi\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec{"tekin", "eray", "cem", "deniz", "emirhan", "suleyman", "volkan", "samet", "nur"};  
+
+	auto riter = svec.rbegin();
+	cout << *riter << "\n";
+	
+	auto iter = riter.base();
+	
+	if(iter == svec.end()){
+		cout << "evet dogru\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+aşağıdaki vectorde son iki öğeyi silin :
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> ivec{1, 2, 4, 5, 2, 6, 7, 2, 9};
+	
+	// find algoritmasını reverse iteratörle çalıştırırım
+	
+	auto riter = find(ivec.rbegin(), ivec.rend(), 2);
+	// riter 9'un konumunu tutar, dereference edince sondan bir öncekini verir.
+	cout << "riter " << "\n";
+	
+	ivec.erase(riter);  // sentax hatası
+	ivec.erase(riter.base()); // yanlış, sondaki elemanı siler
+	
+	ivec.erase(riter.base()-1); // doğru, sondaki bir önceki elemanı siler
+	
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+soru : elimde sadece riter_beg, riter_end var, Print ile bütün diziyi yazdır
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> ivec{2, 5, 6, 9, 3, 34, 76 , 19};
+	
+	auto riter_beg = ivec.rbegin();
+	auto riter_end = ivec.rend();
+	
+	Print(riter_beg, riter_end);
+}
+
+sonuç : 19, 76, 34, 3, 9, 6, 5, 2 
+
+*-----------------------------------------------------------------------------------------------------    
+
+soru : elimde sadece riter_beg, riter_end var, Print ile bütün diziyi yazdır,
+baştan sona yazdırmak istesek
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> ivec{2, 5, 6, 9, 3, 34, 76 , 19};
+	
+	auto riter_beg = ivec.rbegin();
+	auto riter_end = ivec.rend();
+	
+	Print(riter_end.base(), riter_begin.base());
+}
+
+sonuç : 2, 5, 6, 9, 3, 34, 76 , 19
+
+*-----------------------------------------------------------------------------------------------------    
+
+insert iteratör adaptörleri :
+
+int main()
+{
+	vector ivec{ 2, 5, 7, 1, 9, 3}; // CTAD
+	vector <int> destvec;
+	
+	copy(ivec.begin(), ivec.end(), destvec.begin());
+	// 3. parametresine aldığı iteratör konumunu dereference ederek oradan
+	yazmaya başlıyor,
+	
+	print(destvec);
+	// destvec boşşşşş, tanımsız davranış
+}
+
+-----------------------------------------    
+
+int main()
+{
+	vector ivec{ 2, 5, 7, 1, 9, 3}; // CTAD
+	vector <int> destvec(6);
+	
+	copy(ivec.begin(), ivec.end(), destvec.begin());
+	
+	print(destvec);  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+#include <iostream>
+#include <algorithm>
+#include "nutility.h"
+#include<iterator> // for iterators
+#include<vector> // for vectors
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+int main()
+{
+	vector ivec{ 2, 5, 7, 1, 9, 3}; // CTAD
+	vector <int> destvec;
+	
+	Copy(ivec.begin(), ivec.end(), back_inserter(destvec));  // ok,  bu boş container'a ekleyebilir  !!!!
+	
+	print(destvec); 
+}
+
+-------------------------------------------------------   
+
+bu hile nasıl yapılıyor ? 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	back_inserter_iterator<vector<int>> iter{ ivec };
+}
+
+---------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	
+	back_inserter_iterator iter{ ivec };  // CTAD, C++17 ile geldi
+	
+	*iter++ = 10;    // container'a push_back ediliyor
+	
+	cout <<< "ivec.size() = " << ivec.size() << "\n";
+	print(ivec);
+}
+
+--------------------------------------------    
+
+aynı hileyi ben yapacağım :
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)  // bizim yazdığımız copy fonk.
+{
+	while(beg != end){
+		*destbeg++ = *beg++;
+	}
+	return destbeg;
+}
+
+template<typename C>
+class BackInsertIterator{
+
+public: 
+	BackInsertIterator(C& cr) : m_con(cr) {};
+	BackInsertIterator& operator++(int) {return *this;};
+	BackInsertIterator& operator++( ) {return *this;};
+	BackInsertIterator& operator*( ) {return *this;};
+	BackInsertIterator& operator = (const typename C::value_type& val)
+	{
+		m_con.push_back(val);
+		return *this;
+	}
+private:
+	C& m_con;
+};
+
+template <typename C>
+BackInsertIterator<C> BackInserter(C& c)
+{
+	return BackInsertIterator<C>{c};
+}
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{1, 2, 3, 4, 5};
+	vector<int> destvec;
+	
+	Copy(ivec.begin(), ivec.end()), BackInsertIterator<vector<int>>{destvec});
+	
+	print(destvec);
+}
+
+------------------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{1, 2, 3, 4, 5};
+	vector<int> destvec;
+	
+	copy(ivec.begin(), ivec.end(), back_inserter(destvec));
+	copy(ivec.begin(), ivec.end(), back_insert_iterator<vector<int>>{destvec});
+	copy(ivec.begin(), ivec.end(), back_insert_iterator{destvec});
+	// hepsi aynı !!!
+	
+	print(destvec);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+back_insert_iterator     con.push_back(value) // sarmaladığı container'ın push_back fonk. çağırıyor
+back_inserter : back_insert_iterator veren fabrika fonksiyonu, iterator başlık dosyasında
+
+front_insert_iterator     con.push_front(value)  // sarmaladığı container'ın push_front fonk. çağırıyor
+front_inserter: front_insert_iterator veren fabrika fonksiyonu, iterator başlık dosyasında
+
+insert_iterator     con.insert(iter, value) // sarmaladığı container'ın insert fonk. çağırıyor
+inserter : back_insert_iterator veren fabrika fonksiyonu, iterator başlık dosyasında
+
+*-----------------------------------------------------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{1, 2, 3, 4, 5};
+	list<int> dlist;
+	
+	copy(ivec.begin(), ivec.end(), back_inserter(dlist));  // push_back fonk. yapılan çağrıya dönüşür
+	copy(ivec.begin(), ivec.end(), front_inserter(dlist));  // push_front fonk. yapılan çağrıya dönüşür
+	
+	print(dlist);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{34, 7, 7, 12, 9, 9, 18, 1, 123, 56};
+	set<int> myset;
+
+	copy(ivec.begin(), ivec.end(), inserter(myset, myset.begin()) ); // container'in insert fonk. yapılan çağrı için inserter fonk. çağrılır
+	
+	print(myset);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{34, 7, 7, 12, 9, 9, 18, 1, 123, 56};
+	multiset<int> myset;
+
+	copy(ivec.begin(), ivec.end(), inserter(myset, myset.begin()) ); // container'in insert fonk. yapılan çağrı için inserter fonk. çağrılır
+	
+	print(myset);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{34, 7, 7, 12, 9};
+	vector<int> dest{9, 3, 5, 67, 345};
+	
+      // üç işlem de farklı işlem
+	// copy(ivec.begin(), ivec.end(), dest.begin());
+	// copy(ivec.begin(), ivec.end(), back_inserter(dest));
+	copy(ivec.begin(), ivec.end(), inserter(dest, dest.begin+2));
+	
+	print(dest);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+// iteratorler, pointer'lardan daha da yukarıda bir soyutlama,
+o zaman iteratörlerde de const. semantiği var
+
+int main()
+{
+	using namespace std;
+		
+	vector<int> ivec{10, 20, 30, 40, 50};
+	const vector<int>::iterator iter = ivec.begin(); 
+	// top level const.'un karşılığıdır
+	 // iter bir sınıf nesnesi, const bir sınıf nesnesidir. const. bir sınıf nesnesinin sadece hangi üye fonksiyonlarını 
+	çağırabilirim ? cevap : const. üye fonk.'larını çağırabilirim  !!!
+	
+	++iter; // operatorünü overload edersem sentax hatası, const. sınıf nesnesi için sınıfın const olmayan üye fonk. çağırılıyor
+
+	*iter = 75;  // ok, neden ? const bir nesne değil ki, iter nesnesini değiştiremezsiniz
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+low level const. iterator kullanmak istiyorum : sınıfın const. iteratörü türü
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{10, 20, 30, 40, 50};
+	
+	vector<int>::const_iterator iter = ivec.begin();
+	auto iter = ivec.begin();  // böyle yazarsam vector<int>::iterator türü olur.
+	// o yüzden dile cbegin eklendi
+	auto iter = ivec.cbegin();  // böyle yazarsam vector<int>::const_iterator türü olur.
+	
+	++iter;
+	
+	cout << *iter << "\n";
+	*iter = 34;
+}
+
+
+*-----------------------------------------------------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	list<int> mylist{10, 20, 30, 40, 50};
+	
+	for(auto iter = mylist.begin(); iter != mylist.end(); ++iter)
+		++*iter;
+	// burda auto kullanmasaydım
+	// list<int>::iterator iter  yazmam gerekir
+	
+	print(mylist);
+}
+
+--------------------------------------     
+
+// okuma amaçlı erişirsem
+
+int main()
+{
+	using namespace std;
+	
+	list<int> mylist{10, 20, 30, 40, 50};
+	
+	for(auto iter = mylist.cbegin(); iter != mylist.cend(); ++iter)
+		cout << ++*iter << "\n";
+	// burda auto kullanmasaydım
+	// list<int>::const_iterator iter  yazmam gerekir
+	
+	print(mylist);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+list<int>::iterator
+mylist.begin(), mylist.end()
+
+list<int>::const_iterator
+mylist.cbegin(), mylist.cend()
+
+list<int>::reverse_iterator
+mylist.rbegin(), mylist.rend()
+
+list<int>::const_reverse_iterator
+mylist.crbegin(), mylist.crend()
+
+*-----------------------------------------------------------------------------------------------------     
+
+advance 
+distance
+next
+prev
+iter_swap
+
+*-----------------------------------------------------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec{"eray", "deniz", "fatih", "selda"};
+	auto iter = svec.begin();
+	cout << *iter << "\n";
+
+	iter += 2;
+	cout << *iter << "\n";
+}
+
+--------------------------------------------------------     
+
+int main()
+{
+	using namespace std;
+	
+	list<string> slist{"eray", "deniz", "fatih", "selda"};
+	auto iter = slist.begin();
+	cout << *iter << "\n";  // 
+
+	iter += 2;  // sentax hatası, çünkü bu iteratör türü için operasyon tanımlı değil
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+using container = std::vector<std::string>;
+
+int main()
+{
+	using namespace std;
+	
+	container con{"eray", "deniz", "fatih", "selda"};
+	auto iter = slist.begin();
+	
+	cout << *iter << "\n";  
+	advance(iter, 2);
+	cout << *iter << "\n";  
+}
+
+---------------------------------------------------     
+
+using container = std::list<std::string>;  
+
+int main()
+{
+	using namespace std;
+	
+	container con{"eray", "deniz", "fatih", "selda"};
+	auto iter = slist.begin();
+	
+	cout << *iter << "\n";  
+	advance(iter, 2); 
+	cout << *iter << "\n";  
+}
+
+tag_dispatch:
+// vector söz konusu olduğunda derleyici advance(iter, 2) kodunu
++= olarak görür, list söz konusu olunca derleyicinin gördüğü kod 
+iteratörü iki kez arttıracak.
+// bu durum compile time'da belli oluyor !!!
+en çok kullanılan tekniğe tag_dispatch denir.
+
+-------------------------------------------------------------     
+
+tag_dispatch: özünde compile time'da function overload'tan yararlanmak
+
+template<typename Iter>
+void Advance_impl(Iter& iter, int n, std::random_access_iterator_tag) 
+// sondaki parametreye isim vermiyoruz çünkü onu kullanmayacaz !!! işte neden fonk. parametrelerine isim vermek
+mecburi değil anlaşılıyor, function overload resolution'da seçilmesi için 
+{
+	cout << "random access iterator\n";
+	iter += n;
+}
+
+template<typename Iter>
+void Advance_impl(Iter& iter, int n, std::bidirectional_iterator_tag) 
+{
+	cout << "bidirectional iterator\n";
+	
+	while(n--)
+		iter += n;
+}
+
+template<typename Iter>
+void Advance(Iter& iter, int n)
+{
+	// iter += n;  // şablon böyle oluşturulursa list olunca sentax  hatası olur
+	
+	// compile time'da function overloading'den faydalanılacak
+	
+	Advance_impl(iter, n, typename  Iter::iterator_category{});
+	// Iter::iterator_category{} geçici nesne
+	//  random access iterator tag mi , bidirectional iterator tag mi 
+	// olduğunu compile time'da anlar. 
+}
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> x{1, 3, 4, 6, 7, 9, 2};
+	auto iter = x.begin();
+	
+	Advance(iter, 4);
+	
+	list<int> x{1, 3, 4, 6, 7, 9, 2};
+	auto liter = x.begin();
+	
+	Advance(liter, 4);
+}
+
+// n negatifse çalışmaz, kodu daha iyi yazmamız lazım
+
+*-----------------------------------------------------------------------------------------------------     
+
+template<typename Iter>
+void algo(Iter beg, Iter end)
+{
+	int n = 3;
+	
+	std::advance(beg, 3);
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+compile time'da kod seçimini yapmanın tek yolu tag_dispatch tekniği değil
+spine tekniği, constexpr_if
+
+C++ 20 olunca concepts
+
+*-----------------------------------------------------------------------------------------------------     
+
+advance'i negatif bir değerle de çağırabilirsiniz :
+
+using container = std::vector<std::string>;
+
+int main()
+{
+	using namespace std;
+	
+	container con{"eray", "deniz", "fatih", "selda"};
+	auto iter = slist.end();
+	
+	advance(iter, -2);
+	cout << *iter << "\n";  
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+distance: [iter1 iter2) iter1'i kaç kez arttırırsam iter2'yi elde ederim
+
+using container = std::vector<std::string>;
+
+int main()
+{
+	std::distance(iter1, iter2)
+
+	vector<int> ivec{1, 3, 6, 7, 9, 12};
+	cout << distance(ivec.begin(), ivec.end()) << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
+bir container (forward_list) hariç bütün container'ların size üye fonk. var.
+
+----------------------------------------------     
+
+#include <forward_list>
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<int> mylist {1, 3, 6, 7, 9, 12};
+	
+	mylist.size(); //bu fonk.'u yok !!!
+	
+	std::distance(mylist.begin(), mylist.end());
+}
+
+*-----------------------------------------------------------------------------------------------------     
+
