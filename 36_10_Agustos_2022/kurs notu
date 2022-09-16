@@ -7,6 +7,10 @@ if with initializer kullanımı
 find_if
 find_if_not
 iteratör adaptörleri 
+insert iteratör adaptörleri 
+iteratörleri manipüle eden 5 fonksiyon:
+tag_dispatch
+
 
 özet:
 
@@ -847,6 +851,8 @@ list<int>::const_reverse_iterator
 mylist.crbegin(), mylist.crend()
 
 *-----------------------------------------------------------------------------------------------------     
+
+iteratörleri manipüle eden 5 fonksiyon:
 
 advance 
 distance
