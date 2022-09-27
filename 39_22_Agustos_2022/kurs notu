@@ -1,0 +1,971 @@
+
+İçerik:
+
+VECTOR 
+
+
+özet:
+
+*-----------------------------------------------------------------------------------------------------    
+
+using namespace std;
+
+int main()
+{
+	vector<Date> dvec;
+	
+	cout << dec.max_size() << "\n";  // allocater girdiği zaman farklı allocater için farklı değerler olacağında
+	bunu non-static üye fonk. yapmışlar
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+iterator/reference invalidation : 
+
+pointer ile referans aynı kaç kere söyledik
+
+vector üzerinde ekleme/silme yaptığınız zaman, vector üzerinde iteratörleri, adres, ref.'ları geçersiz hale getirir. Yani bunları kullanmak istersek tanımsız davranış olur. 
+
+konuyu daha karmaşık hale getiren iterator invalidation farklı container'lar için farklı kurallara sahip
+
+vector üstünde yapılıyorsa bir iterator invalid olabilirken
+list üstünde valid olabilir
+
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+vector'den 5. öğeyi sildiniz, ondan sonrasına olan pointer'lar invalid hale
+gelir, öncesi geçerli kalır. 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{2, 3, 4, 5, 6, 7};
+	ivec.reserve(100);
+	int *p = &ivec[5];
+	
+	cout << "*p = " << *p << "\n";
+	ivec.insert(ivec.begin() + 4, -1);
+	cout << "*p = " << *p<<  "\n";  // tanımsız davranış 
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{2, 3, 4, 5, 6, 7};
+	ivec.reserve(100);
+	auto iter = ivec.begin() + 5;
+	
+	cout << "*iter = " <<  *iter << "\n";
+	ivec.insert(ivec.begin() + 4, -1);
+	cout << "*iter = " << *iter << "\n";  // tanımsız davranış 
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+ödev : 10 programcıdan 9'u yanlış cevaplar
+
+	// bu vector'ü iteratör kullanarak dolaşın, eğer vector'deki string'in uzunluğu 5 ise
+	o isimden bir tane daha ekleyin !!!  eğer vector'deki string'in uzunluğu 6 ise
+	o ismi silin
+	
+
+#include "nutility.h"
+
+using namespace std;
+
+int main()
+{
+	vector<string> svec;
+	rfill(svec, 50, rname);
+	print(svec);
+}
+
+find_if kullanalım mı ? hayır, algoritma kullanmayın
+
+-------------------------
+
+ödev cevabı :
+
+#include "nutility.h"
+
+using namespace std;
+
+int main()
+{
+	vector<string> svec;
+	rfill(svec, 50, rname);
+	print(svec);
+	
+	for(auto iter = svec.begin(); iter != svec.end(); ++iter){
+		if(iter->size() == 5){
+			svec.insert(iter, *iter);
+		}
+		else if(iter->size() == 6){
+			svec.erase(iter);
+		}
+	}
+	
+	print(svec);
+}
+
+bu kod neden yanlış ?
+iteratör invalidation, ekleme silme işlemi yapınca 
+
+-----------------------------------    
+
+#include "nutility.h"
+
+using namespace std;
+
+int main()
+{
+	vector<string> svec;
+	rfill(svec, 50, rname);
+	print(svec);
+	
+	for(auto iter = svec.begin(); iter != svec.end()){
+		if(iter->length() == 6){
+			iter = svec.erase(iter);
+		}
+		else if(iter->length == 5){
+			iter = svec.insert(iter, *iter);
+			advance(iter, 2);  // 2 arttır
+		}
+		else{
+			++iter;
+		}
+	}
+	
+	print(svec);
+}
+
+// silme işlemi yaparsam silinen öğeden bir sonraki öğenin
+konumu döndürülecek 
+// insert'ün geri dönüş değeri eklenen konuma iteratör
+
+*-----------------------------------------------------------------------------------------------------    
+
+silme algoritmaları :
+
+range parametreli bir algoritma söz konusu range'den bir öğe silemez.
+
+void algo(Iter beg, Iter end);
+// burada sadece iteratör konumunu alıyor, o iteratörden faydalanarak
+container nesnesinin kendisine erişmesi diye birşey sözkonusu değil
+
+peki remove algoritmalar nasıl silme işlemi yapıyor ? 
+logic silme işlemi yaparlar, ne demek logic silme işlemi ? 
+
+3 2 9 7 2 0 2 7 1 2 9 2 1  // 2'leri silelim
+
+3 9 7 0 7 1 9 1 ? ? ? ? ?  // logic silme
+				   |               // aslında silme işlemi yapmıyor, düzenleme yapar, container'in size'i azalmadı
+
+remove algoritmasının geri dönüş değeri olan logic_end konumu
+begin olarak kullanıp gerçek end konumunu end olarak kullanıp 
+bu range'i container'in erase fonk.'nuna argüman olarak gönderirseniz fiziksel olarak da silme işleminin yapmış olacaksınız.
+
+--------------------------------------------------    
+
+template <typename Iter, typename T>
+Iter Remove(Iter beg, Iter end, const T& val);
+
+--------------------------------------------------    
+
+#include <algorithm>
+using namespace std;
+
+int main()
+{
+	vector<int> ivec{1, 2, 5, 6, 2, 3, 2, 9, 2, 2, 4, 7};
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	
+	auto logic_end_iter = remove(ivec.begin(), ivec.end(), 2);
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	print(ivec.begin(), logic_end_iter);
+	
+	print( logic_end_iter, ivec.end());  //  ? ? ? ?  değerlerin ne olacağı belli değil !!!
+	
+	// hangi ifade ile kaç tane öğenin silindiğini anlarım ??
+	cout << "logic silinen öge sayisi : " << ivec.end() - logic_end_iter << "\n";
+	cout << "logic silinen öge sayisi : " <<  distance(logic_end_iter, ivec.end()) << "\n";
+	cout << "logic size : " << distance(ivec.begin(), logic_end_iter) << "\n";
+	
+	ivec.erase(logic_end_iter, ivec.end());
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	print(ivec);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+// ben gerçekten belirli değere sahip öğelerin tamamını container'dan 
+silmek istiyorum
+
+#include <algorithm>
+using namespace std;
+
+int main()
+{
+	vector<int> ivec{1, 2, 5, 6, 2, 3, 2, 9, 2, 2, 4, 7};
+	
+	print(ivec);
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	
+	int ival = 2;
+	// remove-erase idiomu
+	// erase - remove idiomu
+	ivec.erase(remove(ivec.begin(), ivec.end(), ival), ivec.end());
+	
+	print(ivec);
+	cout << "ivec.size() = " << ivec.size() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+C++20'de 
+	// remove-erase idiomu
+	// erase - remove idiomu
+erase() global fonk.'nu eklediler. 
+
+int main()
+{
+	vector<int> ivec{1, 2, 5, 6, 2, 3, 2, 9, 2, 2, 4, 7};
+	
+	print(ivec);
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	
+	int ival = 2;
+	// remove-erase idiomu
+	// erase - remove idiomu
+	// ivec.erase(remove(ivec.begin(), ivec.end(), ival), ivec.end());
+	erase();  // global fonksiyon, az önceki çağrıyı sarmalamaktan başka bir şey yapmaz, 
+	algoritma değil range istemiyor, 
+	
+	print(ivec);
+	cout << "ivec.size() = " << ivec.size() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+Aynı mantıkla silme fonksiyonu var
+remove_if : unary predicate'in  true değer verdiği öğeleri logic silme işlemine tabi tutar
+
+
+#include <algorithm>
+#include "date.h"
+
+template<typename Iter, typename UnPred>
+Iter Remove_If(Iter beg, Iter end, UnPred f );
+
+int main()
+{
+	using namespace std;
+
+	vector<Date> dvec;
+	rfill(dvec, 1000, Date::random);
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	
+	int mon;
+	cout << "silinecek ayi girin: ";
+	cin >> mon;
+	
+	dvec.erase(remove_if(dvec.begin(), dvec.end(), [mon](const Date& d) {
+		return d.month() == mon;}), dvec.end());
+	
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	print(dvec, "\n");
+}
+
+-----------------------------  
+
+erase_if
+
+int main()
+{
+	using namespace std;
+
+	vector<Date> dvec;
+	rfill(dvec, 1000, Date::random);
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	
+	int mon;
+	cout << "silinecek ayi girin: ";
+	cin >> mon;
+	
+	dvec.erase(remove_if(dvec.begin(), dvec.end(), [mon](const Date& d) {
+		return d.month() == mon;}), dvec.end());
+	
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	print(dvec, "\n");
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+silinen öğe sayısını tutmak
+
+int main()
+{
+	using namespace std;
+
+	vector<Date> dvec;
+	rfill(dvec, 1000, Date::random);
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	
+	int mon;
+	cout << "silinecek ayi girin: ";
+	cin >> mon;
+	
+	auto size_first = dvec.size();
+	auto n = erase_if( dvec,  [mon](const Date& d) {
+		return d.month() == mon;});  // bir önceki örnek ile aynı işi yapar
+	auto size_second = dvec.size();
+	
+	cout << "size_first  -  size_second = " << size_first  -  size_second << "\n";
+	print(dvec, "\n");
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+unique fonksiyonu : ardışık özdeş değerdeki öğelerin sayısını bire indiriyoruz
+
+1 5 5 3 3 3 6 6 5 7 7 7 1  1 2 9 3 7 7 6 1 1
+1 5 3 6 5 7 1 2 9 3 7 6 1 
+
+iki overload'u var. 
+
+a ) ==
+b ) binary predicate : ardışık öğe binary predicate'a gönderilir, true değer gönderirse 
+	siler
+	
+-----------------------------------    
+
+ilk overload :
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 3}(); });
+	print(ivec);
+
+	ivec.erase(unique(ivec.begin(), ivec.end()), ivec.end());
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	
+	print(ivec);
+}
+
+-----------------------------------    
+
+ikinci overload :
+tek çift sırayla bulunsun
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 100}(); });
+	print(ivec);
+
+	ivec.erase(unique(ivec.begin(), ivec.end(), 
+		[ ](int a, int b){return a % 2 == b % 2; }), ivec.end());
+	
+	cout << "ivec.size() = " << ivec.size() << "\n";
+	
+	print(ivec);
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+mulakat sorusu : 
+
+// kelimeler arasındaki boşlukları bire indirmek için unique'dan faydalanın
+
+int main()
+{
+	using namespace std;
+	
+	string str;
+	
+	cout << "bir yazı girin : ";
+	getline(cin, str);
+	
+	cout << "[" << str << "]\n"; 
+	
+	unique(str.begin(), str.end(), [](char c1, char c2){
+		return isspace(c1) && isspace(c2);}) , str.end());
+		
+	cout << "[" << str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+remove_copy algoritması : 
+
+sonunda copy sözcüğü olan algoritmalar bir işlemi yapıyorlar ama kendi yerinde değil.
+O işlem yapılmış gibi başka bir range'e kopyalıyorlar. 
+
+1 2 3 1 6 1 7 1 1 9 1
+2 3 6 7 9 
+
+bu değerdeki öğeler hariç hepsini kopyala !!!
+
+------------------------------  
+
+soru : ivec'deki öğeleri dvec'e kopya ama 2 değerine sahip öğeleri kopyalama
+
+remove_copy'nin geri dönüş değeri nedir ? 
+bütün yazma algoritmaları en son yazılan öğeden sonraki konumu döndürür
+
+
+#include <iterator>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 5}(); });
+	print(ivec);
+	
+	vector<int> dvec;
+	
+	remove_copy(ivec.begin(), ivec.end(), back_inserter(dvec) , 2)); 
+	// birinci ikinci parametre kaynak range, üçüncü parametre hedef range'in
+	başlangıcı, son parametre de kopyalanmayacak değer. 
+	// üçüncü parametre dvec.begin() dersek tanımsız davranış çünkü dvec boş,
+	// mecbur ekleme modunda çalıştırmak gerekiyor, iterator adaptoru kullanmak gerek.
+	
+
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	print(dvec);
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+// birinci ikinci parametre kaynak range, üçüncü parametre hedef range'in
+başlangıcı, son parametre de kopyalanmayacak değer. 
+	
+*-----------------------------------------------------------------------------------------------------  
+
+not : bütün yazma algoritmaları en son yazılan öğeden sonraki konumu döndürür
+
+*-----------------------------------------------------------------------------------------------------  
+
+soru : belirli bir koşulu sağlayanları kopyalamayacağım 
+
+remove_copy_if : 
+
+#include <iterator>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 100}(); });
+	print(ivec);
+	
+	vector<int> dvec;
+	
+	cout << "kaca tam bolunenler kopyalanmasın " <<  "\n";
+	int ival;
+	cin >> ival;
+	remove_copy_if(ivec.begin(), ivec.end(), back_inserter(dvec) ,  [ival](int x){return x%ival == 0;}); 
+
+	cout << "dvec.size() = " << dvec.size() << "\n";
+	print(dvec);
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+reverse_copy : reverse edilmiş gibi başka bir range'e kopyalar
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 10, []{return Irand{0, 100}(); });
+	print(ivec);
+
+	reverse(ivec.begin(), ivec.end());
+	print(ivec);
+}
+
+--------------------------------------------  
+
+#include <list>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 10, []{return Irand{0, 100}(); });
+	print(ivec);
+
+	list<int> ilist(10);
+	
+	reverse(ivec.begin(), ivec.end(), ilist.begin());
+	print(ilist);
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+// değeri 3 olanların yerine değeri 9 olanları yerleştirmek istesem 
+
+#include <list>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 5}(); });
+	print(ivec);
+	
+	replace(ivec.begin(), ivec.end(), 3, 9);  // orginal container değişir
+	print(ivec);
+}
+
+------------------------------------------  
+
+#include <list>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 5}(); });
+	print(ivec);
+	
+	replace_if(ivec.begin(), ivec.end(), [](int x){return x%2 == 0}, -1);  // orginal container değişir
+	print(ivec);
+}
+
+------------------------------------------  
+
+#include <list>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 5}(); });
+	print(ivec);
+	vector<int> dvec;
+	
+	replace_copy(ivec.begin(), ivec.end(), back_inserter(dvec), 3, 7);  // değeri 3 olan yerine 7 kopyala
+	print(ivec);
+}
+
+------------------------------------------  
+
+#include <list>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, []{return Irand{0, 5}(); });
+	print(ivec);
+	vector<int> dvec;
+	
+	replace_copy_if(ivec.begin(), ivec.end(), back_inserter(dvec), [](int x){return x%2 == 0}, -1); 
+	// değeri 3 olan yerine 7 kopyala
+	print(ivec);
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+SIRALAMAYA İLİŞKİN ALGORİTMALAR (sıralama algoritmaları demedik çünkü sıralamayla bir ilgisi var) :
+
+sort 
+stable_sort 
+partial_sort_copy 
+n_th_element 
+partition 
+partition_copy
+is sorted
+is_sorted_until
+ 
+
+*STL C++   Josuttis'in kitabından tekrar yapın !!!!
+https://www.amazon.com.tr/Standard-Library-Tutorial-Reference/dp/0321623215
+
+çok güzel bir kitap
+
+---------------------------------------  
+
+üretimde en çok ihtiyacınız olacak algoritma sort algoritmalarıdır
+
+sort algoritmasında karşılaştırma < ile yapılır !!!
+
+---------------------------------------  
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 1000, Irand{0, 10000});
+	sort(ivec.begin(), ivec.end());
+	print(ivec);
+}
+
+---------------------------------------  
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 100, rname);
+	sort(svec.begin(), svec.end());  // sorun çıkmaz, çünkü string nesneleri < ile karşılaştırılabilir
+	print(svec);
+}
+
+---------------------------------------  
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<Date> dvec;
+	rfill(dvec, 20, Date::random);
+	sort(dvec.begin(), dvec.end());  // sorun çıkmaz, çünkü Date nesneleri < ile karşılaştırılabilir
+	print(dvec, "\n");
+}
+
+---------------------------------------  
+
+#include <algorithm>
+
+struct Eray{
+
+};
+
+int main()
+{
+	using namespace std;
+	
+	vector<Eray> evec(100);
+	
+	sort(evec.begin(), evec.end());  // sentax hatası, çünkü < operatörü overload edilmemiş
+}
+
+---------------------------------------  
+
+#include <algorithm>
+
+struct Eray{
+	bool operator<(const Eray&)const;
+};
+
+int main()
+{
+	using namespace std;
+	
+	vector<Eray> evec(100);
+	
+	sort(evec.begin(), evec.end());  //ok, çünkü < operatörü overload edilmemiş
+}
+
+---------------------------------------  
+
+< sort algoritmasına göre değil >'e göre yapmak istiyorsam
+sort'un diğer overload'undan yararlanmam gerekir
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{0, 1000});
+	print(ivec);
+	
+	sort(ivec.begin(), ivec.end(), [](int a, int b){ return a < b;});
+	// böyle yapmama gerek yok 1. overload'u buydu zaten
+	print(ivec);
+	
+	sort(ivec.begin(), ivec.end(), [](int a, int b){ return a > b;});
+	print(ivec);
+}
+
+---------------------------------------  
+
+// öyle bir sıralama yaptır ki negatif pozitif önemli olmasın, mutlak değerlerine 
+göre sırala
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{-1000, 1000});
+	print(ivec);
+	
+	sort(ivec.begin(), ivec.end(), [](int a, int b){ return abs(a) < abs(b);});
+	print(ivec);
+}
+
+---------------------------------------  
+
+// tekler sıralı başta çiftler sıralı sonda
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 100, Irand{ 0, 1000});
+	print(ivec);
+	
+	auto fcomp = [](int a, int b){
+		return(a % 2 == 0 && b % 2 != 0) || (a % 2 == b % 2 && a < b);
+	};
+	
+	sort(ivec.begin(), ivec.end(), fcomp);
+	print(ivec, "\n");
+}
+
+---------------------------------------  
+
+// isimleri alfabetik sıralama
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 40, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	sort(svec.begin(), svec.end());
+	print(svec, "\n");
+}
+---------------------------------------  
+
+// isimleri alfabetik sıralama, 
+
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 40, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	sort(svec.begin(), svec.end(), [](const string &s1), const string &s2) {return s1 > s2;} );
+	print(svec, "\n");
+}
+
+bunu tercih etmiyoruz nedeni var, lambda ifadesi yerine daha kolay yolu var (altta) :
+
+---------------------------------------  
+
+functor ile
+
+template<typename T>
+struct Less{
+	bool operator(const T& left, cont T& right)const
+	{
+		return left < right;
+	}
+};
+
+template<typename T>
+struct Greater{
+	bool operator(const T& left, cont T& right)const
+	{
+		return left > right;
+	}
+};
+
+
+int main()
+{
+	using namespace std;
+	
+	cout << Less<int>{}(10, 20) << "\n";
+	cout << Less<double>{}(3.5, 4.9) << "\n";  // sınıf şablonu olmasının avantajı var.
+	
+}
+
+---------------------------------------  
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 40, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	sort(svec.begin(), svec.end(), greater<string>{} );  // lambda yerine tercih edilen yol !!!
+	// geçici nesne geçiyoruz, functor
+	print(svec, "\n");
+}
+
+---------------------------------------  
+
+functor kullanımına da deduction eklendi
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 40, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	sort(svec.begin(), svec.end(), greater{} );  // deduction var
+	print(svec, "\n");
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+int main()
+{
+	using namespace std;
+	
+	cout << plus<int>{}(3,5) << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+transform algoritması : iki overload'u var
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> vec1{1, 5, 7, 9, 2, 3};
+	vector<int> vec2{ 2, 10, 90, 129, 333, 511};
+	vector<int> vec3;
+	
+	transform(vec1.begin(), vec1.end(), vec2.begin(), back_inserter(vec3), plus{});
+	print(vec1);
+	print(vec2);
+	print(vec3);
+}
+
+--------------------------------------------------------  
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> vec1{1, 5, 7, 9, 2, 3};
+	vector<int> vec2{ 2, 10, 90, 129, 333, 511};
+	vector<int> vec3;
+	
+	transform(vec1.begin(), vec1.end(), vec2.begin(), back_inserter(vec3), multiples{});
+	print(vec1);
+	print(vec2);
+	print(vec3);
+}
+
+------------------------------------------------------  
+
+soru : yukarıdaki aynı işi standart function object olmasa nasıl yapabilirim ? 
+ya sınıfı yazacam ya lambda ifadesi kullanacaktım
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> vec1{1, 5, 7, 9, 2, 3};
+	vector<int> vec2{ 2, 10, 90, 129, 333, 511};
+	vector<int> vec3;
+	
+	transform(vec1.begin(), vec1.end(), vec2.begin(), back_inserter(vec3), [](int a, int b){return a*b});  // a-b veya a + b yazılabilir
+	
+	print(vec1);
+	print(vec2);
+	print(vec3);
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
+mülakatlarda :
+
+büyükten küçüğe sıralamak için :
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	sort(svec.begin(), svec.end(), greater{} );  // deduction var
+	print(svec, "\n");
+}
+
+------------------------------------  
+
+büyükten küçüğe sıralamak için 2 :
+
+reverse iterator :
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	sort(svec.rbegin(), svec.rend());  // deduction var
+	print(svec, "\n");
+}
+ 
+*-----------------------------------------------------------------------------------------------------  
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 20, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	auto f = [](const string &s1, const string& s2){
+		return s1.length() < s2.length();
+	};
+	
+	sort(svec.rbegin(), svec.rend(), f);  // deduction var
+	print(svec, "\n");
+}
+
+*-----------------------------------------------------------------------------------------------------  
+
