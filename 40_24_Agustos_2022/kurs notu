@@ -1,0 +1,739 @@
+
+İçerik:
+
+VECTOR 
+
+
+özet:
+
+*----------------------------------------------------------------------------------------------------- 
+
+functor class : genelleştirilmiş bazı operatör kullanımını gerçekleştiriyorlar.
+Örneğin iki tane öğe toplanacaksa bu toplama işlemini generic olarak yapmanın
+yollarından biri plus functor'ını kullanmak
+
+bunların listesi :
+plus<int>
+
+--------------------------------------------- 
+
+#include <functional>  // bu başlık dosyasındalar
+
+int main()
+{
+	using namespace std;
+	
+	auto x1 = plus<int>{}(3, 5);
+	auto x2 = minus<int>{}(3, 5);
+	auto x3 = multiplies<int>{}(3, 5);
+	auto x4 = divides<int>{}(3, 5);
+	auto x5 = modulus<int>{}(3, 5);
+	auto x6 = negate<int>{}(3);
+	
+	// karşılaştırma 
+	auto x7 = less<int>{}(3, 5);
+	auto x8 = less_equal<int>{}(3, 5);
+	auto x9 = greater<int>{}(3, 5);
+	auto x10 = greater_equal<int>{}(3, 5);
+	auto x11 = equal_to<int>{}(3, 5);
+	auto x12 = not_equal_to<int>{}(3, 5);
+	auto x13 = logical_and<int>{}(3, 5);
+	auto x14 = logical_or<int>{}(3);
+	auto x15 = logical_not<int>{}(3);
+	auto x16 = bit_and<int>{}(3, 5);
+	auto x17 = bit_or<int>{}(3, 5);
+	auto x18 = bit_xor<int>{}(3, 5);
+	auto x19 = bit_not<int>{}(3);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <functional> 
+
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;   // aynısı  set<int, less<int>> myset;
+	set<int, greater<int>> myset;  // default less'tir, greate olunca yazılmalı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <functional> 
+#include <set>
+
+template<typename T>
+using gset = set<T, greater<T>>;
+
+int main()
+{
+	using namespace std;
+	
+	gset<string> myset;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+sıralamanın
+stable sort
+unstable sort olması
+
+stable sort :  sıralamadan önce aynı değere sahip öğeler sıralama yapıldıktan sonra
+izafi konumlarını koruyacaklar
+
+--------------------------------------- 
+
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <iterator>
+#include "nutility.h"
+#include <fstream>
+#include <iomanip>
+
+using Person = std::pair<int, std::string>;
+
+int main()
+{
+	constexpr int size{10'000};
+	using namespace std;
+	
+	vector<Person> pvec;  // aynısı vector<pair<int, string>> pvec;
+	pvec.reserve(size);
+	const auto f = []{return pair{Irand{0, 100}, rname() }; };
+	generate_n(back_inserter(pvec), size, f);  // döngüsel yapıda f'i çağırır, back_inserter vasıtası ile vector'e insert eder
+	
+	sort(pvec.begin(), pvec.end(), [](const Person& p1, const Person& p2)
+		{
+			return p1.first < p2.first;
+		});
+		
+	stable_sort(pvec.begin(), pvec.end(), [](const Person& p1, const Person& p2)
+		{
+			return p1.second < p2.second;
+		});
+	
+	
+	ofstream ofs{"out.txt"};
+	if(!ofs){
+		cerr << "out.txt dosyasi olusturulamadi\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	/*
+	for(const auto& p : pvec){  // p'nin türü const std::pair<int, string>&
+		// pair'yi doğrudan yazdıracak inserter yok, nutility hariç
+		ofs << p.first << '  ' << p.second << '\n';
+	} */
+	
+	os <<  left; // sola dayalı yazmak için
+	for(const auto& [id, name] : pvec){  // structure binding ileride öğrenecez
+		ofs << setw(10) << id << '  ' << name<< '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+stable sıralama ise
+
+ali'ler birarada olmalı !!!
+
+stable_sort : sort'un stable olması garantisini verir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+partition ile stable_partition arasındaki fark da bu şekilde
+
+*----------------------------------------------------------------------------------------------------- 
+
+using Person = std::pair<int, std::string>;
+
+int main()
+{
+	constexpr int size{10'000};
+	using namespace std;
+	
+	vector<Person> pvec;  // aynısı vector<pair<int, string>> pvec;
+	pvec.reserve(size);
+	const auto f = []{return pair{Irand{0, 100}, rname() }; };
+	generate_n(back_inserter(pvec), size, f);  // döngüsel yapıda f'i çağırır, back_inserter vasıtası ile vector'e insert eder
+	
+	partial_sort(pvec.begin(), pvec.begin + 20, [](const Person& p1, const Person& p2)
+		{
+			return p1.first < p2.first;
+		});  // ilk 20 sıralama !!!
+		
+	
+	ofstream ofs{"out.txt"};
+	if(!ofs){
+		cerr << "out.txt dosyasi olusturulamadi\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	/*
+	for(const auto& p : pvec){  // p'nin türü const std::pair<int, string>&
+		// pair'yi doğrudan yazdıracak inserter yok, nutility hariç
+		ofs << p.first << '  ' << p.second << '\n';
+	} */
+	
+	os <<  left; // sola dayalı yazmak için
+	for(const auto& [id, name] : pvec){  // structure binding ileride öğrenecez
+		ofs << setw(10) << id << '  ' << name<< '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+ne zaman partial sort'u kullanmalıyım ?
+
+tamamının değil n tanesinin sıralı olmasını istiyorsak kullanmalıyız. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	svec.reserve(100'000);
+	rfill(svec, 100'000, rname);
+	
+	partial_sort(svec.begin(), svec.begin + 10, svec.end());
+	
+	copy(svec.begin(), svec.begin() + 100, ostream_iterator<string>{cout, "\n"});
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+partial_sort_copy : yerinde yapmıyor, n tanesini başka bir yere kopyalıyor
+
+---------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	svec.reserve(100'000);
+	rfill(svec, 100'000, rname);
+	
+	vector<string> destvec(40);
+	
+	partial_sort_copy(svec.begin(), svec.end(), destvec.begin(), destvec.end());
+	
+	print(destvec);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+gördüğümüz algoritmalar:
+
+sort
+stable_sort
+partial_sort
+partial_sort_copy
+
+*----------------------------------------------------------------------------------------------------- 
+
+nth_element : n'in elemana göre partition yapar, n. elemandan öncekiler ondan
+daha küçük, n. elemandan sonrakiler ondan daha büyük
+
+---------------------------------
+
+median ortadaki değerdir.
+
+2 5 7 9 13 56 761 9124  // 13 median
+
+burada n_th element ile median'ı bulurum. Tamamını sıralamaya göre daha 
+az maliyet. 
+
+---------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	ivec.reserve(1'000'000);
+	
+	rfill(ivec, 100'000, Irand{0, 1'000'000 });
+	
+	nth_element(ivec.begin(), ivec.begin() + ivec.size() / 2, ivec.end());
+	cout << "median = " << ivec[ivec.size() / 2] << "\n";
+	
+}
+// yapılan işlem sayısı tamamını sıralamaya göre daha az !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+partition : bir range'i bir koşullu sağlayanlar ve sağlamayanlar olarak ikiye
+bölüyor, koşulu sağlayanlar range'in başına çekiliyor sağlamayanlar range'den
+sonraya yerleştirilir. 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	ivec.reserve(100);
+	
+	rfill(ivec, 100, Irand{0, 1000});
+	print(ivec);
+	
+	// tek sayıları vector'ün başına çiftleri sonuna almak istiyorum
+	auto pp = partition(ivec.begin(), ivec.end(), [](int x){return x % 2 == 0});
+	print(ivec);
+	
+	if(pp != ivec.end()){
+		cout << "partition point : " << *pp << "\n";
+	}
+	else{
+		cout << "hepsi cift\n";
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tıpkı sort da olduğu gibi partition'da stable olma garantisi yok
+
+stable partion olmasını istiyorsanız :
+
+	auto pp = stable_partition(ivec.begin(), ivec.end(), [](int x){return x % 2 == 0});
+	print(ivec);
+
+*----------------------------------------------------------------------------------------------------- 
+
+haftasonu olan günler başta hafta içi günler sonda olsun :
+
+int main()
+{
+	using namespace std;
+	
+	vector<Date> dvec;
+	dvec.reserve(1000);
+	
+	rfill(dvec, 1000, Date::random);
+	print(dvec);
+	
+	stable_partition(dvec.begin(), dvec.end(), [](const Date& dt){
+		const auto wd = dt.week.day();
+		return wd == 0 || wd == 6; } 
+	);
+	
+	ofstream ofs{ " out.txt" };
+	if(!ofs){
+		cerr << "out.txt dosyasi olusturulamadi\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	print(dvec, "\n", ofs);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+partition copy :  partition yapıyor ama yerinde değil, koşulu sağlayanları bir yere, sağlamayanları bir yere yazıyor
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	svec.reserve(1000);
+	
+	rfill(svec, 1000, rname);
+	
+	vector<string> ok_vec;
+	vector<string> not_ok_vec;
+	
+	auto ip = partition_copy(svec.begin(), svec.end(), back_inserter(ok_vec),  
+	            back_inserter(not_ok_vec), [](const string& s){return s.contains('a'); });
+	// vector boş o yüzden back_inserter kullanılır
+	
+	// structured binding
+	auto [iter_ok, iter_not_ok] = partition_copy(svec.begin(), svec.end(), back_inserter(ok_vec),  
+	            back_inserter(not_ok_vec), [](const string& s){return s.contains('a'); });
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+heap algoritmaları : öyle bir ikili ağaç ki o ağaçtaki en büyük değer
+
+
+
+
+
+complete olursa heap olur
+biri eksik olursa incomplete olur
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 16, Irand(0, 100));
+	
+	make_heap(ivec.begin(), ivec.end());  // bu overload heap'i büyükten küçüğe oluşturur
+	// min heap için diğer overload'u kullan 
+	print(ivec);
+
+}
+
+// max heap'de elemanlar kendi ağacının en büyük öğesi olur
+// min heap'de elemanlar kendi ağacının en küyük öğesi olur
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+// heap veri yapısına ekleme yapma
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec;
+	rfill(ivec, 16, Irand(0, 100));
+	
+	make_heap(ivec.begin(), ivec.end()); 
+	print(ivec);
+	ivec.push.back(53); 
+	push_heap(ivec.begin(), ivec.end());
+	
+	cout << is_heap(ivec.begin(), ivec.end()) <<  "\n";  
+	// heap olup olmadığını bool olarak verir
+	
+	pop_heap(ivec.begin(), ivec.end());  // heap olma özelliğini bozmadan en büyük değeri (max_heap olduğundan) vector'ün sonuna atar
+	
+	cout << ivec.back() << "\n";
+	ivec.pop_back();
+}
+
+// log(n) karmaşıklığında
+
+*----------------------------------------------------------------------------------------------------- 
+
+öncelik kuyruğu : hiç organize bir veri yapısı kullanmadan bir range'i önce heap haline getireceğim
+sonra döngüsel yapıda hep en büyük değeri oradan çekip çıkaracağım
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 39, []{return rname() + ' ' + rfname(); });
+	
+	make_heap(svec.begin(), svec.end());  // en büyüğü değeri çekecez !!!
+	
+	while(! svec.empty()){
+		pop_heap(svec.begin(), svec.end());
+		cout  << svec.back() << '\n';
+		(void)getchar();
+		svec.pop_back();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : bir programcıya 4-5 tane sıralama algoritmasının ismini söyle ?
+
+bunlardan biri heap_sort olur. Öğren internetten, önemli
+
+https://www.geeksforgeeks.org/heap-sort/
+
+---------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 39, []{return rname() + ' ' + rfname(); });
+	
+	make_heap(svec.begin(), svec.end(), greater{}); 
+	sort_heap(svec.begin(), svec.end(), greater{}); 
+	
+	print(svec, "\n");
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+"is" ile başladığı için geri dönüş değeri bool
+
+is_sorted : bir range'in sıralanmış olup olmadığını test ediyor 
+
+------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{2, 5, 7, 9, 13, 76, 981, 19812};
+	cout << boolalpha;
+	
+	cout << is_sorted(ivec.begin(), ivec.end()) << "\n";
+	cout << is_sorted(ivec.begin(), ivec.end(), greater{}) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+STL'de algoritması varken gidip kendisinin algoritma yazması kötü programcı demektir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+is_sorted_until : sırayı bozan ilk öğenin konumu
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{345912, 123765, 2345, 14, 981, 765, 45, 5, 3, -1};
+	
+	auto iter = is_sorted_until(ivec.begin(), ivec.end(), greater{});
+	
+	cout << distance(ivec.begin(), iter) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+is_partitioned : partition olup olmadığını check eder
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{3, 7, 9, 1, 6, 4, 2};
+	
+	cout << is_partitioned(ivec.begin(), ivec.end(), [](int x){return x % 2 !=  0; }) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+partition_point() : zaten partion yapılmış bir range'deki partition noktasını buluyor
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{3, 7, 9, 1, 6, 4, 2};
+	
+	auto iter = partition_point(ivec.begin(), ivec.end(), [](int x) {return x % 2 != 0; });
+	cout << "*iter= " << *iter << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{987, 712, 972, 654, 113, 955, 416, 1234};
+	
+	cout <<  boolalpha << is_heap(ivec.begin(), ivec.end());
+	
+	cout <<  *is_heap_until(ivec.begin(), ivec.end());
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// bir veri yapısındaki en büyük ve en küçük elemanı bulmak
+
+max_element :
+
+int main()
+{
+	using namespace std;
+	
+	vector<Date> dvec;
+	
+	rfill(dvec, 10, Date::random);
+	print(dvec, "\n");
+	auto max_iter = max_element(dvec.begin(), dvec.end()); // less'i kullanacak
+	
+	cout << "max = " << *max_iter << "\n";
+	cout << "max_idx = " << distance(dvec.begin(), max_iter) << "\n";
+}
+
+bu algoritmalar default overload'unda less'i kullanıyor, en büyüğü
+bulurken karşılaştırmalar less'i kullanıyor. Ama sizin kriteriniz
+başka bir kriter olursa o kritere göre bulacak. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+min_element :
+
+int main()
+{
+	using namespace std;
+	
+	vector<Date> dvec;
+	
+	rfill(dvec, 10, Date::random);
+	print(dvec, "\n");
+	auto min_iter = min_element(dvec.begin(), dvec.end()); // less'i kullanacak
+	
+	cout << "min = " << *min_iter << "\n";
+	cout << "min_idx = " << distance(dvec.begin(), min_iter) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+vektördeki en büyük tarihin yılı :
+
+int main()
+{
+	using namespace std;
+	
+	vector<Date> dvec;
+	rfill(dvec, 10, Date::random);
+	print(dvec, "\n");
+	
+	cout << max_element(dvec.begin(), dvec.end())->year() << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+hem büyük konuma hem en küçük konuma erişim :
+
+typedef  std::vector<Date>::iterator veciter;
+
+int main()
+{
+	using namespace std;
+	
+	vector<Date> dvec;
+	rfill(dvec, 10, Date::random);
+	print(dvec, "\n");
+	
+	pair<veciter, veciter> iter = minmax_element(dvec.begin(), dvec.end());  
+	// eski C++ yazımı  //  typedef'i  kullanırlarmış
+	
+	auto iter = minmax_element(dvec.begin(), dvec.end());
+	// bu şekilde yazılır ama structured binding ile daha kolay aşağıda
+	
+	auto [min_iter, max_iter] = minmax_element(dvec.begin(), dvec.end());
+	cout << "min = " << *min_iter << "\n";
+	cout << "max = " << *max_iter << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+foreach : bir range'deki öğeleri bir callable'a gönderir.
+transform : range'deki öğeleri bir callable'a gönderir, callable'in geri 
+dönüş değerini bir range'e yazar
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{7, 9, 6, 3, 40, 5, 7, 6, 98, 2, 346, 79, 8, 53};
+	
+	for_each(ivec.begin(), ivec.end(), [](int x){  // callable sondaki öğe
+		cout << "[" << x << "]\n";
+		});
+}
+
+-----------------------------
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{7, 9, 6, 3, 40, 5, 7, 6, 98, 2, 346, 79, 8, 53};
+	
+	for_each(ivec.begin(), ivec.end(), [](int& x){  // callable sondaki öğe
+		cout << "[" << ++x << "]\n";
+		});
+		
+	for(int i : ivec)
+		cout << i << " ";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat : vector'ün bool açılımı içinde bir bool tutan bir vector değil 
+bu partial specialization, bool değer bir bit'te de tutulabilir.
+
+proxy class : başka bir sınıfın işini görmek amaçlı class
+vector bool açılımı da bit seviyesinde tutmak için proxy class kullanır 
+ama C++'da bit diye bir tür yok ki, hile yapılıyor ileri C++'da
+
+int main()
+{
+	using namespace std;
+	
+	vector<bool> bvec{ true, false, true, false, true};
+	
+	cout << typeid(bvec[2]).name << "\n"; // dikkat !! bambaşka bir tür bool değil
+}
+
+------------------------------------------ 
+
+kötü bir fikir 
+
+int main()
+{
+	using namespace std;
+	
+	vector<bool> bvec{ true, false, true, false, true};
+	
+	// bvec[3] sonuna nokta koyunca class olduğu anlaşır, ütye fonk.'ları var, bool olsa olmazdı
+	
+	bool b = bvec[3]; // implicit olarak bool fonk. çağırılır
+	bool b = bvec[3].operator bool(); // aynısı
+}
+
+------------------------------------------ 
+
+#include <deque>  // deque'nun bool açılımı kullanılır
+
+int main()
+{
+	using namespace std;
+	
+	deque<bool> bvec{ true, false, true, false, true};
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+deque container:  (dinamik dizilerin dizisi) 
+
+ismin geldiği yer : double ended queue, çift bitimli kuyruk
+dinamik dizilerin dizisi
+ 
+
+2. chunk'ın 3. elemanı
+
+deque'da contiguous bir yapı yok.
+
+*----------------------------------------------------------------------------------------------------- 
+
+ne zaman, neden dequekullanılır ?
+
+dinamik dizilerin dizisi olduğunda baştan eklemeyi hem sondan eklemeyi
+amortized constant time'a çeker. vector'de ise sadece sondan ekleme ve silme amortized constant time'da idi.
+
+sadece sondan değil baştan da ekleme yapıyorsanız deque kullanılır. 
+
+diğer avantaj index ile erişme
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+push_front()
+pop_front() fonksiyonları da var. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+vector contiguous bir bellek alanında tutulduğundan C API'lerine gönderilebilir. Deque'de bunu yapamazsınız. İlk öğenin adresi bütün bellek alanının adresi değil birinci chunk'ın adresi. 
