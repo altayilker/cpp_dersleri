@@ -1,0 +1,985 @@
+
+İçerik:
+
+deque 
+
+Associative containers
+strict weak ordering 
+
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+deque : double ended queue (dinamik dizilerin dizisi)
+
+
+
+veriler chunk'larda tutulur. Sayısı derleyiciye bağlı ama genelde 8
+chunk olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+vector'ün bool specialization'ı iyi fikir olmayabilir
+deque'ün bool açılımını kullanmak daha iyi bir fikir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+deque'nun invalidation kuralları ile vector invalidation'ın kuralları farklı
+
+deque'nun invalidation'ı :
+
+1) ekleme iki uçtan değil ortadan yapılıyorsa ne var ne yoksa invalidate oluyor.
+
+2) ekleme iki uçtan yapılıyorsa diğer öğelere olan iteratörler invalid olurken referanslar invalid olmuyor. 
+
+3) silme işlemlerinde baştan ve sondan silme yapılınca silinen öğelerin haricindeki öğeler
+invalid hale gelmiyor
+
+------------------------------------ 
+
+#include <deque>
+
+int main()
+{
+	using namespace std;
+	
+	deque x{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+	x.insert(x.begin() + 3, -1); // eklemeyi ortadan yapayım, tüm öğeler ve referanslar
+	invalid oldu,
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <deque>
+
+int main()
+{
+	using namespace std;
+	
+	deque x{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	
+	auto iter = x.begin() + 3;
+	cout << *iter << "\n";
+	x.push_back(-1);  // 
+	cout << *iter << "\n;  // tanımsız davranış
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <deque>
+
+int main()
+{
+	using namespace std;
+	
+	deque x{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	
+	auto &r = x[3];
+	cout << r<< "\n";
+	x.push_back(-1);  // 
+	cout <<  r << "\n;  //  eklemeyi baştan yaptığım için referanslar invalid hale gelmedi
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+iki tane dezavantaj
+
+1. dezavantaj :
+
+C dizilerine veya API'lerine gönderemezsiniz çünkü contiguous değil
+
+2. dezavantaj :
+
+küçük bir vector'de bir tane eleman tuttun, bu veri yapısı gereği belirli bir bellek
+bloğu ayrılır.
+
+---------------------------- 
+
+#include <deque>
+#include <iostream>
+#include <string>
+
+void* operator new(std::size_t sz)
+{
+	std::cout << "operator new called for the size of : " <<  sz << "\n";
+
+	if(sz == 0)
+		++sz;
+		
+	if(void* ptr = std::malloc(sz))
+		return ptr;
+		
+	throw std::bad_alloc{};
+}
+
+int main()
+{
+	using namespace std;
+	
+	// string str(10000, 'A');
+	deque<int> x;
+	x.push_back(12);
+}
+
+32 byte // chunk'in bir tane elemanı bile olsa chunk için allocate yapılır
+16 byte'lik yer ayrılır // deque veri yapısı için chunk'ların adresini tutan bir yer olmalı
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <deque>
+#include <iostream>
+#include <string>
+#include "date.h"
+
+int main()
+{
+	using namespace std;
+	
+	deque<Date> dc;
+	
+	for(int i = 0; i < 5'000; ++i )
+		auto mydate = Date::random();
+		//....
+		if(mydate.month_day()%2 == 0 ){
+			dc.push_front(move(mydate)); // kaynak çalma, rvalue'ya dönüştürme
+		}
+		else{
+			dc.push_back(mydate);
+		}
+	}
+
+	for(size_t idx = 0; idx < dc.size(); ++idx){
+		cout << dc[idx] << "\n";
+	}
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+	deque<Date> dc;
+	dc.push_front(); // üye fonksiyonlar vector'deki gibi
+	ek olarak push_front, pop_front filan var
+
+*----------------------------------------------------------------------------------------------------- 
+
+sequence containers: 
+vector, deque, list, forward_list, array, string, C dizileri
+
+*----------------------------------------------------------------------------------------------------- 
+
+std:list : veri eklemek ve silmek constant time, 
+
+list'i çifte bağlı liste olarak implemente edilir, öğelerin node denilen düğümlerde
+tutulur. Veri yapısındaki öğeyi ve diğer öğelere erişmek için pointer'ları birarada
+tutan implementasyon birimi
+
+çifte bağlı liste ise bir düğüm içinde data tutuluyor ve iki tane pointer tutuluyor
+
+	node
+------------ 
+	data
+prev     next
+------------ 
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::forward_list (tekli bağlı) liste :
+
+     node
+------------ 
+	data
+      next
+------------ 
+
+*----------------------------------------------------------------------------------------------------- 
+
+bellek kulllanımı açısından uzak durulmalı !!! çünkü her veri için iki pointer tutulmalı, 
+her ekleme ile allocation yapılır
+
+12 byte 4 byte veri için, 
+8 byte'lik header varsa
+
+arka planda 20 byte'lik yer tutulur, fazla bir bellek tutuluyor
+
+düğümler ayrı ayrı yerlerde olduğu için cashing mekanizmasında (ön belleğe alma) contiguous container'lara göre daha zor.
+
+konumunu bildiğimiz öğeye erişmek constant time
+ama index ile erişmek contant time'da değil, 20. öğeye erişmek 
+istiyorsanız bu lineer complexity, neden ? çünkü ilk düğümden başlayıp 2. düğüme
+sonra diğer düğümlere erişmek gerekiyor. Bu durumda list dezavantaj yaratır.
+
+ama ekleme ve silme ağırlıklı kullanıyorsak ve özellikle veri yapısı belirli
+bir sayıyı geçiyorsa vector'e bir alternatif olabilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakatlarda veri yapıları ve algoritmalar sorulur, bağlı liste soruları sorulur
+
+*----------------------------------------------------------------------------------------------------- 
+
+vector, deque, list arasında template parametreleri açısından fark yok.
+Birinci template parametresi container'da tutulan öğenin türü, ikinci parametresi 
+allocator türü 
+Bütün stl container'ları için allocator parametre özel bir allocator kullanılmayınca 
+default allocator kullanılır. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+vector ve deque'un iteratörleri  random access iterator 
+list'in iteratörleri bidirectional iterator
+
+list'in iteratorünü random access iteratör gereken yerlere geçemezsiniz
+
+list'te iteratorler arası işlem yapamam, iter2 - iter1 yapılamaz, distance fonk.
+çağrılmalı, bir sonraki için next kullanılmalı
+
+*----------------------------------------------------------------------------------------------------- 
+
+list'in interface'i neredeyse aynı 
+
+list'in bazı avantajlarından yararlanmak için bazı üye fonksiyonlar var. 
+Bunlar vector, deque'da yok.
+
+öğeler düğümlerde tutulunca düğümlerde data'yı değil pointer'ları swap eder.
+vector, deque'da öğelerin kendisi swap edilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+list'in bazı avantajlarından yararlanmak için bazı üye fonksiyonlar var. 
+
+sort
+reverse
+unique
+merge
+splice
+
+*----------------------------------------------------------------------------------------------------- 
+
+splice :  bağlı liste düğümlerden oluşuyor. Düğüm açısından bakarsak hangi listeye
+ait olduğunu bilmez. Bir düğümü bir listeden çıkartıp başka bir listeye ekleyebilirim. 
+
+1. vector'den silmek için silme fonksiyonu çağırmak ve diğer bir vector'e eklemek için
+insert fonk. çağırmak gerekiyor. Liste'de bu işlemi splice fonk. çağırarak bu düğümün
+ilişkisini ait olduğu listeden kesiyor, düğüm diğer container'a ait hale gelir. Düğüme hiç 
+dokunmadan bu değişiklik yapılır.
+
+*----------------------------------------------------------------------------------------------------- 
+
+vector
+deque
+list
+
+bu container'larda constructor grubu aynı.
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector ivec{1, 4, 5, 7, 9, 12};
+	
+	list mylist{ivec.begin(), ivec.end()};
+	
+	mylist.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+reverse fonksiyonu : (sınıfın reverse fonk.)
+
+vector, deque, string'i reverse etmek için reverse algoritmasını kullanacaktık fakat
+bu farklı. 
+
+#include "nutility.h"
+#include <functional>
+#include <algorithm>
+
+const auto fcomp = [](const std::string& s1, const std::string& s2){
+	return s1.length() < s2.length() || s1.length() == s2.length() && s1 < s2;
+};
+
+int main()
+{
+	using namespace std;
+	
+	list<string> slist;
+	rfill(slist, 20, rname);
+	print(slist);
+	
+	slist.reverse();
+	slist.sort();  // sıralama küçüktür operatörü ile yapılır.
+	slist.sort(greater{});   // greater için <functional> include edilmeli
+	print(slist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	list<string> slist;
+	rfill(slist, 200, rname);
+	
+	slist.unique([](const string &s1, const string s2){return s1.length() == s2.length(); });
+	
+	print(slist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	list<string> slist;
+	rfill(slist, 200, rname);
+	
+	slist.sort();
+	slist.unique([](const string &s1, const string s2){return s1.length() == s2.length(); });
+	
+	print(slist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	list<int> ilist;
+
+	rfill(ilist, 1000, Irand{0, 5});
+	
+	int ival;
+	cout << "silinecek deger: ";
+	cin << ival;
+	
+	auto n_erased = ilist.remove();
+	
+	cout << "n_erased = " << n_erased << "\n";
+	(void)getchar();
+	
+	print(ilist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	list<string> slist;
+
+	rfill(slist, 1000, rname);
+	
+	auto n = slist.remove_if([](const string &s){return s.length() > 3; });
+	print(slist);
+	cout << " n = " << n << "\n";
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+merge : birleştirme demek, burada sıralı birleştirme demek
+
+aynı sıralama kriterine göre sıralanmış iki liste olmalı
+
+int main()
+{
+	using namespace std;
+	
+	list<string> male_list{ "ahmet", "selami", "hakki", "recep", "binali", "bilal", "suleyman"};
+	list<string> female_list{"lale", "nurdan", "suheyla", "aleyna", "tijen", "nuriye", "huriye"};
+	
+	male_list.sort();
+	female_list.sort();
+	print(male_list);
+	print(female_list);
+	
+	male_list.merge(female_list);  // male_list container'ında birleştirecek
+	// female_list'te birşey kalmaz
+	
+	cout << "female_list size = " << female_list.size() << "\n";
+	cout << "male_list size = " << male_list.size() << "\n";
+	
+	print(male_list);  // birleşmiş halinde sıralanmış olur
+}
+
+------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	list<string> male_list{ "ahmet", "selami", "hakki", "recep", "binali", "bilal", "suleyman"};
+	list<string> female_list{"lale", "nurdan", "suheyla", "aleyna", "tijen", "nuriye", "huriye"};
+	
+	male_list.sort(greater{});
+	female_list.sort(greater{});
+	print(male_list);
+	print(female_list);
+	
+	male_list.merge(female_list, greater{});  // male_list container'ında birleştirecek
+	// female_list'te birşey kalmaz
+	
+	cout << "female_list size = " << female_list.size() << "\n";
+	cout << "male_list size = " << male_list.size() << "\n";
+	
+	print(male_list);  // sıralama
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+splice : bir bağlı listeden bir ya da birden fazla öğeyi çıkartacam onu diğer bir bağlı
+listedeki bir konuma ekleyeceğim. Dolayısıyla düğüm hangi listeye ait olduğunu bilmez.
+Düğümlerin bir başka listeye ait olmasını sağlıyorum. 
+
+nodüler (nodlardan oluşan)
+
+int main()
+{
+	using namespace std;
+	
+	list<string> male_list{ "ahmet", "selami", "hakki", "recep", "binali", "bilal", "suleyman"};
+	list<string> female_list{"lale", "nurdan", "suheyla", "aleyna", "tijen", "nuriye", "huriye"};
+	
+	male_list.splice(next(male_list.begin()), female_list);  // selami konumuna ekleyecem
+	// female_list size'i sıfır'a düştü, ilgili konuma insert ediyor.
+	
+	print(male_list);
+}
+
+------------------------------------------ 
+
+ikinci overload :
+
+int main()
+{
+	using namespace std;
+	
+	list<string> male_list{ "ahmet", "selami", "hakki", "recep", "binali", "bilal", "suleyman"};
+	list<string> female_list{"lale", "nurdan", "suheyla", "aleyna", "tijen", "nuriye", "huriye"};
+	
+	male_list.splice(next(male_list.begin()), female_list, female_list.begin());  
+	// diğer overload'u, female_list'in tamamını değil bir kısmını splice etmek
+	
+	print(female_list);
+	print(male_list);
+}
+
+--------------------------------------------- 
+
+ikinci overload :
+
+int main()
+{
+	using namespace std;
+	
+	list<string> male_list{ "ahmet", "selami", "hakki", "recep", "binali", "bilal", "suleyman"};
+	list<string> female_list{"lale", "nurdan", "suheyla", "aleyna", "tijen", "nuriye", "huriye"};
+	
+	male_list.splice(next(male_list.begin()), female_list, prev(female_list.end()));  
+	
+	print(female_list);
+	print(male_list);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+üçüncü overload :  daha var, kopartılacak range'i alır
+
+int main()
+{
+	using namespace std;
+	
+	list<string> male_list{ "ahmet", "selami", "hakki", "recep", "binali", "bilal", "suleyman"};
+	list<string> female_list{"lale", "nurdan", "suheyla", "aleyna", "tijen", "nuriye", "huriye"};
+	
+	male_list.splice(next(male_list.begin()), female_list, next(female_list.begin()), prev(female_list.end());  
+	
+	print(female_list);
+	print(male_list);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bütün fonk.'ları görmüş olduk, ortak fonk. haricinde
+
+*----------------------------------------------------------------------------------------------------- 
+
+forward_list : stl'de en az kullanılan container'dır
+
+iteratörleri bidirectional iteratör değiller. iteratör kategorisi de forward_iterator
+bidirectional iteratör isteyenlere forward list'in iteratörünü geçemem. 
+-- operatörünün operandı yapamam. 
+
+
+size fonksiyonu yok !!! distance algoritması ile bulunabilir
+
+tekli bağlı listedir. 
+
+çifte bağlı listede düğümlerde iki tane pointer var. Biri bir önceki düğümü,
+diğeri de bir sonraki düğümü gösterir. 
+
+belirli bir konuma insert etmek için önceki konuma da erişmeniz gerekiyor. 
+Onun içindeki next pointer'ini da değiştirmek gerekir. çifte bağlı listede bir sorun yok. 
+ama tekli bağlı listede olamaz, çünkü önceki düğüme erişilmez.
+
+normalde insert fonk.'ları bana konum ver o konuma insert edeyim.
+Ama tekli bağlı listede bana konum ver o konuma insert edeyim olmaz, çünkü
+önceki konuma da erişmesi gerekiyor.
+bu durumda insert_after() fonksiyonu eklenmiş.
+
+aynı şekilde silme işlemi de böyle
+normalde erase fonk. konum alır, o konumdaki öğeyi erase eder.
+erase_after fonk. eklenmiş.
+
+*----------------------------------------------------------------------------------------------------- 
+
+insert_after en başa insert edemez. Baştan bir sonrakine insert eder. 
+
+bunun için başka bir hile yapılmış
+
+before_begin() :
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <vector>
+#include <list>
+#include <algorithm>
+#include "nutility.h"
+#include <functional>
+#include <forward_list>
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet"};
+	print(mylist);
+	
+	cout << distance(mylist.begin(), mylist.end()) << "\n";
+	mylist.push_front("necati");
+	print(mylist);
+}
+
+---------------------------------------- 
+
+// insert ile "musa" dan sonraki konuma ekleme yapmak
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet"};
+	print(mylist);
+	
+	cout << distance(mylist.begin(), mylist.end()) << "\n";
+	auto iter = next(mylist.begin());
+	cout << "*iter = " << *iter << "\n";
+	
+	mylist.insert_after(iter, "necati");
+	print(mylist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet", "emre", "cem"};
+	print(mylist);
+	
+	auto iter = next(mylist.begin(), 2);   // "samet"
+	cout << "*iter = " << *iter << "\n";
+	
+	mylist.erase_after(iter);  // "emre" silinir !!!
+	print(mylist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet", "emre", "cem"};
+	print(mylist);
+	
+	mylist.insert_after(mylist.begin(), 5, "recep);  // "eray" dan sonra 5 tane recep
+	print(mylist);
+}
+
+------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet", "emre", "cem"};
+	print(mylist);
+	
+	mylist.insert_after(mylist.before_begin(), 5, "recep);  // listenin başına 5 "recep" eklenir
+	print(mylist);
+}
+
+---------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet", "emre", "cem"};
+	print(mylist);
+	
+	mylist.pop_front();
+	print(mylist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// ilk üç öğeyi silmek için
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist{"eray", "musa", "samet", "emre", "cem"};
+	print(mylist);
+	
+	auto iter_beg = mylist.before_begin();
+	auto iter_end = next(iter_beg, 3);
+	
+	mylist.erase_after(iter_beg, iter_end);
+	print(mylist);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+ödev : elinizde bir forward_list var, liste'den bir değere sahip ilk öğeyi silmeniz isteniyor.
+
+remove hepsini siler !!
+
+int main()
+{
+	using namespace std;
+	
+	forward_list<string> mylist;
+	
+	for(int i = 0; i < 20; ++i){
+		mylist.push_front(rname());
+	}
+	
+	print(mylist);
+	string name;
+	cout << "silinecek ismi girin : ";
+	cin >> name;
+}
+
+------------------------------------------------- 
+
+çift bağlı liste ile istenseydi
+find ile öğe aranır varsa konumunu elde et, ve o konumu erase fonk.'a argüman olarak gönder.
+
+tekli bağlı liste olunca onu silmek için bir önceki konuma ihtiyacım var.
+bidirectional olmadığından eksiltme yapamazsın !!!
+
+----------------------------------------------------
+
+çifte listede anchor(pointer) olarak bağlı liste nesnesinin içinde bulunur.
+ilk anchor ilk düğümün adresi, diğer anchor'da son öğenin adresini tutar.
+
+tekli bağlı listede ikinci anchor yok. 
+
+------------------------------------------------- 
+
+çözüm : 1) arama işlemi için raw loop yaz, iki iteratör
+biri bir geriden gelir. 
+2) tek bir iteratör, fakat aranan değeri ararken next()'i kullanmak
+bu durumda before_begin ile başlatmak gerekir 
+
+----------------------------------------------------------------------
+-------------  Associative containers ---------------------
+----------------------------------------------------------------------
+
+key (anahtar)
+
+verideki aramayı 0(log n) karmaşıklığına çekmek
+
+24 öğe varsa max. 10 sorgulamada bulacağım ya da olmadığını anlayacağım.
+
+set container : logaritmik karmaşıklıkta veri yapısında o değere sahip veri olup olmadığını anlıyor.
+
+binary search : ikili arama ağacı, özellikle red-black tree
+
+log. karmaşıklıkta belirli bir anahtarın veri yapısına eklenmesini, log. karmaşıklıkta belirli bir 
+anahtara sahip değerin veri yapısından silinmesini ve yine log. karmaşıklıkta belirli bir anahtara
+sahip değere erişim imkanı verir.
+hem değerle ekleme,  değerle silme, hem de o değerin olup olmadığını sorgulama varsa
+konumunu bulma log. karmaşıklıkta.  
+
+*----------------------------------------------------------------------------------------------------- 
+
+4 tane container var :
+
+set : ekleme, silme ve değerle arama anahtarla yapılır. Anahtara karşılık anahtar bulunur. 
+Bir değere sahip bir tane anahtar olabilir.
+
+multi_set : Bir değere sahip birden fazla anahtar olabilir.
+örnek aynı isimli birden fazla ilçe var.
+
+map : set ile tek fark sette anahtar türünden öğeler tutulurken map'te pair tutulur.
+Pair'in first'i key, second'ı o anahtara karşı gelen value
+
+multi_map : 
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+equality (eşitliğin == ile sorgulanması)
+equivalance (eşdeğerlik) : 
+
+a == b  // equality
+!(a < b) && !(b < a);  // equivalance 
+
+comparator burada less
+ikili arama ağacı (bildiğinizi varsayıyoruz)
+
+associative container'lar ikili arama ağacı kullanır. 
+
+
+
+oklar pointer'ı temsil eder. Her düğümde iki pointer var. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+set :
+
+template <typename Key, typename Comp = less<Key>, typename A = allocator<Key>>
+
+set'de Date tutalım, bu durumda sizin custom type'in " < " operatörü ile karşılaştırma
+yapmayı sağlamalı. Date'e < operatörü overload edecek fonksiyon eklemediyseniz
+ilk silme, aramada sentax hatası olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> // multimap içinde
+
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;
+	
+	cout << typeid(myset).name();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;
+	
+	Irand myrand{0, 100};
+	
+	for(int i = 0; i < 100; ++i){
+		myset.insert(myrand());   // size'i 100 olmaz, aynı değerden birden fazla varsa bir tanesi insert edilir.
+	}
+	
+	cout << "myset.size() = " << myset.size() << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+
+int main()
+{
+	using namespace std;
+	
+	multiset<int> myset;
+	
+	Irand myrand{0, 100};
+	
+	for(int i = 0; i < 100; ++i){
+		myset.insert(myrand());   // size'i 100 olur multiset'te, aynı değer birden fazla bulunabilir !!!
+	}
+	
+	cout << "myset.size() = " << myset.size() << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+
+int main()
+{
+	using namespace std;
+	
+	multiset<int> myset;  // küçükten büyüğe
+	
+	Irand myrand{0, 100};
+	
+	for(int i = 0; i < 100; ++i){
+		myset.insert(myrand());     
+	}
+	
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	set<int, greater<int>> myset;   // greate comparatörü, büyükten küçüğe olur
+	
+	Irand myrand{0, 100};
+	
+	for(int i = 0; i < 100; ++i){
+		myset.insert(myrand());   
+	}
+	
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  // less'in string açılımı !!!
+	
+	rfill(myset, 100, rname);
+	print(myset);
+	
+}
+
+------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	set<string, greate<>> myset;  // greate'in string açılımı !!!
+	
+	rfill(myset, 100, rname);
+	print(myset);
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+#include "nutility.h"
+
+struct Comp{
+	
+	bool operator()(const std::string& r1, const std::string& r2)const
+	{
+		return r1.size() < r2.size();
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	set<string, Comp> myset;  // Comp'daki fonk. kullanılır
+	
+	rfill(myset, 5, rname);
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <string>
+#include <set> 
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	auto fcomp = [](const std::string& r1, const std::string& r2)const
+	{
+		return r1.size() < r2.size();
+	};
+	
+	set<string, decltype(fcomp)> myset;  // C++ 20 ve sonrası yazım
+	// set<string, decltype(fcomp)> myset(fcomp); // C++ 20 öncesi yazım !! kopyalayarak elde edecek
+	
+	rfill(myset, 5, rname);
+	print(myset);
+}
+
+// C++ 20 standartlarına kadar lambda ifadeleri karşılığı oluşturulan closure type'ların
+default const. delete edilmişti. C++ 17'de sentax hatası.w
+
+functor için de aynı !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+strict weak ordering : (sizin oluşturduğunuz comparatör'ün sağlaması gereken özellikler)
+
+1. anti-simetrik (antisymmetric)
+x < y doğru ise y < x yanlış olmalı
+
+op(x, y) doğru ise op(y,x) yanlış olmalı
+
+2. geçişken (transitive)
+x < y doğru ve y < z doğru ise bu durumda x < z doğru olmalı
+op(x, y) doğru ve op(y,z) doğru ise op(x, z) doğru olmalı
+
+3. irreflexive
+x < x her zaman yanlış olmalı
+op(x, x) her zaman yanlış olmalı
+
+4. eşitliğin geçişkenliği (transitivity of equivalance)
+!(a<b) && !(b<a) doğru ve !(b<c) && !(c<b) doğru ise bu durumda !(a<c) && !(c<a) doğru olmalı
+
+*----------------------------------------------------------------------------------------------------- 
+
+
