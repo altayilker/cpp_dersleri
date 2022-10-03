@@ -1,0 +1,1161 @@
+
+İçerik:
+
+Associative containers
+strict weak ordering 
+
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+4 tane associative container var :
+
+binary search tree kullanır. red-black binary search tree
+
+set : logaritmik karmaşıklıkta veri yapısına ekleme, silme, arama işlemi yapılır
+Bir değere sahip bir tane anahtar olabilir. 
+
+multi_set : Bir değere sahip birden fazla anahtar olabilir.
+örnek aynı isimli birden fazla ilçe var.
+
+map : set ile tek fark, sette anahtar türünden öğeler tutulurken map'te pair tutulur.
+Pair'in first'i key, second'ı o anahtara karşı gelen value
+
+multi_map : Bir değere sahip birden fazla anahtar olabilir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename Key, typename Comp = std::less<Key>, typename A = std::allocator<Key>>
+class Set;
+
+callable' i eşittir karşılaştırması  a == b  // equality yerine  
+!(a < b) && !(b < a);  // equivalance ile yapar.
+
+!op(a,b) && !op(b,a);  // bu işte kullanacak comparatör'ün strict weak ordering koşullarını sağlamalı.  
+bu sadece set için değil sort'ta kullanılan binary predicate için de geçerli
+
+--------------------------------------------------- 
+
+comparatör'ün strict weak ordering koşullarını sağlamalı, sağlamazsa sentax hatası olmaz
+ama bazı durumlarda tanımsız davranış olur.
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <set>
+#include <functional> // greater için eklendi
+
+template <typename T>
+using gset = std::set<T, std::greater<T>>;
+
+int main()
+{
+	using namespace std;
+	
+	gset<int> myset{3, 6, 9, 1, 2, 8};
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kendi binary predicate'ını kullanma (kendiniz bir functor class oluşturacaksınız)
+
+3 yol var.
+
+--------------------------------------- 
+
+1. yol : comparator olarak global fonksiyon kullandık 
+
+#include <set>
+#include <functional> 
+
+bool abs_comp(int a, int b)
+{
+	return std::abs(a) < std::abs(b);
+}
+
+int main()
+{
+	using namespace std;
+	
+	set<int, bool (*)(int, int)> myset(&abs_comp);  // bool (*)(int, int) function pointer türü
+	// set<int,  decltype(&abs_comp)> myset(&abs_comp); // bu da geçerli
+
+	myset.insert(12);
+	myset.insert(-5);
+	myset.insert(7);
+	myset.insert(5);
+	myset.insert(9);
+	myset.insert(-4);
+	myset.insert(-12);
+	
+	for(auto i : myset)
+		cout << i << ' ';
+}
+
+cevap : -4 -5 7 9 12  //  mutlak değeri aynı olan sayılar eklenmedi
+
+---------------------------------------------------- 
+
+#include <set>
+#include <functional> 
+
+bool abs_comp(int a, int b)
+{
+	return std::abs(a) < std::abs(b);
+}
+
+int main()
+{
+	using namespace std;
+	
+	multiset<int, bool (*)(int, int)> myset(&abs_comp);  // bool (*)(int, int) function pointer türü
+
+	myset.insert(12);
+	myset.insert(-5);
+	myset.insert(7);
+	myset.insert(5);
+	myset.insert(9);
+	myset.insert(-4);
+	myset.insert(-12);
+	
+	for(auto i : myset)
+		cout << i << ' ';
+}
+
+cevap : -4 -5 5 7 9 12 -12
+
+----------------------------------------------- 
+
+2. yol : comparator olarak functor class kullanmak
+
+#include <set>
+#include <functional> 
+
+struct Comp{
+	bool operator()(int a, int b)
+	{
+		return std::abs(a) < std::abs(b);
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	set<int, Comp> myset;
+
+	myset.insert(12);
+	myset.insert(-5);
+	myset.insert(7);
+	myset.insert(5);
+	myset.insert(9);
+	myset.insert(-4);
+	myset.insert(-12);
+	
+	for(auto i : myset)
+		cout << i << ' ';
+}
+
+----------------------------------------- 
+
+3. yol : comparator olarak bir lambda ifadesinden elde edilen closure type kullanmak:
+
+#include <set>
+#include <functional> 
+
+int main()
+{
+	using namespace std;
+	
+	auto fcomp = [](int a, int b)
+	{
+		return std::abs(a) < std::abs(b);
+	};
+	
+	set<int, decltype(fcomp)> myset;
+
+	myset.insert(12);
+	myset.insert(-5);
+	myset.insert(7);
+	myset.insert(5);
+	myset.insert(9);
+	myset.insert(-4);
+	myset.insert(-12);
+	
+	for(auto i : myset)
+		cout << i << ' ';
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct A{
+	bool operator<(const A&)const;
+};
+
+int main()
+{
+	using namespace std;
+	
+	set<A> myset;
+	
+	myset.insert(A{});
+};
+
+-------------------------------------------- 
+
+bool operator<(const A&)const;
+
+int main()
+{
+	using namespace std;
+	
+	set<A> myset;
+	
+	myset.insert(A{});
+};
+
+-------------------------------------------------------------- 
+
+bool operator<(const A&, const A&);
+
+int main()
+{
+	using namespace std;
+	
+	set<A> myset;
+	
+	myset.insert(A{});
+};
+
+-------------------------------------------------------- 
+
+struct Comp{
+	bool  operator()(const A&, const A&)const;
+};
+
+int main()
+{
+	using namespace std;
+	
+	set<A, Comp> myset;
+	
+	myset.insert(A{});
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+Associative container'ların üye fonksiyonları :
+
+constructor : default const. var, fill constructor'ları yok
+copy const, move const., init list const. var
+
+-------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset{"volkan", "eray", "suleyman",  "cem", "deniz" };  // initializer list const. 
+	
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// her öğeden bir tane olması
+// çözüm 1 : sort edip unique kullanırım
+// çözüm 2 : set'in range const.
+
+#include <set>
+#include <functional> 
+#include  <iostream>
+#include "nutility.h"
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	rfill(svec, 200, rname);
+	print(svec);
+	
+	set<string> myset(svec.begin(), svec.end());
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bu veri yapısının nimeti lookup (search) 'ı logaritmik karmaşıklığa çeker.
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	
+	myset.insert("nedim");
+	myset.insert("ayse");
+	myset.insert("fuat");
+	myset.insert("nedim");   // bunu eklemez !! multiset olsa ekler
+	
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+set'in insert fonk. gerei dönüş değeri pair'in iterator bool açılımıdır
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	
+	myset.insert("nedim");
+	myset.insert("ayse");
+	myset.insert("fuat");
+	
+	// pair<iterator, bool>
+	myset.insert("nedim");   
+	
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	rfill(myset, 10, rname);
+	print(myset);
+	
+	string name;
+	
+	cout << "eklenecek ismi girin :";
+	cin >> name;
+	
+	if(auto p = myset.insert(name); p.second) {  // p bir pair, iterator bool pair'i
+		// p.first
+	}
+	else{
+		// p.first var olan öğeye iteratör
+	}
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// structured binding kullanabilirsiniz
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	rfill(myset, 10, rname);
+	print(myset);
+	
+	string name;
+	
+	cout << "eklenecek ismi girin :";
+	cin >> name;
+	
+	if(myset.insert(name).second) {   // auto [iter, success] = myset.insert(name); success){
+		
+	} 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// yapmamanız gereken şeyler :
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	rfill(myset, 10, rname);
+	print(myset);
+	
+	auto iter = myset.begin();
+	*iter = "seyhan";  // iterator konumundaki öğeyi değiştiremezsiniz, const'tur, ikili arama ağacı corrupt olur. 
+}
+
+------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	rfill(myset, 10, rname);
+	print(myset);
+	
+	auto iter = myset.begin();
+	const_cast<string&>(*iter) = "seyhan";  // sentax engelini aşabiliriz, ama kod doğru anlamına gelmez !!! hatalı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bu durumda ben set'teki bir anahtarı nasıl değiştirebilirim ? 
+
+gürbüz anahtarı yerine zeliha olacak, gürbüzü değiştirip onun yerine zeliha yazılmaz,
+gürbüzü setten çıkartıp sete zeliha'yı ekleyeceğiz
+
+bir eski yol : silip yerine yeniden insert edeceksiniz
+
+------------------------------------- 
+
+yeni yol : 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;
+	rfill(myset, 10, rname);
+	print(myset);
+	
+	myset.insert(myset.begin(), "yilmaz");  // legal, bu sequence container'lardaki insert ile karıştırmayın,
+	// bu hint insert !!!
+	// eğer bu konum gerçekten insert işleminin yapılacağı konumsa burada maliyet düşer.
+	// buradaki konum o konuma ekle demek değil,ama o konuma eklenebiliyorsa ekle
+	
+	
+	// insert'in iki overload'u var,
+	// birincisi sadece bana key ver, ben nereye insert edeceğimi kendin bulucam diyor
+	// ikincisi hint insert, iteratör konumu ver, eğer insert oraya yapılabiliyorsa yap, sen ilave karşılaştırmadan kurtul
+	ama oraya yapılmıyorsa bir dezavantajın olmayacak
+}
+
+------------------------------------------------------- 
+
+	// insert'in iki overload'u var,
+	// birincisi sadece bana key ver, ben nereye insert edeceğimi kendin bulucam diyor
+	// ikincisi hint insert, iteratör konumu ver, eğer insert oraya yapılabiliyorsa yap, sen ilave karşılaştırmadan kurtul
+	ama oraya yapılmıyorsa bir dezavantajın olmayacak
+
+*----------------------------------------------------------------------------------------------------- 
+
+emplace fonk. : 
+
+set'te const.'a göndereceğiniz argümanları alır.
+
+int main()
+{
+	using namespace std;
+	
+	set<Date> myset;  // Date'leri küçükten büyüğe yazar
+	rfill(myset, 10, Date::random);
+	print(myset, "\n");
+	
+	myset.emplace(12, 5, 1987 );  // perfect forwarding ile container'in sağladığı bellek alanında oluşturur
+	print(myset, "\n");  
+}
+
+----------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<Date> myset;  // Date'leri küçükten büyüğe yazar
+	rfill(myset, 10, Date::random);
+	print(myset, "\n");
+	
+	myset.emplace_hint(myset.begin(), 12, 5, 1987 );  // insert_hint'e karşı gelir
+	print(myset, "\n");  
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+silme fonksiyonları :
+
+ver bana iteratörü sileyim o iteratör konumundaki
+ya da ver bana range'i sileyim o range'deki öğeleri diyen çeşidi var.
+
+----------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  
+	rfill(myset, 10, rtown);
+	print(myset);
+	
+	myset.erase(myset.begin());
+	print(myset);
+	
+	myset.erase(prev(myset.end());
+	print(myset);
+	
+	myset.erase(next(myset.begin(), prev(myset.end()));
+	print(myset);
+}
+
+---------------------------------------------------- 
+
+anahtarla silme :
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  
+	rfill(myset, 10, rtown);
+	print(myset);
+	
+	string town;
+	cout << "silinecek sehir: ";
+	cin >> town;
+	
+	auto n = myset.erase(town);  // geri dönüş değeri silinen öğe sayısı, 1 veya 0 olabilir, çünkü set fonks.
+	cout << n << " anahtar silindi\n";
+	print(myset);
+}
+
+------------------------------------ 
+
+int main()
+{
+	using namespace std;
+	
+	multiset<string> myset;  
+	rfill(myset, 100, rtown);
+	print(myset);
+	
+	string town;
+	cout << "silinecek sehir: ";
+	cin >> town;
+	
+	auto n = myset.erase(town);  // geri dönüş değeri silinen öğe sayısı, çünkü multiset fonks.
+	cout << n << " anahtar silindi\n";
+	print(myset);
+}
+
+------------------------------------------ 
+
+erase_if : C++ 20 ile eklendi, vector'de olduğu gibi
+
+int main()
+{
+	using namespace std;
+	
+	multiset<string> myset;  
+	rfill(myset, 100, rtown);
+	print(myset);
+	
+	string town;
+	cout << "silinecek sehir: ";
+	cin >> town;
+	
+	auto n = erase_if(myset, [](const string& s){return s.contains('a'); });
+	print(myset);
+	
+	cout << n << " anahtar silindi\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+arama işlemi var mı yok mu ya cevap almak için yapılır
+
+a) count fonk. : 
+
+int main()
+{
+	using namespace std;
+	
+	multiset<string> myset;  
+	rfill(myset, 20, rtown);
+	print(myset);
+	
+	string town;
+	cout << "sehri girin: ";
+	cin >> town;
+	
+	if(myset.count(town)){
+		// var
+	}
+	else{
+		// yok 
+	}
+}
+
+----------------------------------------------- 
+
+b) C++ 20 ile contains fonk. geldi, bool döndürür. string fonk. gibi
+
+int main()
+{
+	using namespace std;
+	
+	multiset<string> myset;  
+	rfill(myset, 20, rtown);
+	print(myset);
+	
+	string town;
+	cout << "sehri girin: ";
+	cin >> town;
+	
+	if(myset.contains(town)){
+		// var
+	}
+	else{
+		// yok 
+	}
+}
+
+---------------------------------------------------- 
+
+c) stl'de arama için find fonk.  kullanılır
+
+int main()
+{
+	using namespace std;
+	
+	multiset<string> myset;  
+	rfill(myset, 20, rtown);
+	print(myset);
+	
+	string town;
+	cout << "sehri girin: ";
+	cin >> town;
+	
+	if(auto iter = myset.find(town); iter != myset.end()){
+		
+	}  
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  
+	
+	auto n = sizeof(myset.begin());
+	
+	cout << "n = " << n << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  
+	rfill(myset, 10, rtown);
+	print(myset);
+	
+	string old_key, new_key;
+	cout << "eski ve yeni anahtarlar: ";
+	cin >> old_key >> new_key;
+	
+	// eski yöntem !!!
+	if(auto iter = myset.find(old_key); iter != myset.end()){
+		myset.erase(iter);
+		myset.insert(new_key);
+	}
+	
+	print(myset);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// düğümü yerinden çıkartma
+// düğümle set'in ilişkisini kesmek
+
+extract fonksiyonu :
+
+iki şekilde kullanılabilir
+
+1) aramayı doğrudan extract'a yaptırma
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  
+	rfill(myset, 10, rtown);
+	print(myset);
+	cout << "size = " << myset.size() << "\n";
+	
+	string old_key, new_key;
+	cout << "eski ve yeni anahtarlar: ";
+	cin >> old_key >> new_key;
+	
+	auto handle = myset.extract(old_key);  // move only type
+	
+	// if(!handle.empty())
+	if(handle)
+		handle.value() = new_key;
+		// myset.insert(handle); // sentax hatası, handle move only type
+		// myset.insert(move(handle));
+	}
+	
+}
+
+--------------------------------------------------------- 
+
+move only type : kopyalamaya kapalı, taşımaya açık tür
+
+---------------------------------------------------------
+
+eğer iteratör konumu sizdeyse
+
+int main()
+{
+	using namespace std;
+	
+	set<string> myset;  
+	rfill(myset, 10, rtown);
+	print(myset);
+	
+	auto iter = next(myset.begin());
+	cout << *iter << "\n";
+	
+	auto handle = myset.extract(iter);
+	handle.value() = barselona;
+	myset.insert(move(handle));
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+4  5   8  8  9  9  9  9  13  17   24  24  50
+
+lower bound : anahtarın sırayı bozmadan eklenebileceği ilk konum
+anahtardan büyük ya da eşit olan ilk konum
+
+upper bound : sırayı bozmadan eklenebilecek son konum
+anahtarlardan büyük olan son öğenin konumu
+
+18 eklense lower and upper bound aynı 17
+9 için lower bound ilk 9 ve upper bound son 13
+
+4  5   8  8  9  9  9  9  13  17   24  24  50
+			 |                  |
+-------------------------------------------------- 
+
+[lower_bound upper_bound)  range'ini kullansam
+bu range'in distance'i kaç tane key olduğunu verir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+23 için upper bound, lower bound aynı 24
+
+4  5   8  8  9  9  9  9  13  17   24  24  50
+								   | |
+								
+-------------------------------------------------- 
+
+equal range : [lower bound  upper bound)
+
+distance : o anahtardan kaç tane olduğu
+
+*----------------------------------------------------------------------------------------------------- 
+
+associative fonk.'ların upper bound, lower bound fonk. var. Geri dönüş değeri upper bound 
+veya lower bound iteratorudur. 
+
+equal range fonk. da var. Geri dönüş değerilower bound, upper bound iterator pair'idir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	multiset<int> myset;
+	rfill(myset, 20, Irand{0, 30});
+	print(myset);
+	
+	int ival;
+	cout << "anahtar degerini girin: ";
+	cin >> ival;
+	
+	auto iter_lower = myset.lower_bound(ival);
+	auto iter_upper = myset.upper_bound(ival);
+	
+	cout << "index for lower bound = " << distance(myset.begin(), iter_lower) << "\n";
+	cout << "index for upper bound = " << distance(myset.begin(), iter_upper) << "\n";
+	cout << "equal range distance : " << distance(iter_lower, iter_upper) << "\n";
+	print(iter_lower, iter_upper);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+lower ve upper bound'u insert_hint'te de kullanabiliriz. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+equal_range :
+
+int main()
+{
+	using namespace std;
+	
+	multiset<int> myset;
+	rfill(myset, 20, Irand{0, 30});
+	print(myset);
+	
+	int ival;
+	cout << "anahtar degerini girin: ";
+	cin >> ival;
+	
+	auto [iter_lower, iter_upper] = myset.equal_range(ival);  // structured binding
+	
+	cout << "index for lower bound = " << distance(myset.begin(), iter_lower) << "\n";
+	cout << "index for upper bound = " << distance(myset.begin(), iter_upper) << "\n";
+	cout << "equal range distance : " << distance(iter_lower, iter_upper) << "\n";
+	print(iter_lower, iter_upper);
+}
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+bu isimli aynı zamanda algoritmalar da var !!!
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	
+	rfill(svec, 100, rtown);
+	sort(svec.begin(), svec.end());
+	
+	print(svec);
+	
+	cout << "sehri girin : ";
+	string town;
+	cin >> town;
+	
+	auto iter_lower = lower_bound(svec.begin(), svec.end(), town);
+	auto iter_upper = upper_bound(svec.begin(), svec.end(), town);
+	// auto [iter_lower, iter_upper] = equal_range(svec.begin(), svec.end(), town);
+	
+	print(iter_lower, iter_upper);
+}
+
+--------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	
+	rfill(svec, 100, rtown);
+	sort(svec.begin(), svec.end(), greater{});
+	
+	print(svec);
+	
+	cout << "sehri girin : ";
+	string town;
+	cin >> town;
+	
+	auto iter_lower = lower_bound(svec.begin(), svec.end(), town);
+	auto iter_upper = upper_bound(svec.begin(), svec.end(), town);
+	// auto [iter_lower, iter_upper] = equal_range(svec.begin(), svec.end(), town, greater{});
+	
+	print(iter_lower, iter_upper);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// dikkat, mulakat sorusu, bir vector'e sırayı bozmayacak şekilde ekleme
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	
+	for(int i = 0; i < 20; ++i){
+		auto name = rname();
+		cout << name << "\n";
+		
+		auto iter = lower_bound(svec.begin(), svec.end(), name);
+		svec.insert(iter, name);
+		print(svec);
+		(void)getchar(),
+	}
+}
+
+
+---------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	// fcomp'da kısalar önce uzunlar daha sonra gelir, uzunlukları aynıysa lexicografical compare
+	const auto fcomp = [](const std::string& s1, const std::string& s2){
+		return s1.length() < s2.length() || s1.length() == s2.length() && s1 < s2;
+	};
+	
+	
+	for(int i = 0; i < 20; ++i){
+		auto name = rname();
+		cout << name << "\n";
+		
+		auto iter = lower_bound(svec.begin(), svec.end(), name);
+		svec.insert(iter, name);
+		print(svec);
+		(void)getchar(),
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;
+	
+	myset.clear();
+	myset.erase(myset.begin(), myset.end());
+	
+	myset.  // check et, görülmeyen kaldı mı ? 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+	key_comp() :  comparator'u döndürür.
+	
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;
+	
+	auto f = myset.key_comp(); 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;
+	
+	auto f = myset.key_comp(); 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+merge sonradan eklendi
+
+int main()
+{
+	using namespace std;
+	
+	const auto fcomp = [](const std::string& s1, const std::string& s2){
+		return s1.length() < s2.length() || s1.length() == s2.length() && s1 < s2;
+	};
+	
+	set<string, decltype(fcomp)> s1;
+	set<string, decltype(fcomp)> s2;
+	
+	rfill(s1, 10, rname);
+	rfill(s2, 10, rname);
+	
+	print(s1);
+	print(s2);
+	
+	s1.merge(s2);
+	cout << "s2.size() = " << s2.size() << "\n";
+	
+	print(s1);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<int> myset;
+	
+	myset.  // set'te key ile value aynı
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+set bitmiş oldu !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<int>::value_type;  // vector'un int açılımının value type'i hangi tür ? cevap : int
+	vector<string>::value_type; // vector'un string açılımının value type'i hangi tür ? cevap : string
+	
+	vector<pair<int, double>::value_type;  // cevap : pair'in int double açılımı
+	
+	set<int>::key_type;  // set'in int açılımının key type ile set'in int açılımının value type'ı aynı. cevap : int 
+	set<int>::value_type;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+map container'i: 
+
+anahtara karşılık gelen bir değer var
+map kendi içinde key value pair'lerini tutuyor
+key'in value type'i 
+
+map<int, string>    
+// value type'i pair<int, string> açılımı
+// key'in türü int, value'nun türü string
+
+--------------------------------------------------- 
+
+template<typename Key, typename Val, typename Comp = less<Key>, typename A = allocator<pair<Key, Value>>
+class Map{
+	
+}
+*----------------------------------------------------------------------------------------------------- 
+
+map'de hangi constructor'lar var ?
+
+default, copy, move const. , initializer list const., range const. 
+
+---------------------------------------------------------- 
+
+map'in pair tuttuğunu unutmayın !!!
+
+------------------------------------------------ 
+
+#include <map>  // multimap bunun içinde
+
+int main()
+{
+	using namespace std;
+	
+	map<int, string> imap;
+	
+	for(int i = 0; i < 10; ++i){
+		imap.insert(pair<int, string>{rand(), rname()});
+		imap.insert({rand(), rname()});  // deduction'dan faydalanarak bu şekilde de yazılabilir !!!
+		imap.insert(make_pair(i, rname()));
+		imap.emplace(rand(), rname());
+	}
+	
+	for(const auto& p : imap){
+		cout << p.first << " " << p.second << "\n";
+	}
+}
+
+------------------------------------------------------ 
+
+// greater<> ile 
+
+#include <map>  
+
+int main()
+{
+	using namespace std;
+	
+	map<int, string, greater<>> imap;
+	
+	for(int i = 0; i < 10; ++i){
+		imap.insert(pair<int, string>{rand(), rname()});
+		imap.insert({rand(), rname()});  // deduction'dan faydalanarak bu şekilde de yazılabilir !!!
+		imap.insert(make_pair(i, rname()));
+		imap.emplace(rand(), rname());
+	}
+	
+	for(const auto& p : imap){
+		cout << p.first << " " << p.second << "\n";
+	}
+}
+
+-------------------------------------------------------- 
+
+structured binding'in en çok kullanıldığı yerlerden biri range based for loop :
+
+	for(const auto& p : imap){
+		cout << p.first << " " << p.second << "\n";
+	}
+
+	for(const auto& [id, name] : imap){
+		cout << id << " " << name << "\n";
+	}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// map<string, int>  yapalım,
+//  anahtar string oldu, string ile logaritmik karmaşıklıkta arama, silme, ekleme yapılır.
+
+#include <map>  
+
+int main()
+{
+	using namespace std;
+	
+	map<string, int> imap;
+	
+	for(int i = 0; i < 10; ++i){
+		imap.insert(pair<int, string>{name(), rand() % 100});
+		imap.insert({rname(), rand() % 100});  // deduction'dan faydalanarak bu şekilde de yazılabilir !!!
+		imap.insert(make_pair(rname(), i));
+		imap.emplace(rname(), rand() % 100);
+	}
+	
+	for(const auto& [name, id] : imap){
+		cout << name << " " << id << "\n";
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// multimap 
+// aynı key'den birden fazla olabilir
+
+#include <map>  
+
+int main()
+{
+	using namespace std;
+	
+	multimap<string, int> imap;
+	
+	for(int i = 0; i < 10; ++i){
+		imap.insert(pair<int, string>{name(), rand() % 100});
+		imap.insert({rname(), rand() % 100});  // deduction'dan faydalanarak bu şekilde de yazılabilir !!!
+		imap.insert(make_pair(rname(), i));
+		imap.emplace(rname(), rand() % 100);
+	}
+	
+	for(const auto& [name, id] : imap){
+		cout << name << " " << id << "\n";
+	}
+	
+	string name;
+	cout << "aranacak ismi girin: ";
+	cin >> name;
+	
+	if( auto iter = imap.find(name); iter!= imap.end()){
+		cout << "bulundu, degeri " << iter->second;
+	}
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
