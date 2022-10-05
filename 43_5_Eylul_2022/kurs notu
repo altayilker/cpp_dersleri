@@ -1,0 +1,842 @@
+
+İçerik:
+
+associative container
+unordered associative containers
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+set ve multiset bitti.
+
+*----------------------------------------------------------------------------------------------------- 
+
+map :  arama, ekleme, silme log. karmaşıklıkta
+
+arka plandaki arama, ikili arama ağacı, red-black tree
+
+set, multiset'e göre fark anahtarla arama yapıyorum, ama key'e karşılık bir değer ile 
+ilişkili.
+Anahtar elimde ise karşılık gelen değere erişebilirim ve value değiştirilebilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+map<int, string>
+
+
+template<typename Key, typename Val, typename Comp = less<Key>, typename A =
+allocator<pair<const Key, Value>>
+class Map{
+
+
+}
+
+burda kullanılan predicate'in strict weak ordering kriterlerini karşılaması gerekir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+set'te görmediğimiz fonk.'lar burada var.
+
+*----------------------------------------------------------------------------------------------------- 
+
+mymap.insert(pair<int, Date>{???});
+mymap.insert(make_pair(1, 3.4));
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <map>
+#include <iostream>
+#include <string>
+
+int main()
+{
+	using namespace std;
+	
+	map<string, int> mymap;
+	
+	pair<string, int> px{ "murat", 56};
+	mymap.insert(px);
+	mymap.insert(std::move(px));
+	mymap.insert({"alican", 67});
+	mymap.insert(make_pair("esen", 9));
+	mymap.emplace("deniz", 987); 
+	mymap.try_emplace("selami", 56);
+	
+	for(const auto& p : mymap){
+		cout << p.first << " " << p.second << "\n";  // less sırasında !!!
+	}
+}
+
+--------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	map<string, int> mymap;
+	
+	pair<string, int, greater<>> px{ "murat", 56};
+	mymap.insert(px);
+	mymap.insert(std::move(px));
+	mymap.insert({"alican", 67});
+	mymap.insert(make_pair("esen", 9));
+	mymap.emplace("deniz", 987); 
+	mymap.try_emplace("selami", 56);
+	
+	for(const auto& p : mymap){
+		cout << p.first << " " << p.second << "\n";  // büyükten küçüğe sıralama !!!
+	}
+}
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+vector<int> 'nın value type'ı : int
+set<string>' nın value type'ı : string
+map<string, Date>'nın value type'ı : pair<string, Date> açılımı
+map<int, long> 
+--------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	using mytype = map<int, long>;
+	
+	cout << typeid(mytype::value_type).name() << "\n";
+	cout << typeid(mytype::key_type).name() << "\n";
+	cout << typeid(mytype::mapped_type).name() << "\n";
+	// microsoft visual studio gösterir !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	map<string, Date> mymap;
+	
+	for(int i{}; i < 100; ++i){
+		mymap.emplace(rname(), Date::random());
+	}
+	
+	cout << "size = " << mymap.size() << "\n";
+
+	for(const auto& [name, bdate] : mymap){
+		cout << name << " " << bdate << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+rname  // nutility.h'da
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	map<string, Date> mymap;
+	
+	for(int i{}; i < 100; ++i){
+		mymap.emplace(rname(), Date::random());
+	}
+	
+	cout << "size = " << mymap.size() << "\n";
+
+	for(const auto& [name, bdate] : mymap){
+		cout << name << " " << bdate << '\n';
+	}
+	
+	string name_entry;
+	cout << "ismi girin: ";
+	cin >> name_entry;
+	
+	if(auto iter = mymap.find(name_entry); iter != mymap.end()){
+		auto bdate = iter->second;
+		mymap.erase(iter);
+		mymap.emplace("polathan", bdate);
+	}
+	
+}
+
+--------------------------------------------------- 
+
+extract ile :
+
+int main()
+{
+	using namespace std;
+	
+	map<string, Date> mymap;
+	
+	for(int i{}; i < 100; ++i){
+		mymap.emplace(rname(), Date::random());
+	}
+	
+	cout << "size = " << mymap.size() << "\n";
+
+	for(const auto& [name, bdate] : mymap){
+		cout << name << " " << bdate << '\n';
+	}
+	
+	string name_entry;
+	cout << "ismi girin: ";
+	cin >> name_entry;
+	
+	if(auto iter = mymap.find(name_entry); iter != mymap.end()){
+		auto handle = mymap.extract(iter);
+		handle.key() = "polathan";
+		// handle.mapped() =  ???;
+		mymap.insert(move(handle));
+	}
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// [ ] operator fonk. :
+map'te var,  multimap'te yok
+
+
+int main()
+{
+	using namespace std;
+	
+	map<string, Date> mymap;
+	
+	for(int i{}; i < 100; ++i){
+		mymap.emplace(rname(), Date::random());
+	}
+	
+	cout << "size = " << mymap.size() << "\n";
+
+	for(const auto& [name, bdate] : mymap){
+		cout << name << " " << bdate << '\n';
+	}
+	
+	string name_entry{"mehmet"};
+	
+	mymap[name_entry] = Date{5, 9, 2022};
+	// pair'in second'ını default init. eder
+	// map'e ekler ve map'e eklenmiş öğeye referans veriyor
+	
+	// varsa anahtarına eriş, yoksa insert işlemi yap,
+	// insert ettiğin anahtarın value'suna eriş, o da default const. 
+	// edilmiş
+	
+	mymap["ayla"] = Date{1, 2, 1998};
+}
+
+------------------------------------------------------ 
+
+int main()
+{
+	using namespace std;
+	
+	map<string, Date> mymap;
+	
+	for(int i{}; i < 100; ++i){
+		mymap.emplace(rname(), Date::random());
+	}
+	
+	cout << "size = " << mymap.size() << "\n";
+
+	for(const auto& [name, bdate] : mymap){
+		cout << name << " " << bdate << '\n';
+	}
+	
+	string name;
+	cout << "ismi girin: ";
+	cin >> name;
+	
+	mymap[name] = Date{5, 5, 1955};
+	
+	for(const auto& [name, bdate] : mymap){
+		cout << name << " " << bdate << '\n';
+	}
+}
+
+// girilen isim yoksa eklenir
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <fstream> 
+
+int main()
+{
+	using namespace std;
+
+	vector<string> svec;
+	rfill(svec, 10000, rname);
+	
+	map<string, int> cmap;
+	
+	for(const auto& name : svec){
+		++cmap[name];
+	}
+	
+	ofstream ofs{"out.txt"};
+	if(!ofs){
+		cerr << "out.txt dosyasi oluşturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	for(const auto&[name, count] : cmap){
+		ofs << name << " " << count << "\n";
+	}
+}
+
+------------------------------------------------------- 
+
+sort algoritmasını map ile kullanamazsınız 
+map'i sıralamak diye birşey sözkonusu değil
+vector'e taşıyıp vector'de sort algoritmasını çalıştırın
+
+------------------------------------------------- 
+
+#include <fstream> 
+
+int main()
+{
+	using namespace std;
+
+	vector<string> svec;
+	rfill(svec, 10000, rname);
+	
+	map<string, int> cmap;
+	
+	for(const auto& name : svec){
+		++cmap[name];
+	}
+	
+	vector<pair<string, int>> cvec{cmap.begin(), cmap.end()};
+	// CTAD ile vector cvec yazılabilir
+	
+	sort(cvec.begin(), cvec.end());  // karşılaştırmada less kullanılır, pair'lerde first'i küçük
+	// olan küçüktür, first'leri aynı ise second'ına bakılır
+	
+	sort(cvec.begin(), cvec.end(), [](const auto& p1, const auto & p2 )
+	{
+		return p1.second > p2.second; // second'in büyüklüğüne göre sıralama
+	});
+		  
+	
+	ofstream ofs{"out.txt"};
+	if(!ofs){
+		cerr << "out.txt dosyasi oluşturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	for(const auto&[name, count] : cmap){  // const bir map için bu kullanılamaz !!!
+		ofs << name << " " << count << "\n";
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+
+	vector<string> svec;
+	rfill(svec, 10000, rname);
+	
+	map<string, int, greater<>> cmap;
+	
+	for(const auto& name : svec){
+		++cmap[name];
+	}
+	
+	vector<pair<string, int>> cvec{cmap.begin(), cmap.end()};
+	// CTAD ile vector cvec yazılabilir
+	
+	sort(cvec.begin(), cvec.end());  // karşılaştırmada less kullanılır, pair'lerde first'i küçük
+	// olan küçüktür, first'leri aynı ise second'ına bakılır
+	
+	sort(cvec.begin(), cvec.end(), [](const auto& p1, const auto & p2 )
+	{
+		return p1.second > p2.second; // second'in büyüklüğüne göre sıralama
+	});
+		  
+	
+	ofstream ofs{"out.txt"};
+	if(!ofs){
+		cerr << "out.txt dosyasi oluşturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	for(const auto&[name, count] : cmap){  // const bir map için bu kullanılamaz !!!
+		ofs << name << " " << count << "\n";
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+insert ile [] operatör fonk. arasındaki fark nedir ?
+
+insert anahtar varsa ekleme işlemi yapmaz. geri dönüş değeri iteratör bool pair'i . Geri dönüş değerine bakarak 
+ekleme işlemi yapılıp yapılmadığı anlaşılır.
+
+[] operatör fonk. : anahtar varsa anahtarın value'suna ref. semantiği ile eriştiriyor, anahtar yoksa insert 
+işlemi yapıyor. 
+
+ikisi aynı şey değil. insert ya ekleme yapıyor ya yapmıyor. [ ] operatör fonk. yoksa ekleme yapar ama
+varsa onun value'suna eriştiriyor.
+
+mymap[key]    
+mymap.operator[](key)  // ikisi aynı
+
+mymap[key]    => geri dönüş değeri referans
+++mymap[key] 
+
+*----------------------------------------------------------------------------------------------------- 
+
+at fonksiyonu : anahtara karşı gelen değere eriştirmek ama anahtar yoksa exception throw eder.
+
+int main()
+{
+	using namespace std;
+	
+	map<string, int> mymap{
+		{"deniz", 12},
+		{"emre", 34},
+		{"fatih", 45},
+		{"ayse", 92},
+	};
+	
+	try{
+		auto value = mymap.at("salih");  // bu anahtar olmadığı için exception throw eder !!!
+	}
+	catch(const std::exception& ex){
+		cout << "exception caught: " << ex.what() << "\n";
+	}
+
+	
+}
+
+--------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	const map<string, int> mymap{
+		{"deniz", 12},
+		{"emre", 34},
+		{"fatih", 45},
+		{"ayse", 92},
+	};
+	
+	auto val = mymap["deniz"];  // [ ] operator fonk. non-const, kullanmak hata verir.
+	
+}
+
+--------------------------------------------------------------- 
+
+// at fonksiyonu const overload edilmiş, hata vermez 
+
+int main()
+{
+	using namespace std;
+	
+	 // amacım bu map'e ekleme yapmak değil, lookup için kullanacaksan const. olur.
+	const map<string, int> mymap{  
+		{"deniz", 12},
+		{"emre", 34},
+		{"fatih", 45},
+		{"ayse", 92},
+	};
+	
+	try{
+		auto value = mymap.at("salih");  // bu anahtar olmadığı için exception throw eder !!!
+	}
+	catch(const std::exception& ex){
+		cout << "exception caught: " << ex.what() << "\n";
+	}
+	
+}
+
+------------------------------------------------------------------------ 
+
+// container'imiz const olduğu için iteratörümüz de const.
+
+int main()
+{
+	using namespace std;
+	
+	 // amacım bu map'e ekleme yapmak değil, lookup için kullanacaksan const. olur.
+	const map<string, int> mymap{  
+		{"deniz", 12},
+		{"emre", 34},
+		{"fatih", 45},
+		{"ayse", 92},
+	};
+	
+	if(auto iter = mymap.find("emre"); iter != mymap.end()){
+		iter->second;
+	}
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+emplace'in dezavantajları :
+
+map type bazı durumlarda sadece move type olur. Kopyalanamaz
+
+emplace fonk. o unique_ptr'nin kaynağını çalacak, key'de varsa ekleme işlemi yapmayacak
+bu sebeble try_emplace fonk. eklendi.
+
+------------------------------------------ 
+
+try_emplace : does not move from rvalue arguments if the insertion does not happen
+This is useful when manipulating maps whose values are move-only types,
+such as std::unique_ptr
+
+-------------------------------------------------------- 
+
+emplace ile insert farkı nedir ?
+
+*----------------------------------------------------------------------------------------------------- 
+
+ mymap.insert_or_assign()  : []  operatör fonk. yerine alternatif
+
+neden bunu çağırayım ? []  ya insert edecek ya da var olan öğenin
+
+1) bunu kullanırsam fonk. geri dönüş değeri iteratör bool pair'inden alabilirsiniz
+2) [] operatör fonk. map type'in default const. olma koşulu ararken
+insert_or_assign aramaz
+
+https://en.cppreference.com/w/cpp/container/map/insert_or_assign
+
+
+Notes: 
+
+
+insert_or_assign returns more information than operator[] and does not require default-constructibility of the mapped type
+
+
+
+--------------------------------------------------------------------------------------------------- 
+----------------  unordered associative containers : (hastable) ---------------
+--------------------------------------------------------------------------------------------------- 
+
+hastable : çırpı tablosu :)
+
+çünkü anahtara erişmek ortalamada const. time'da. Bu çok iyi birşey (log. karmaşıklığa göre iyi)
+
+diyelim ki isimleri kullanacaz. Bir ismin sette olup olmadığına bakacam. Fakat bunu const. time'a çekmek istiyorum
+
+cevap :  isimleri bir vector'de tutsam. vector'e index ile erişip vector'un o index'li elemanının aradığım anahtar
+olup olmadığına baksam.
+
+"volkan" ı anahtar olarak kullanılırsa tam sayıya dönüştürmek gerekir. Buna hashing denir. 
+anahtarı alıp tam sayıya dönüştürecek, arka planda bir başka kod o tam sayıyı vectorel bir veri yapısında 
+index olarak kullanacak. Vektörel bir veri yapısında index'le erişim const. time'dır. Eğer anahtarı index'e
+çevirmek const. time olursa. Bu durumda siz const. time'da vector'ün belirli bir  indisine erişerek aradığınız
+değeri veya karşılık gelen anahtarı bulabileceksiniz.
+
+anahtar oluşturmada bazen collision olur. Collision çözümlemeye yönelik bir çok teknik var.
+
+en çok kullanılan teknik :
+vector'ün elemanları doğrudan elemanlar olmasın, bağlı liste olsun. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+unordered_set : 
+unordered_multiset : 
+unordered_map : 
+unordered_multimap : 
+
+interface ordered'lar ile aynı.
+
+*----------------------------------------------------------------------------------------------------- 
+
+doğrudan bir sıra yok, büyükten küçüğe filan dolaşmak yok.
+
+karşılaştırma için equivalance'i kullanmıyor. Eşitlik kriterini sınayan equal to
+kullanılıyor.
+
+std:hash<int> : int türünden bir nesneyi indexe dönüştürür
+std:hash<string> :  string türünden bir nesneyi indexe dönüştürür
+
+------------------------------------------- 
+
+Fighter, Date tutacaksanız (int, string'de stl yapar) onu hash edecek fonk. ihtiyacınız olacak
+1) hash template'ini explicit specialization kullanılacak
+2) kendiniz template kendi sınıfınızı oluşturacaksınız
+
+--------------------------------------------------------------- 
+
+Nicolai M. Josuttis 'in kitabından
+
+anahtarınız var, hashfunc()'a gönder, o size index verir, vectorel veri yapısında o index'e eriş, 
+orda bağlı listeler var, herhangi bir collision yoksa o bağlı listede bir tane öğe var.
+Eğer collision varsa üç tane öğe var mesela. Öğe yoksa o liste boş.
+
+-------------------------------------------------- 
+
+#include <unordered_set>
+#include <unordered_map>
+
+int main()
+{
+	using namespace std;
+	
+	cout << hash<int>{}(8'243'234) << "\n";  // hash değerini verir
+	cout << hash<int>{}(8'243'235) << "\n";  // hash değerini verir
+	cout << hash<int>{}(8'243'236) << "\n";  // hash değerini verir
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <unordered_set>
+#include <unordered_map>
+#include  "date.h"
+
+int main()
+{
+	using namespace std;
+	
+	cout << hash<Date>{}(Date{1, 4, 1987});  // sentax hatası, hash'in Date açılımı yok, explicit spec. yapılmamış
+}
+
+---------------------------------------------------------- 
+
+explicit specialization :
+
+template <>
+struct std::hash<Date>{
+	std::size_t operator()(const Date& date)const
+	{
+		return hash<int>{} (date.month_day()) + hash<int>{}date.month() + hash<int>{} date.year();  // index'e, size_t'ye dönüştürür
+	}
+
+};
+
+int main()
+{
+	using namespace std;
+	
+	cout << hash<Date>{}(Date{1, 4, 1987}) << "\n";
+
+	cout << hash<Date>{}(Date{1, 4, 1987});
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+--------------------------------------------------------------- 
+
+#include "hval.h"
+
+template <>
+struct std::hash<Date>{
+	std::size_t operator()(const Date& date)const
+	{
+		return hash_val(date.month(), date.year(), date.month_day);
+	}
+
+};
+
+int main()
+{
+	using namespace std;
+	
+	unordered_set<Date> myset;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kendi türümü kendim oluşturacam
+
+// tarihleri index'lere dönüştürme işlemi
+struct DateHasher{  
+
+	std::size_t operator()(const Date& date)const
+	{
+		return hash_val(date.month(), date.year(), date.month_day);
+	}
+
+};
+
+int main()
+{
+	using namespace std;
+	
+	unordered_set<Date, DateHasher> myset;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+unordered set, map fonksiyonlar büyük olçüde aynı 
+ama arkadaki veri yapısı farklı
+
+*----------------------------------------------------------------------------------------------------- 
+
+// amaç anahtarla erişimi cont. time'a çekmek, yine aynı fonk. var.
+
+int main()
+{
+	using namespace std;
+	
+	unordered_set<string> myset;
+	
+	for(int i = 0; i < 100; ++i){
+		myset.insert(rname());
+	}
+	
+	for(const auto& name : myset){
+		cout << name << " ";
+	}
+	
+	myset.count();
+	myset.contains();
+	myset.find();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+set de olsa unordered_set de olsa fonk. aynı
+ama arka planda karmaşıklık burada const. time'da.
+
+ama unordered_set kullandınız diye programınız daha hızlı olmak zorunda değil.
+neden ? her sorgulama için hash fonk. çağırılıyor bir de == çağırılır çünkü anahtarı bir indexe dönüştürmeniz gerekiyor. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+average constant time : her bucket'ta bir tane olması gerekir ve collison olmayacaktı. 900 tane bucket'te collision yoksa constant time.
+
+bağlı listeler logaritmik karmaşıklıkta değil. Doğrudan index'le 
+erişiyorum. 
+
+complexity'de yazar (cppreference'de yazar)
+
+https://en.cppreference.com/w/cpp/container/unordered_set/contains
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include "nutility.h"
+#include  <fstream>
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs{"out.txt"};
+	if(!ofs){
+		cerr << "out.txt dosyasi oluşturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	unordered_set<string> myset;
+	
+	for(int i = 0; i < 100; ++i){
+		myset.insert(rname());
+	}
+	
+	for(const auto& name : myset){
+		cout << name << " ";
+	}
+
+	ofs << "size = " << myset.size() << "\n";
+	ofs << "bucket count " << myset.bucket_count(); // arka planda kaç 
+	
+	for(size_t i{}; i < myset.bucket_count(); ++i){
+		ofs << i << " [" << myset.bucket_size(i) << " ]" ;
+		if(!myset.bucket_size(i))
+			ofs << '\n';
+		else{
+			 // bizim container'ların begin'i gibi değil. İndex isteyen begin fonk.
+			for(auto iter = myset.begin(i); iter != myset.end(i); ++iter){
+				ofs << *iter << " ";
+			}
+			ofs << '\n';
+		}
+	}
+
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct DateEqual{
+
+	bool operator()(const Date& d1, const Date& d2)const
+	{
+		return d1.year_day() == d2.year_day();
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	unordered_set<Date, ???, DateEqual> 
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+hash fonk. tek yaptığı anahtarı index'e dönüştürmek.
+anahtarı size_t'ye dönüştürmek
+
+int main()
+{
+	using namespace std;
+	
+	cout << hash<int>{}(1'234'561'987);  
+	// size bir size_t verir.
+	// hash değerinin 512 elemanlı vector'de index olarak kullanılmasını sağlayan hash sınıfının kodu 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// kendi hash fonk.'umuzu basitçe yazalım
+
+
+size_t get_hash_value(const std::string& s)  
+{
+	size_t sum{};
+	
+	for(auto c : s)
+		sum += c;
+		
+	return sum;
+}
+
+int main()
+{
+	for(int i = 0; i < 100; ++i){
+		auto s = rname() + " " + rfname();
+		cout << s << " ";
+		cout << get_hash_value(s) % 512 << "\n";
+	}
+}
+
+// mükemmel değil !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : çok fazla collision'ın olduğu boş bucket'ların da yeterince olduğu 
+durumda hashing fonk. değiştirme senaryosu var mı yoksa bucket size
+mi arttırılıyor ?
+
+bucket sayısı değiştirilebilir, 512 bucket yerine 1024 kullanayım
+tekrar anahtarların yeni vector'e göre yapılması gerekecek
+
+
+*----------------------------------------------------------------------------------------------------- 
