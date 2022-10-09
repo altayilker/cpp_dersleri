@@ -1,0 +1,1041 @@
+
+İçerik:
+
+
+
+özet:
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+stack
+queue
+priority_queue
+
+*----------------------------------------------------------------------------------------------------- 
+
+kendileri doğrudan container değil, so called containers,
+amaçları bir container'i composition containment yoluyla edinip
+bazı abstract data type veri yapılarını implemente etmek ve bunlar için
+bir interface elde etmek. Ama aslında implementasyonda member olarak
+aldıkları container'i kullanıyorlar. 
+
+stack : last in first out, giren sıranın tersi çıkar, kitapları üst üste koyuyorum, en üstten kitabı alıyorum.
+bir çok algoritmada implementatsyonunda recursive bir yapıya sahip değilse kullanır.
+
+*----------------------------------------------------------------------------------------------------- 
+
+STL std::stack sınıfının benzeri olan kendi stack sınıfınızı şablon olarak implemente ediniz.
+
+a) pop fonksiyonu stack'ten çıkartılan öğenin değerini döndürsün
+b) boş stack'ten top işlemi yapıldığında pop işlemi exception throw etmeli 
+c) 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <stack>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	vector<int> ivec{ 2, 5, 7, 9, 3};
+	
+	// stack<int> mystack;  // deque'in int açılımı demek
+	
+	// stack<int, vector<int>> mystack;   // deque yerine vector kullanmak
+	
+	stack<int> mystack{ ivec.begin(), ivec.end()};  // stack'in range const. var.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <stack>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	deque<int> dq{ 2, 5, 7, 9, 3};
+
+	stack<int> mystack{dq};
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <stack>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	vector<int> ivec{ 2, 5, 7, 9, 3};
+
+	stack<int> mystack{ivec}; // sentax hatası, nedeni ? böyle bir const. olmayışı mı yoksa tür uyumsuzluğu mu ?
+}
+
+--------------------------------------------------
+
+#include <stack>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	vector<int> ivec{ 2, 5, 7, 9, 3};
+
+	stack<int, vector<int>> mystack{ivec};  // tür uyumu sağlandı !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+CTAD da çalışır
+
+#include <stack>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	deque<int> dq{ 2, 5, 7, 9, 3};
+
+	stack<int> mystack{dq};  // int yazmaya gerek yok !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+her sınıf taban sınıf olmaya uygun değildir !!! tipik yanlış anlamalardan biri
+
+*----------------------------------------------------------------------------------------------------- 
+
+stack sınıfı kalıtıma uygun olarak mı oluşturulmuştur?
+
+sanal sınıflara sahipse kalıtıma uygun oluşturulmuştur
+protected bölümünün olması (olmak zorunda değil)
+
+bir sınıfı final yaptığınızda o sınıftan kalıtım sentax hatası olur.
+
+*----------------------------------------------------------------------------------------------------- 
+
+stack sınıfından kalıtım yapılması istenmeyen bir durum mu ? 
+sınıf final değil, sınıfın bir protected elemanı var.
+
+stack'teki kalıtımı gösterelim
+
+#include <stack>
+#include <vector>
+
+class mystack : public std::stack<int> {
+public:
+	void print()const
+	{
+		// container'a erişmem gerekir
+		// c. // taban sınıftaki container'in ismi
+		
+		auto n = size();  // türemiş sınıfın fonk. taban sınıfın üye fonk. çağırıyor
+		auto iter = c.end();
+		while(n--){
+			std::cout << *--iter << " ";
+		}
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	int a[ ] = {2, 7, 9, 1, 4, 3 };
+	// kalıtım yoluyla elde ettiğim sınıfta taban sınıfın const.'ını kullanabilir miyim ?
+	
+	mystack x{ begin(a), end(a)};  
+	// hata, const.'lar inherit edilmiyor ama inherited constructor ile
+	bunu yapabiliyoruz.  
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <stack>
+#include <vector>
+
+class mystack : public std::stack<int> {
+public:
+	void print()const
+	{
+		// container'a erişmem gerekir
+		// c. // taban sınıftaki container'in ismi
+		
+		auto n = size();  // türemiş sınıfın fonk. taban sınıfın üye fonk. çağırıyor
+		auto iter = c.end();
+		while(n--){
+			std::cout << *--iter << " ";
+		}
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	int a[ ] = {2, 7, 9, 1, 4, 3 };
+	mystack x;
+	
+	for(auto i : a)
+		x.push(i);
+		
+	x.print();  // print kalıtım ile stack'e eklendi, burada kullanılıyor.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int* foo();
+
+int main()
+{
+	using namespace std;
+	
+	if(int* p = foo()){
+		
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int foo();
+
+int main()
+{
+	using namespace std;
+	
+	if(int x = foo(); x > 10){
+		
+	}
+	
+	while(int x = foo(), x > 10){  // ok, virgül operatörü sequence point oluşturur, 
+		
+	}
+	
+	while(int x = foo(); x > 10){  // hatalı
+		
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int foo();
+
+int main()
+{
+	switch(int x = foo()){  // switch'in içindeki ifadenin değeri x'in değeridir
+	
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+if(auto x = foo(); x > 10){
+
+}
+
+if(auto [x, y] = foo(); x > 10){
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bizim görmediğimiz compile time if var.
+
+if constexpr 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <queue>
+#include "date.h"
+
+int main()
+{
+	using namespace std;
+	
+	queue<Date> x;
+	
+	x.push(Date::random());
+	x.emplace();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	
+	svec.emplace_back();  // emplace_back fonk. argüman göndermeden çağırınca ne oluyor ?
+	// vector'e default init. edilmiş string eklemiş oluyorsunuz. Argüman göndermediğime göre 
+	Default const. çağırılır. 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	
+	svec.emplace_back(11, 'a');  // argümanlar vector'de tutulan öğenin const.'ına gönderilir. 
+	// böyle bir const. var mı var. ilk argüman size_t, ikinci argüman char
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+	Nec()
+	{
+		std::cout << "Nec default ctor\n";
+	}
+	
+	Nec(const Nec&)
+	{
+		std::cout << "copy ctor\n";
+	}
+	
+	Nec(Nec&&)
+	{
+		std::cout << "move ctor\n";
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	vector<Nec> vec;
+	vec.reserve(100);
+	
+	vec.emplace_back();  // sadece  default const. çağırılır
+	// çünkü doğrudan vector'ün sağladığı bellek alanında argümanları perfect
+	forward ederek nesneyi oluşturuyor. 
+	
+}
+
+-------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<Nec> vec;
+	vec.reserve(100);
+	
+	vec.push_back(Nec{});  
+	// default const. + move const. çağırılır !!!
+	// geçici nesne oluşturuluyor, fakat push_back fonk. iki overloadu var.
+	biri sağ taraf ref. , diğeri lvalue ref. parametreli, 
+	
+	push_back doğrudan kendisi kullanmaz. Arka planda copy const ya da move const.
+	çağırır bunun vektore eklenmesi için. 
+	emplace_back'in çağırılması her zaman daha iyi.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+birinci seçiminiz emplace fonk. olsun
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<Nec> vec;
+	vec.reserve(100);
+	
+	Nec mynec;
+	
+	vec.push_back(mynec);   // Nec default const, copy const. çağırılır
+	vec.emplace_back(mynec);  // // Nec default const, copy const. çağırılır
+	// iki fonk. arasında fark var mı ?
+	// burada fark yok 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	queue<string> x;
+	
+	for(int i = 0; i <10; ++i){
+		auto s = rname();
+		cout <<  "kuyruga " << s << " girdi\n";
+		x.push(s);
+	}
+	
+	cout << "kuyruk sonu : " << x.back() << "\n";
+	cout <<  "\n";
+	
+	while(!x.empty()){
+		cout << x.front() << "\n";
+		(void)getchar();
+		x.pop();
+	}
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	queue<string, vector<string>> x;
+	
+	for(int i = 0; i <10; ++i){
+		auto s = rname();
+		cout <<  "kuyruga " << s << " girdi\n";
+		x.push(s);
+	}
+	
+	cout << "kuyruk sonu : " << x.back() << "\n";
+	cout <<  "\n";
+	
+	while(!x.empty()){
+		cout << x.front() << "\n";
+		(void)getchar();
+		x.pop();
+	}
+}
+
+hatalı, stack'de push front fonk. çağırılıyorsa, pop_front fonk. vector'de olmadığı için
+hata veriyor. list olsa hata olmazdı, list'in pop_front fonk. var.
+
+*----------------------------------------------------------------------------------------------------- 
+
+priority queue : heap'in kullanıldığı tipik senaryo
+
+arka planda heap veri yapısı kullanıyor. Range'i heap hale getirebiliyoruz,
+
+-------------------------------------------- 
+
+
+#include <queue>  // priority queue bu başlık dosyasında
+
+
+int main()
+{
+	using namespace std;
+	
+	priority_queue<int> x;
+	
+	for(int i = 0; i < 10; ++i){
+		x.push(Irand{0, 1000}());
+	}
+	
+	while(!x.empty()){
+		cout << x.top() << "\n";
+		x.pop();
+		(void)getchar();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+#include <queue>  
+
+
+int main()
+{
+	using namespace std;
+	
+	priority_queue<int, vector<int>, greater<>> x;
+	
+	for(int i = 0; i < 10; ++i){
+		x.push(Irand{0, 1000}( ) );
+	}
+	
+	while(!x.empty()){
+		cout << x.top() << "\n";
+		x.pop();
+		(void)getchar();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+//karşılaştırma kriterim sadece gün
+// kendi karşılaştırma kriterimiz
+
+
+#include <queue>  
+
+
+int main()
+{
+	using namespace std;
+	
+	const auto f = [](const Date& d1, const Date& d2)
+	{
+		return d1.month_day() < d2.month_day();
+	};
+	
+	priority_queue<Date, vector<Date>, decltype(f)> x;  
+	// C++ 20 standartları !!! 
+	// öncesinde lambda karşılığı oluşturulan sınıf türünün (closure type)'in default const. yoktu !!!
+	
+	for(int i = 0; i < 10; ++i){
+		x.emplace(Date::random());
+	}
+	
+	while(!x.empty()){
+		cout << x.top();
+		x.pop();
+		(void)getchar();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// alias template konusunu hatırlamakta fayda var
+
+template<typename T>
+using min_q = std::priority_queue<T, std::vector<T>, std::greater<T>>;
+
+int main()
+{
+	using namespace std;
+	
+	min_q<int>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	auto f = [](int x){ return x + 1; };
+	
+	decltype(f) f2;  // C++ 17'de sentax hatası , C++20'de ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	auto f1 = [](int x){ return x + 1; };
+	
+	auto f2 = f1;
+	
+	f1 = f2; // legal mi ? legal olması için sınıfın atama operatör fonk. olması gerekir. copy const. ile alakası yok
+	// sentax hatası, C++ 17'de closure type'ların sadece default const. değil copy assignment'i da delete edilmiş
+	// C++ 20'de ok !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	auto f1 = [](int x){ return x + 1; };
+	auto f2 = [](int x){ return x + 1; };
+	
+	f1 = f2; // hatalı çünkü türleri farklı
+}
+
+f1 ve f2 türü aynı mı ? hayır farklı türler
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int (*p)(int) = [](int x) {return x + 1;}
+}
+
+ilgili function pointer türüne stateless lambda'lardan elde edilen closure type'in otomatik dönüşümü var.
+stateless lambda olması hiçbirşey capture etmediği anlamına geliyor. 
+
+----------------------------------------------------- 
+
+int main()
+{
+	int a = 34;
+	
+	int (*p)(int) = [a](int x) {return x + 1;}  // bu dönüşüm yok, hatalı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int a{};
+	
+	auto f = [a] (int x) {return x + 1; };
+	
+	decltype(f) g;  // hata, çünkü artık burada stateless değil,  
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// pozitif lambda idiom
+
+int main()
+{
+	int a{};
+	
+	auto f = [](int x) {return x + 1; };
+	
+	std::cout << typeid(f).name() << "\n";
+	
+	auto f = +[](int x) {return x + 1; };  // pozitif lambda idiom
+	
+	std::cout << typeid(f).name() << "\n";  // type deduction değişti
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat sorusu :
+
+class Neco{
+public:
+	operator bool()const {return true; }
+};
+
+int main()
+{
+	Neco n1, n2;
+	
+	auto x = n1 + n2; // geçerli 
+	// auto x = n1.operator bool() + n2.operator bool();  // derleyicinin ürettiği kod, çok enteresan
+	// bool işleme sokulursa integral promotion gereği int'e dönüşür, x'in türü int, değeri : 2
+	
+	cout << x; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// pozitif lambda idiom
+
+int main()
+{
+	int a{};
+	int (*fp)(int) = nullptr;  // function pointer
+	+fp;
+	
+	
+	auto f = +[](int x) {return x + 1; };  
+	// geçici bir sınıf nesnesi işaret operatörünün operandı olmaz
+	// bu işlemin yapılabilmesi için  derleyicinin  öyle bir tür dönüşümü yapması gerekiyor ki ancak 
+	closure type türünden function pointer türüne ancak dönüşüm yaparsa + ifadesi legal olacak.
+	function pointer türüne dönüştüren fonk. var. O zaman function pointer türüne dönüştü. 
+	
+}
+
+soru : bir function pointer işaret operatörünün operandı olur mu ? evet
+
+*----------------------------------------------------------------------------------------------------- 
+
+// pozitif lambda idiom
+
+int main()
+{
+	auto f = [](int x) {return x + 1; };  // f'nin türü closure type
+	
+	auto f = +[](int x) {return x + 1; };  // f'nin türü function pointer type
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+
+}
+
+int main()
+{
+	func([ ] (int x) {return x + 1; })  // tür çıkarımı ile T burada closure type
+	
+	func(+[ ] (int x) {return x + 1; })  // tür çıkarımı ile T burada function pointer type
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tuple : (tupıl diye okunmalı, demet)
+
+n öğeyi bir arada tutar, variadic template araçlarından faydalanarak implemente edilmiş
+
+pair nerede kullanılıyorsa orada kullanılabilir
+
+her pair aynı zamanda bir tuple olarak kullanılabilir, 
+
+tuple'in kendisi bir container değil, bir yapı
+
+----------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, double, string> x;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tuple'da tutulan öğelere erişmek için bir fonk. şablonu kullanılıyor. 
+
+get interface:
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, double, string> x;
+	 // default const. çağırılınca öğeler value init edilir. Yani ilk öğe int, 
+	ikinci öğe double, ..
+	
+	cout << get<0>(x) << "\n";  // tuple'daki ilk öğeyi döndürür, referens semantiği
+	cout << get<1>(x) << "\n";  
+	cout << get<2>(x).size() << "\n";  
+	cout << get<3>(x) << "\n";  // compile time hatası 
+}
+
+pair, array, hatta kendi oluşturduğunuz tür içinde 
+get interface'ini kullanabiliyorsunuz. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, double, string> x;
+	
+	get<0>(x) = 765;  // ok, referans döndürür, lvalue exp.
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, double, string> x;
+	
+	get<2>(x) = "mustafa;  
+	get<2>(x) = "can";  
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, double, string> x(  12, 5.6, "necati");
+	
+	// CTAD çalışır
+	tuple x(  12, 5.6, "necati");
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+
+	tuple x(  12, 5.6, "necati");  // const char açılımı, string olmasını istiyorsan
+	tuple x(  12, 5.6, string(necati));
+	
+	tuple x(  12, 5.6, "ali"s);  // s koyarsam constexpr fonk. çağırılır, bu fonk. string döndürür
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	auto f = make_tuple(1, 5.6, 23L);  // f'in türü tuple(int, double, long)
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+default init edebilirim
+parametreli const. çağrı yapabilirim
+CTAD'tan faydalanabilirm
+make_tuple'a çağrı yapabilirim
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	int ival = 45;
+	double dval = 7.8;
+	
+	pair<int&, double&> x(ival, dval);
+	
+	x.first += 55;
+	
+	cout << " ival = " << ival << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+pair de tuple da referans tutabilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, int, int> t{12, 56, 67};
+	
+	cout << get<0>(t) + get<1>(t) + get<2>(t) << "\n";
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, string, double> tp{ 23, "volkan", 9.99};
+	
+	get<int>(tp) += 17;
+	get<string>(tp) = " gundogdu";
+	get<double>(tp) = 7.46;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, string, double, int> tp{ 23, "volkan", 9.99, 34};
+	
+	get<int>(tp) += 17;  // hata, hangi int'i toplayacak ??
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+enum{age, salary, name};
+using person = std::tuple<int, double, std::string> ;
+
+int main()
+{
+	using namespace std;
+	
+	// ilk öğesi küçük olan küçüktür, ilk öğesi aynıysa ikinci öğesi küçük olan küçüktür
+	age; // age'i kullandığımda 0 sabitini kullanmış oluyorum 
+	
+	person per{45, 3500, "mustafa can"};
+	
+	get<age>(per);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <tuple>
+
+using age = int;
+using salary = double;
+using name = std::string;
+
+int main()
+{
+	using namespace std;
+	
+	tuple<age, salary, name> tp;
+	
+	get<age>(tp);
+}
+	
+*----------------------------------------------------------------------------------------------------- 
+
+// karşılaştırmanın default olarak 
+
+using person = std::tuple<int, std::string, Date>;
+
+int main()
+{
+	using namespace std;
+	
+	vector<person> pvec;
+	
+	for(int i = 0; i < 50'000; ++i){
+		pvec.emplace_back(Irand{15, 80}(), rname(), Date::random());
+	}
+	
+	sort(pvec.begin(), pvec.end());
+	
+	// ekranda takip etmemiz zor olur diye dosyaya yazdırıyorum
+	std::ofstream ofs{ "out.txt" };
+	if(!ofs){
+		std::cerr << "out.txt dosyasi olusturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	for(const auto&[age, name, bdate] : pvec){
+		ofs << age << "  " << name << "  " << bdate << "\n";
+	}
+	
+	for(const auto&t : pvec){
+		get<0>(t)
+	}
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::tuple<int, double, string> foo();
+
+int main()
+{
+	auto [age, salary, name] = foo(); 
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	int x;
+	int a[20];
+	double d;
+};
+
+int main()
+{
+	struct Nec mynec{};
+	
+	auto [v1, v2, v3] = mynec;
+	
+	cout << typeid(v2).name() << "\n";
+}
+
+// v2 : int [20], array decay sözkonusu değil
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	int x{};
+	double d{};
+	string s;
+	
+	tie(x, d, s);  // tuple döndürür ama referans açılımını döndürür
+	
+	tuple<int&, double&, string&> tp = tie(x, d, s); 
+	
+	auto tp = tie(x, d, s); 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+pair'in atama operator fonk. var. Tuple pair'in genelleştirilmiş hali dolayısıyla
+ tuple'in da atama operator fonk. var. 
+Tuple'a tuple atanınca ilk elemana ilk eleman atanır. 
+
+--------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	int x{};
+	double d{};
+	string s;
+	
+	tuple<int, double, string> tx{ 23, 5.6, "kerim"};
+	
+	tie(x, d, s) = tx;
+	// s = get<2>tx;
+	// tie bu öğeleri ayrıştırdı. 
+	
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+structured binding istemediğim öğe varsa ne yapabilirim
+istemeseniz de onu kullanmak zorundasınız 
+
+std::tuple<int, double, long> foo();
+
+int main()
+{
+	auto [ival, _, lval] = foo();
+	
+	auto [x, y, _] = foo();  // sentax hatası, aynı değişkene _  birden
+	fazla isim vermiş olursunuz 
+	
+	auto [x, y, __] = foo(); // ok
+}
+
+-------------------------------------------------------- 
+
+tie'da istemediğim öğe varsa ne yapabilirim
+tie'da discard etmeye yönelik bir araç var.
+
+std::tuple<int, double, long> foo();
+
+int main()
+{
+	int x;
+	long lval;
+	
+	tie(x, ignore, ival) = foo();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tie'in karşılaştırma amaçlı kullanılmasına fakir adamın spaceship
+operatörü diyorlar
+
+bool operator<(const Date& d1, const Date& d2)
+{
+	return std::tuple(d1.y_, d1.m_, d1.d_) < std::tuple(d2.y_, d2.m_, d2.d_)
+}
+
+// önce birinciye, eşitse sonra ikinciye, eşitse sonra üçüncüye bakılacak !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
