@@ -1,0 +1,1379 @@
+
+İçerik:
+
+
+
+özet:
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+std::tuple<int, double, std::string> foo();
+
+int main()
+{
+	using namespace std;
+	
+	int ival = 5;
+	double dval = 4.5;
+	std::string s;
+	
+	// tuple<int&, double&, string&> t(ival, dval, s);
+	auto t = tie(ival, dval, s);
+	
+	auto tp = foo();
+	
+	
+	ival = get<0>(tp);
+	dval = get<1>(tp);
+	s = get<2>(tp);
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::tuple<int, double, std::string> foo();
+
+int main()
+{
+	using namespace std;
+	
+	int ival = 5;
+	double dval = 4.5;
+	std::string s;
+	
+	tie(ival, dval, s) = foo();
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::tuple<int, double, std::string> foo();
+
+int main()
+{
+	using namespace std;
+	
+	auto [ival, dval, s] = foo();  // eğer yeni tanımlayacaksak
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tuple idiom : bazen zincirleme atama yapmanız gerekiyor 
+
+int main()
+{
+	int x = 10;
+	int y = 20;
+	int z = 30;
+	
+	int temp = x;
+	x = y;
+	y = z;
+	z = temp;
+	
+	std::cout << "x = " << x << "\n";
+	std::cout << "y = " << y << "\n";
+	std::cout << "z = " << z << "\n";
+}
+
+-------------------------------------------------- 
+
+int main()
+{
+	int x = 10;
+	int y = 20;
+	int z = 30;
+	
+	tie(x, y, z) = tuple(y, z, x);
+	
+	std::cout << "x = " << x << "\n";
+	std::cout << "y = " << y << "\n";
+	std::cout << "z = " << z << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+using namespace std;
+
+enum{ age, name, bdate};
+
+int main()
+{
+	using namespace std;
+	
+	tuple<int, string, Date> tx;
+	
+	get<name> (tx);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+using namespace std;
+
+using age = int;
+using name = std::string;
+using birth_date = Date;
+
+int main()
+{
+	using namespace std;
+	
+	tuple<age, name, birth_date> tx;
+	
+	get<age>(tx);  
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+using namespace std;
+
+void func(int, double, std::string);
+
+int main()
+{
+	tuple<int, double, string> tx(10, 3.4, "deniz");
+	
+	tuple tx(10, 3.4, "deniz");  // 3. parametre string olmaz, array decay ile const char* olur
+	
+	tuple tx(10, 3.4, "deniz"s);  // 3. parametre string oldu
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+using namespace std;
+
+void func(int, double, std::string);
+
+int main()
+{
+	tuple tx(10, 3.4, "deniz"s);  // 3. parametre string oldu
+	
+	func(get<0>(tx), get<1>(tx), get<2>(tx));
+	
+	// func'in yaptığını yapmanın daha kolay yolu
+	apply(func, tx);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+using namespace std;
+
+// tuple_size  : metafunction, compile time'da bir tür veya değer hesaplayan fonksiyonlar, aslında sınıf
+// tuple_element
+
+int main()
+{
+	// constexpr auto x = tuple_size<tuple<int, double, long, char>>::value;  // class template
+	constexpr auto x = tuple_size_v<tuple<int, double, long, char>>;  // variable template
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+using tpl = std::tuple<int, int, double, long, long>;
+
+int main()
+{
+	constexpr auto x = tuple_size_v<tpl>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int a[20];
+
+int main()
+{
+	constexpr auto x = tuple_size_v<decltype(a)>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+using tpl = std::tuple<int, double, string, long>;
+
+int main()
+{
+	tuple_element<0, tpl>::type x;  // int x;
+	tuple_element<1, tpl>::type y;  // double y;
+	tuple_element<2, tpl>::type z;  // string z;
+	tuple_element<3, tpl>::type t;  // long t;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+meta_func<type>::value
+meta_func_v<type>::value
+meta_func<type>::type
+meta_func_t<type>::type
+
+*----------------------------------------------------------------------------------------------------- 
+
+using tpl = std::tuple<int, double, string, long>;
+
+int main()
+{
+	tuple_element<1, tpl>::type ;
+	tuple_element_t<1, tpl> ;  // aynı anlamdalar
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	tuple x{ 2, 4.5, 8L};
+	
+	get<0>(x) = 98;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	pair p{ 2, 4.5, 8L};
+	
+	get<0>(p) = 98;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Data{
+	int x, y, z;
+};
+
+int main()
+{
+	int a[3];
+	
+	auto [x, y, z] = a;  // structured binding aslında get interface'ini kullanıyor. 
+	// dizi için de kullanılır ama get interface'i yok çünkü C dizileri bir sınıf türü değil !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Data{
+	int x, y, z;
+};
+
+int main()
+{
+	Data mydata{1, 3, 5};
+	auto [a, b, c] = mydata;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	std::array<int, 4> ar{};
+	
+	get<0>(ar) = 4;
+	tuple_element_t<0, decltype(ar)> x;
+	constexpr auto val = tuple_size_v<decltype(ar)>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Array{
+	int a[20];
+};
+
+int main()
+{
+	Array ar = {1, 4, 65};
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int ar[3](1, 23, 45);  // C++ 17'de hata, C++ 20 ile aggregiate type'lara ilk değer verme ( ) ile yapılır.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	array<int, 5> ar;
+	
+	tuple_element<0, decltype(ar)>::type
+	tuple_element_t<0, decltype(ar)>
+	
+	tuple_size<decltyp(ar)>
+	tuple_size<array<int, 5>>::value
+	tuple_size_v<array<int, 5>>
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+get interface: sadece  tuple,  array'de kullanabiliyoruz
+
+structured binding : aggregiate type'larda, C dizileri, array, pair, tuple kullanılabilir
+vector'de kullanılamaz. map'in kendisi için değil map'te tutulan pair için kullanıldı.
+
+--------------------------------------- 
+
+int main()
+{
+	map<int, double> m;
+	
+	for(auto[ival, dval] : m)  // pair için kullanıyoruz, map'in kendisi için değil
+}
+
+--------------------------------------- 
+
+int main()
+{
+	vector<pair<int, double>> vec;
+	
+	for(auto[ival, dval] : vec)  // ok
+}
+
+--------------------------------------- 
+
+int main()
+{
+	vector<tuple<int, double, long>> vec;
+	
+	for(auto[ival, dval, lval] : vec){   // ok, structured binding kullanabiliyorum
+	
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::bitset : bir sınıf şablonu, amacı bitsel işlemleri kolaylaştırmak,
+operator overloading'ten faydalanamak
+
+C'de yapabileceğimiz bir manipülasyon işlemlerini bu sefer bir interface ile yaptırabilmek
+wrapper class olduğundan verim açısından bir fark yok
+
+non-type parametreli bir sınıf şablonu
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+
+int main()
+{
+	std::bitset<16> x;  // 16-32-64 bit açılımı
+	
+	x.all; // all, any, count, flip, none, reser, set, size, test, to_string,  vs. birçok fonksiyonu var.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+doğrudan inserter'ı var. Bu sebeble int, double, string'i onlar için bir inserter olduğundan yazdırabiliyorsam
+bitset'i de doğrudan kendi insert şablonu olduğu için yazdırabiliyorum
+
+#include <bitset>
+#include  <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;  // hepsi sıfır olur !!!
+	
+	cout <<  x;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+#include  <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x(863);  // 863'ün bitleri neyse onlarla başlayacak
+	
+	cout <<  x;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+#include  <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	cout << bitset<32> x{654};  // 654'ün bitleri neyse onlarla başlayacak
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<std::size_t>
+class Bitset{
+	unsigned char buffer[n / 8 + 1]; // bitleri böyle bir buffer'da tuttuğunuzu düşünün
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+
+	cout<< sizeof(bitset<32>) << "\n";  // sınıf nesnesinin ihtiyaç duyduğu storage
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	bitset<32> y;  // bu ikisi ayrı bir tür, birbirine atanmaz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+hangi constructor'lar var ?
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x; // default  const.
+	bitset<32> x{};  
+	bitset<64> x(98732uLL);  
+	
+	cout << x << "\n";
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x("010010101001");   // string parametreli bir const. var !!!
+	
+	cout << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	string str{"1111111111111111"};
+	
+	bitset<32> x(str, 5, 3);  // 5 indexinden başlayarak 3 karakter bit olarak alınacak
+	
+	cout << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	string str{"1111111111111111"};
+	
+	bitset<32> x(3576u);
+	bitset<64> y(x.to_ulong);  // y x ile init edilebilir, enterasan !!!! 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir bitset nesnesi ile neler yapabilirim ?
+
+1) değerini bir çıkış akımına operator left shift fonks. ile yazdırabilirim. 
+bu dosyaya yazmak, belleğe yazmak vs. hepsi için geçerli kalıtım mekanizması 
+kullanıldığı için.
+
+2) bitlerin üstünde boolean değer elde eden sorgulamalar yapabilirim
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x{ 873'252'548ul};
+	
+	cout << x << "\n";
+	
+	x.count();  // doğrudan setbit count'u veriyor, 1 olan bitleri verir.
+	
+	cout << x.count() << " tane biti 1 \n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x( -1);  // enteresan {} ile hata oluyor, narrowing conversion
+	
+	cout << x << "\n";
+	
+	x.count();  // doğrudan setbit count'u veriyor, 1 olan bitleri verir.
+	
+	cout << x.count() << " tane biti 1 \n";
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	cout << x << "\n";
+	x.set();  // hepsini bir yapar
+	cout << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	cout << x << "\n";
+	x.set(0);  // sıfırıncı biti set etti, 1 yaptı
+	cout << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x(-1);
+	
+	cout << x << "\n";
+	x.set(5).reset(3);  // böyle yazabilme nedenimiz x.set(5)'in kendi türünden referans (*this) döndürmesidir  
+	// sadece 3 indexli bitleri reset fonk. sıfırlar
+	cout << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x(54123u);
+	
+	cout << x << "\n";
+	x.flip();  // bitleri ters çevirir
+	cout << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	cout << boolalpha;
+	cout << "x.any() = " << x.any() << "\n";  // en az bir biti 1 mi ?
+	x.set(3);
+	cout << "x.any() = " << x.any() << "\n"; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	cout << boolalpha;
+	cout << "x.all() = " << x.all() << "\n";  // bütün bitleri 1 mi ?
+	x.set();
+	cout << "x.all() = " << x.all() << "\n"; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	cout << boolalpha;
+	cout << "x.none() = " << x.none() << "\n";  // non of the bits true mu ?
+	x.set(5);
+	cout << "x.none() = " << x.none() << "\n"; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::bitset fonk. :
+
+x.set
+x.reset
+x.flip
+bs.count()
+bs.any()
+bs.all()
+bs.none()
+
+*----------------------------------------------------------------------------------------------------- 
+
+bit'i nasıl get edebilirim ?
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	x.operator[](4);   // x[4] demek
+	
+	bitset<16>::reference r; // nested type, bunun fonkisyonları var.
+	
+	auto val = x[5];  // val'in türü bitset'in 16 açılımının ref. türü
+	
+	bool b = x[5];  // o türün bir tür değiştirme operator fonk. var. Bool türüne dönüştürüyor. enterasan
+	
+	if(x.operator[](5).operator bool()){
+	
+	}
+	
+	x[5] = true; // operator atama fonk. çağırıyorsunuz, bunlar inline olduğu için ilave maliyet yaratmıyor
+	
+	x.set(5);  // x[5] = true; aynı
+	
+}
+
+bir fonk. geri dönüş değeri bit olamaz
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	x[2] = ~x[5]; 
+	x.operator[](2).operator= ( x[5].operator~());    //   ikisi aynı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x;
+	
+	auto b = x[4];  // b'nin türü boolean değil proxy class
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	vector<bool> bvec(10);
+	
+	auto x = bvec[3];  // x bool değil, vector'ün bool açılımının ref. türü, proxy class var. Yardımcı bir sınıf var bu işin yapılmasını sağlayan
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	
+	deque<bool> bvec(10);
+	
+	auto x = bvec[3];   // x'in türü bool
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat : vector'ün bool açılımı bir partial specialization, yani içinde bool tutumuyor,
+bir proxy class kullanır. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <bitset>
+int main()
+{
+	using namespace std;
+	bitset<16> x(7634);
+	
+	x[2] = true;
+	x[3] = false;
+	x[2] = x[5];  // ref. türünden
+	~x[10];
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+enum Color{
+	White,
+	Yellow,
+	Gray,
+	Blue,
+	Red,
+	Magenta,
+	Black,
+	No_of_colors
+};
+
+int main()
+{
+	using namespace std;
+	
+	bitset<No_of_colors> prop;
+	
+	prop[Yellow] = true;
+	prop[Magenta] = false;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// bitset sınıfının operator== ve operator!= işlevleri var. 
+ama diğer dört karşılaştırma operatörü yok.
+
+int main()
+{
+	using namespace std;
+	
+	bitset<16> x(623);
+	bitset<16> y(623);
+	
+	cout << (x == y) << "\n";
+	cout << (x < y) << "\n";  // hata !!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	set<bitset<16>> myset;  // set<bitset<16>, less<bitset<16>> myset;
+	
+	myset.emplace(652u);  // set'te doğrudan tutamıyoruz, 
+	çünkü burada comparator olarak küçüktür operatorunu kullandığımız için tutamayız
+	// kendi comparatorümüz ile mümkün
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+int main()
+{
+	using namespace std;
+	
+	auto f = [](bitset<32> x, bitset<32>y){
+		return x.to_ullong() < y.to_ullong();
+	};
+	
+	set<bitset<32>,decltype(f)> myset; // C++ 20, closure type'ın default const.'ını kullanıyor
+	// set<bitset<32>,decltype(f)> myset(f);  // C++ 17
+	
+	Irand myrand{0, 1'000'000'000};
+	
+	for(int i = 0; i < 5000; ++i){
+		myset.emplace(myrand());
+	}
+	
+	std::ofstream ofs{ "out.txt" };
+	if(!ofs){
+		std::cerr << "out.txt dosyasi olusturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	for(const auto bs : myset)
+		ofs << bs << '\n';
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// bitset de bitsel sola kaydırma, sağa kaydırma operatörünü overload ediyor
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x{-1};
+	
+	cout <<  x << "\n";
+	cout << (x << 5); // bitsel sola kaydırma, paranteze almazsam önce x sonra 5'i yazdırırdım. 
+	cout << (x >> 5);  // bitsel sağa kaydırma
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x{ 763245u};
+	bitset<32> y{ 9234798u};
+	
+	cout <<  x << "\n";
+	cout <<  y << "\n";
+	cout <<  (x & y) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	bitset<32> x{ 763245u};
+	bitset<32> y{ 9234798u};
+	
+	cout <<  x << "\n";
+	cout <<  y << "\n";
+	cout <<  (x ^ y) << "\n"; // bitsel "or"
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+		
+	bitset<32> bs{"010100101001010001001"};
+	
+	cout << bs.to_ulong();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+https://projecteuler.net/archives
+
+matematik sorularını programlama ile çözüyorsun
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru :
+
+triangular
+
+// 1                   1
+// 12                 3
+// 123              6
+// 1234           10
+// 12345         15
+// 123456      21
+
+mesela 21,  1-3-7-21 toplam 4 böleni var
+
+toplam bölen sayısı 500'den fazla olan ilk sayıyı bul
+
+çözüm 0.5 sn geçmeyecek !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : 
+
+"12345"
+
+"10111213"
+	
+"456745684569"
+
+substring'lere bölündüğünde bir öncekinden bir sonraki fazla olacak
+32 basamağa kadar
+
+void func(const std::string& s)
+
+int main()
+{
+	func("9843984498345");
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+str() fonk. : 
+
+int main()
+{
+	using namespace std;
+	
+	std::ostringstream oss;
+	
+	cout << 1235 << "ali" << 4.5 << std::bitset<16>{6356u};
+	
+	oss << 1235 << "ali" << 4.5 << std::bitset<16>{6356u};
+	auto s = oss.str();
+}
+
+----------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	std::ostringstream oss;
+	int ival = 345;
+	
+	oss << ival;
+	
+	oss.str();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	bitset<32> bs{ 6734762345u };
+	cout << bs << "\n";
+	
+	auto s = bs.to_string();
+	reverse(s.begin(), s.end());
+	cout << ss << "\n";
+}
+
+------------------------------------------------------------------------------- 
+----------------------------- functional.h --------------------------------
+------------------------------------------------------------------------------- 
+
+reference_wrapper :
+// referans kullanımına alternatif, ref. değil, rebindable, container'larda tutulabilir,
+// template'lerin ref. parametreli fonk. yazmasını sağlayabiliyoruz
+
+-------------------------------------- 
+
+fonkiyon adaptörleri var, bunlar bir callable'i alıp bize bir callable veriyorlar
+
+std::bind
+mem_fn
+not_fn
+
+-------------------------------------- 
+
+standart function object'ler
+
+std::greate
+std::less
+std::plus
+
+*----------------------------------------------------------------------------------------------------- 
+
+reference wrapper : bir sınıf şablonu, 
+
+template <typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func(x);
+	std::cout << "x = " << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// T : int& olmasını istersem
+
+template <typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func<int&>(x);
+	std::cout << "x = " << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class ReferenceWrapper{
+public:
+	ReferenceWrapper(T &r) : mp{&r} {};
+	ReferenceWrapper& operator=(T &x)
+	{
+		mp = &x;
+	}
+	
+private:
+	T* mp;
+};
+
+int main()
+{
+	int ival = 657;
+	int y = 345;
+	ReferenceWrapper<int> r{ival};
+	
+	r = y;  // normal ref. gibi olsa bu atamayı ival'e yapmış olurdum. Burada 
+	// r y'ye referans haline gelir
+	
+	int x = r;
+}
+
+---------------------------------------------- 
+
+referansın yerine geçtiği nesneyi nasıl kullanacağım ?
+
+template <typename T>
+class ReferenceWrapper{
+public:
+	ReferenceWrapper(T &r) : mp{&r} {};
+	ReferenceWrapper& operator=(T &x)
+	{
+		mp = &x;
+	}
+	
+	operator T&()
+	{
+		return *mp;
+	}
+	
+private:
+	T* mp;
+};
+
+int main()
+{
+	int ival{ 45 };
+	ReferenceWrapper r{ival};
+	
+	int x = r; // nasıl oldu da bu kod geçerli oldu ?
+	// ref. wrapper'in int açılımı nasıl int'e dönüştü çünkü () fonk. çağırıldı
+}
+
+---------------------------------------------- 
+
+template <typename T>
+class ReferenceWrapper{
+public:
+	ReferenceWrapper(T &r) : mp{&r} {};
+	ReferenceWrapper& operator=(T &x)
+	{
+		mp = &x;
+	}
+	
+	operator T&()
+	{
+		return *mp;
+	}
+	
+	T& get()
+	{
+		return *mp;
+	}
+	
+private:
+	T* mp;
+};
+
+template <typename T>
+ReferenceWrapper<T> Ref(T &r)
+{
+	return ReferenceWrapper<T>(r);
+}
+
+int main()
+{
+	int ival{ 45 };
+	
+	Ref(ival);  // nesneye ref. olacak referencewrapper kullanmak istesem ve isimlendirmek 
+	// istemesem bu yol kullanılabilir.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 10;
+	
+	// reference_wrapper<int> r(x); // r x'e referans oldu
+	reference_wrapper r(x);  // CTAD'la böyle de yazılabilir
+	
+	++ r;  // aslında yapılan ++r.operator int &()
+	
+	cout << "x = " << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 10;
+	
+	// reference_wrapper<int> r(x); // r x'e referans oldu
+	reference_wrapper r(x);  // CTAD'la böyle de yazılabilir
+	
+	r.get();
+
+	cout << "x = " << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 10;
+	int y = 56;
+	
+	reference_wrapper r = x;
+	
+	++r;
+	cout << "x = " << x << "\n";
+	
+	r = y;  // ref.'ı başka bir nesneye bind ettim
+	
+	++r;
+	cout << "y = " << y << "\n";
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 10;
+	int y = 56;
+	
+	reference_wrapper r = x;
+	
+	++r;
+	cout << "x = " << x << "\n";
+	
+	r.get() = y;
+	
+	cout << "x = " << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+ref fonksiyonu :
+
+isme ref. olan fonk. şablonu var mı ?
+
+int main()
+{
+	int x = 10;
+	
+	auto y = ref(x);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func(ival); // call by value
+	
+	cout << "ival = " << ival << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func<int&>(ival); // call by reference
+	
+	cout << "ival = " << ival << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int x = 10;
+	
+	// func<int&>(ival); // çoğu yerde ben template argümanını göstermek istemeyeceğim
+	
+	func(ref(ival));
+	
+	cout << "ival = " << ival << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+cref fonksiyonu : referencewrapper'in const. int açılımını oluşturuyor
+
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int x = 10;
+	
+	auto y = cref(ival);  // nesneyi sadece okuma amaçlı kullanmak için
+	
+	cout << "ival = " << ival << "\n";
+}
+
+-------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	const int ival = 10;
+	
+	reference_wrapper r = ival;  // r'nin türü reference_wrapper'in const int açılımı
+	
+	cout << "ival = " << ival << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+int main()
+{
+	int ival = 10;
+	
+	cref(ival);
+	
+	cout << "ival = " << ival << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kullanıldığı yerler :
+
+fonk. parametresinin ref. olmasını isteyebileceğim durumlar neler ?
+template<typename T>
+void func(T x)
+{
+	++x;
+}
+
+kullanmanız gereken yerde kullanmazsanız verim kaybı olabilir 
+
+------------------------------------------------- 
+
+template<typename InIter, typename UnPred>
+int CountIf(InIter beg, InIter end, UnPred f)
+{
+
+}
+
+int main()
+{
+	vector<string> svec;
+	
+	count_if(svec.begin(), svec.end(), )  // 3. parametresi ref. değil
+}
+
+--------------------------------------------------- 
+
+ref. olmamasının sonucu ney ?
+ya kopyalama maliyeti çok olan sınıf varsa 
+
+struct BigPred{
+public:
+	bool operator()(const std::string&)const;
+private:
+	unsigned buffer[2048];
+};
+
+int main()
+{
+	vector<string> svec;
+	///....
+	BigPred f;
+	///....
+	count_if(svec.begin(), svec.end(), f);
+	
+	count_if(svec.begin(), svec.end(), ref(f)); // bu şekilde kopyalama maliyetinden kurtuluruz
+}
+
+2048 byte'in yerine 4 byte'in kopyalanması oldu
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <random>
+
+int main()
+{
+	mt19937 eng;
+	
+	cout << "sizeof(eng) = " << sizeof(eng) << "\n";  // 5000 byte
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+
