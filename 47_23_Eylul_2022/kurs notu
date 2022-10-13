@@ -1,0 +1,1613 @@
+
+İçerik:
+
+
+
+özet:
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+function.h ile devam ediyoruz.
+
+structured binding : C için ve belirli sınıflar için hazır geliyor
+
+-------------------------------------------- 
+
+struct Data{
+	int a, b, c;
+};
+
+int main()
+{
+	Data mydata = {1, 4, 5};
+	
+	auto [x, y, z] = mydata;  // structured binding
+}
+
+structured binding'den faydalanmak için ayrı bir kod yazmaya gerek yok
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Data{
+	int a, b, c;
+};
+
+Data get_data()
+{
+	return {4, 8, 7};
+}
+
+int main()
+{
+	Data mydata = {1, 4, 5};
+	
+	auto [x, y, z] = get_data();  // structured binding
+	
+	std::cout << "x = " << x << "\n";
+	std::cout << "y = " << y << "\n";
+	std::cout << "z = " << z << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+diziler için de hazır gelir
+
+int main()
+{
+	int a[] = {2, 7, 9};
+	
+	auto& [x1, x2, x3] = a;  // structured binding
+	
+	++x1;
+	++x2;
+	++x3;
+	
+	for(int i : a)
+		std::cout << i << " ";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int a[] = {2, 7, 9, 12};
+	
+	auto[x1, x2, x3, _] = a;  // ok,
+	
+	auto[x1, x2, x3,] = a;  // hata, değişken sayısı tutmuyor
+	
+	auto[x1, x2, _, _] = a;  // hata, _ aynı değişken ismi verilemez, aynı scope'da olamaz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+
+};
+
+Nec foo()
+{
+	return {1, 2, 3};
+}
+
+int main()
+{
+	auto [x, y, z] = foo();
+	
+	auto f = [x](int a){return a*x}; // C++ 17'de bu hatalı, allah allah x blok scope'da, enterasan hata
+	// C++ 20'de düzeltildi
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	Myclass() = default;
+	int a{}, b{};
+private:
+	int c{};
+};
+
+void foo()
+{
+	Myclass m;
+	//..
+	auto [x, y, z] = m;  // hata, can not access private member
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	Myclass() = default;
+	int a{}, b{};
+	friend voo foo();
+private:
+	int c{};
+};
+
+void foo()
+{
+	Myclass m;
+	//..
+	auto [x, y, z] = m;  // C++20'de geçerli hale geldi, structured binding
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Point{
+public:
+	Point() = default;
+	Point(double x, double y, double z) : mx{x}, my{y}, my{z} {}
+private:
+	double mx{}, my{}, mz{};
+};
+
+int main()
+{
+	Point px{ 1.2, 5.6, 7.7};
+	
+	auto [x, y, z] = px;  // hata, aggregiate type olmadığı için
+	// get interface'ini implemente ederse bunu yapabilirsiniz
+}
+
+--------------------------------------------- 
+
+get interface'ini implemente etmek:
+
+#include <tuple>
+
+class Point{
+public:
+	Point() = default;
+	Point(double x, double y, double z) : mx{x}, my{y}, my{z} {}
+	double get_x()const
+	{
+		return mx;
+	}
+	double get_y()const
+	{
+		return my;
+	}
+	double get_z()const
+	{
+		return mz;
+	}
+	
+private:
+	double mx{}, my{}, mz{};
+};
+
+
+// tuple_size
+// tuple_element
+// get
+// sizin sınıfınız bunlara destek veriyorsa structure binding'de kullanılabilir 
+
+// 1) tuple size için bir specialization yazılmalı
+// 2) std'nin sınıflarına partial spec. yazmanız için aynı namespace içinde olmalı
+namespace std {
+	template<>  // full specialization
+	struct tuple_size<Point>{
+		static constexpr size_t value = 3; 
+		// herhangi bir kod tuple_size'in point açılımını kullandığında onun value değeri
+		// 3 olacak
+	};
+	
+	template<std::size_t>
+	struct tuple_element<n, Point{ // partial specialization
+		using type = double;
+	};
+}
+
+template<std::size_t  n>
+decltype(auto) get(const Point& p)
+{
+	if constexpr( n == 0)   // compile time if
+		return p.get_x();
+	
+	if constexpr( n == 1)   // compile time if
+		return p.get_y();
+
+
+	if constexpr( n == 2)   // compile time if
+		return p.get_z();
+}
+// get'i de overload etmem gerekirdi, lvalue ref, rvalue ref., vs için
+// eğer bu parametreler de geçilecekse
+
+
+int main()
+{
+	Point px{ 1.2, 5.6, 7.7};
+	
+	// get<0> px;
+	
+	auto [x, y, z] = px;  
+	
+	std::cout <<  "x = " << x << "\n";
+	std::cout <<  "y = " << y << "\n";
+	std::cout <<  "z = " << z << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	std::array<int,5> ar{};
+	get<0>(ar);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	int ar[3] = {};
+	
+	auto [x, y, z] = ar;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+reference wrapper hatırlatma:
+
+bir sınıf. Bu sınıf türünden bir nesne adete ref.'ı simüle ediyor. 
+ref. kullanamayacağımız bazı yerlerde ref. wrapper türünden
+bir nesne kullanabiliyorum.
+
+ 1) rebindable ref. olur.
+
+#include <functional>
+
+int main()
+{
+	using namespace std;
+	
+	int x = 10;
+	
+	reference_wrapper r = x;
+	
+	r.get();  // sarmaladığı nesneyi gösterir
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <functional>
+
+int main()
+{
+	using namespace std;
+	
+	int x = 10;
+	int y = 30;
+	
+	reference_wrapper r = x;
+	
+	++r; // x'i arttırmış oldum
+	std::cout <<  "x = " << x << "\n";
+	
+	r = y;
+	++r; // y'yi arttırmış oldum
+	std::cout <<  "x = " << x << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x)
+{
+
+}
+
+int main()
+{
+	using namespace std;
+	
+	int x = 10;
+	
+	func(reference_wrapper<int>{x});  // x'e referansı kullanacağım, copy'lama maliyeti azalır.
+	
+	func(ref(x)); // yukarıdaki ile aynı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+birden fazla nesneyi ref. semantiği ile container'da tutabilirsiniz:
+
+#include <functional>
+#include <vector>
+#include <list>
+
+using iref = std::reference_wrapper<int>;
+
+int main()
+{
+	using namespace std;
+	
+	int x{}, y{10}, z{20}, t{30};
+	
+	vector<iref> vec{ x, y, z, t};
+	
+	for(auto &r : vec){
+		++r;
+	}
+	
+	cout << "x = " << x << "\n";
+	cout << "y = " << y << "\n";
+	cout << "z = " << z << "\n";
+	cout << "t = " << t << "\n";
+	
+	list<iref> mylist{ x, y, z, t};  // yukarıda x, y, z, t değerlerini değiştirmiş oldum, şimdi üzerlerinden tekrar işlem yapıyorum
+	
+	for(auto &r : vec){
+		r *= 2;  
+	}
+	
+	cout << "x = " << x << "\n";
+	cout << "y = " << y << "\n";
+	cout << "z = " << z << "\n";
+	cout << "t = " << t << "\n";
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 10, y = 20;
+	
+	auto p = make_pair(ref(x), ref(y));  // geri dönüş değeri pair(int&, int&)
+
+	auto p2 = make_pair(x, y);  // geri dönüş değeri pair(int, int)
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+reference_wrapper'i bir fonk.'a da bağlayabilirim:
+
+int foo(int x)
+{
+	return x * x + 5;
+}
+
+int main()
+{
+	using namespace std;
+	
+	reference_wrapper rf = foo;
+	
+	rf(10);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+fonksiyon adaptörleri :
+
+std::function objects  // gördük
+reference wrapper  // gördük
+
+
+bind1st  // deprecate edildi, dilden kaldırıldı
+bind2nd  // deprecate edildi, dilden kaldırıldı
+
+1) std:bind  // büyük lokma
+2) mem_fn
+3) not_fn
+
+std::function  // general function wrapper
+
+std:: invoke
+
+*----------------------------------------------------------------------------------------------------- 
+
+fonksiyon adaptörü ne demek ?
+kendisi bir fonksiyon. bir fonksiyon şablonu sizden bir callable'i alıyor, geri dönüş değeri
+olarak bir fonk. şablonu  verir. 
+
+callable function_adapter(callable)
+kendi içinde bir sınıf nesnesi oluşturur, bunun elemanı olarak callable'i tutar. Size döndürdüğü 
+callable aslında oluşturduğu sınıf türünden. Ama bu callable'in fonksiyon çağrısını kullandığınızda
+aslında o da sizin gönderdiğiniz callable'i çağrıyor. Ama özel bir şekilde çağırır.
+örneğin : bir fonk. parametre değişkeni sayısını değiştirebiliyorsunuz. Üç elemanlı olanı
+iki elemanla çağırılmasını sağlayabiliyorsunuz. Ama üçüncü argümana sizin istediğiniz bir 
+elemanın bağlanmasını (bind) mümkün kılar.
+
+callable : fonk. çağrı operatörünün operandı olabilen tüm varlıklardır
+örneğin, functor object, function pointer, function
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::bind : epey karmaşık, ama fazla bir maliyet eklediği (overhead) için eleştirilere de konu.
+illa kullanmak zorunlu değil yerine lambda ile işinizi görebilirsiniz. 
+
+bind fonk. çağırırken özel bir namespace'deki identifier'ları kullanacaksınız.
+bu identifier'lar std::placeholders'da
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	func(12, 45, 87);
+}
+
+----------------------------------------------- 
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	using namespace std::placeholders;
+	
+	auto f = std::bind(func, _1, _2, _3);  // ilk eleman fonksiyon
+	// func'in 1. parametresine callable'in 1. parametresine geçilen argüman gönderilecek
+	
+	f(10, 20, 30);
+}
+
+----------------------------------------------------- 
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	using namespace std::placeholders;
+	
+	auto f = std::bind(func, _3, _1, _2);  
+	// callable'in üçüncü parametresine gönderdiğim argüman func'in birinci parametresi 
+	
+	f(10, 20, 30);
+}
+
+------------------------------------------------------ 
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	using namespace std::placeholders;
+	
+	auto f = std::bind(func, _1, _1, _1);  
+	// callable'in birinci parametresine gönderdiğim argüman func'in birinci, ikinci, üçüncü parametresine gönderilecek
+	
+	f(10);
+}
+
+------------------------------------------------------ 
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	using namespace std::placeholders;
+	
+	auto f = std::bind(func, _1, 20, 30);  
+	// callable'in birinci parametresine gönderdiğim argüman func'in birinci parametresine gönderilecek, diğerleri
+	// 20 ve 30 değerleri olacak
+	
+	f(10);
+}
+
+------------------------------------------------------ 
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	using namespace std::placeholders;
+	
+	auto f = std::bind(func, 9, _1, _2);  
+	
+	f(-1, -5);  // func(9, -1, -5) olmasını istiyoruz
+}
+
+------------------------------------------------------ 
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << " y = " << y << " z =  " <<  z << '\n';
+}
+
+int main()
+{
+	using namespace std::placeholders;
+	
+	auto f = std::bind(func, 9, _1, _2)(5, 3);  // 9, 5, 3 değerleri ile çağırmak !!!
+	//  std::bind(func, 9, _1, _2)'in geri dönüş değeri callable olduğundan bir değişkende
+	// tutmama gerek yok, bu yüzden bu şekilde de yazılabilir
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Functor{
+
+public:
+	int operator()(int x, int y)const
+	{
+		return x * x + y * y;
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	Functor f;
+
+	cout << f(5, 7) << "\n";
+}
+
+-------------------------------------------------------- 
+
+class Functor{
+
+public:
+	int operator()(int x, int y)const
+	{
+		return x * x + y * y;
+	}
+};
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	Functor f;
+
+	auto fn = std::bind(f, 10, _1);
+	
+	cout << fn(20) << "\n";  // 10 ve 20 ile çağırıyoruz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Functor{
+
+public:
+	int operator()(int x, int y)const
+	{
+		return x * x + y * y;
+	}
+};
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	auto f = [](int a, int b){
+		return a * b + 23;
+	};
+	
+	cout << f(3, 5) << "\n";
+	
+	auto fn = bind(f, _1, _1);
+	
+	cout << fn(20) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tipik yapılan hata:
+
+#include <iostream>
+#include <functional>
+
+void func(int& x, int& y)
+{
+	x *= 5;
+	y *= 10;
+}
+
+int main()
+{
+	using namespace std;
+	
+	int a = 5;
+	int b = 7;
+	
+	auto fn = std::bind(func, a, b);
+	
+	fn();
+	
+	cout << "a = " << a <<  "\n";  // a ve b değişmedi !!!
+	cout << "b = " << b <<  "\n";
+}
+
+----------------------------------------------- 
+
+#include <iostream>
+#include <functional>
+
+void func(int& x, int& y)
+{
+	x *= 5;
+	y *= 10;
+}
+
+int main()
+{
+	using namespace std;
+	
+	int a = 5;
+	int b = 7;
+	
+	auto fn = std::bind(func, ref(a), ref(b));
+	
+	fn();
+	
+	cout << "a = " << a <<  "\n";  // a ve b değişti !!!
+	cout << "b = " << b <<  "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void myprint(std::ostream &os, int x, int y)
+{
+	os << "(" << x << ", " << y << ")\n";
+}
+
+int main()
+{
+	using namespace std;
+	
+	myprint(cout, 2, 78);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat sorusu:
+
+void myprint(std::ostream &os, int x, int y)
+{
+	os << "(" << x << ", " << y << ")\n";
+}
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	auto fn = bind(myprint, cout, _1, _2);
+	
+	fn(45, 90);  // sentax hatası, neden ?
+	// cout objesi kopyalamaya kapalı, 
+	// cout bir obje idi. Unutma !!!
+}
+
+--------------------------------------------------------- 
+
+void myprint(std::ostream &os, int x, int y)
+{
+	os << "(" << x << ", " << y << ")\n";
+}
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	auto fn = bind(myprint, ref(cout), _1, _2);
+	// cout bir obje idi. Unutma !!!
+	
+	
+	fn(45, 90);  // ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	static void foo(int a, int b)
+	{
+		std::cout << "a = " << a << " b = " << b << "\n";
+	}
+};
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	Myclass m;
+	
+	auto fn = bind(&Myclass::foo, m, _1, _2);  // class bind etme !!!
+	
+	fn(20, 56);
+}
+
+-------------------------------------------------- 
+
+class Myclass{
+public:
+	static void foo(int a, int b)
+	{
+		std::cout << "a = " << a << " b = " << b << "\n";
+	}
+};
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	Myclass m;
+	
+	auto fn = bind(&Myclass::foo, _1, _2, 30);
+	
+	fn(m, 20);
+}
+
+-------------------------------------------------- 
+
+class Myclass{
+public:
+	static void foo(int a, int b)
+	{
+		std::cout << "a = " << a << " b = " << b << "\n";
+	}
+};
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	Myclass m;
+	Myclass* p{&m};
+	
+	auto fn = bind(&Myclass::foo, _1, _2, 30);
+	
+	fn(m, 20);  // ok
+	fn(p, 20);  // ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Functor{
+public:
+	int operator()(int x, int y)const
+	{
+		return x * x + y * y;
+	}
+};
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	Functor f;
+	
+	auto fn = std::bind(f, 10, _1);
+
+	auto fx = std::bind(fn, 5);
+	
+	fx(2);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bind ile yaptığımı fonksiyonu çağırarak yapabilirdim, faydası ne ?
+
+tipik örnek :
+
+// necmettin'den büyük olanları kopyalacağım
+
+int main()
+{
+	using namespace std;
+	using namespace placeholders;
+	
+	vector<string> svec;
+	rfill(svec, 20, rname);
+	print(svec);
+	vector<string> destvec;
+	
+	copy_if(svec.begin(), svec.end(), back_inserter(destvec), bind(greater{}, _1, "necmettin" );
+	
+	// copy_if'in son parametresine bind(...) ifadesinin göndermekle  bind'in geri dönüş değeri olan callable'i göndermiş oldum
+	// bu callable kaç argümanla çağırılmalı ?
+	//  cevap : 1
+	// copy_if range'deki öğeleri son parametreye geçtiğim unary predicate'a gönderdiğine göre 
+	// bind'in geri dönüş değeri olan callable da bunu birinci parametreye container'daki öğeyi, 
+	// ikinci parametreye "necmettin" i göndererek çağrı yapacak.
+}
+
+---------------------------------------- 
+
+kendimiz lambda yazabiliriz, bind'a bir alternatif
+
+copy_if(svec.begin(), svec.end(), back_inserter(destvec),  [](const string &s){return s > "neco";} );
+
+*----------------------------------------------------------------------------------------------------- 
+
+mem_fn : bu da bir adaptör. Yaptığı iş bana öyle bir callable veriyor ki bu callable'a bir sınıf nesnesi gönderdiğimde
+callable'in fonksiyon çağrı operatör fonksiyonu benim gönderdiğim sınıf nesnesini kullanarak
+o sınıf nesnesinin bir üye fonk.'u çağırıyor. Olmasa lambda ifadesi bu işi yapabilir. 
+
+class Nec{
+public:
+	Nec(int x = 0) : mx{x} {}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+	void set(int val)
+	{
+		mx = val;
+	}
+	
+private:
+	int mx;
+};
+
+
+int main()
+{
+	using namespace std;
+	
+	Nec mynec{ 5};
+	
+	auto fn = mem_fn(&Nec::print);  // geri dönüş değeri callable
+	
+	fn(mynec); // sınıf nesnesini bu callable'a argüman göndererek çağırıyoruz
+	
+	auto fnx = mem_fn(&Nec::set);
+	
+	fnx(mynec, 20);
+	
+	fn(mynec);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+mem_fn'nin kullanıldığı yerlerden biri :
+
+for_each : bir range'deki öğeleri sadece bir fonk.'a gönderir
+
+class Nec{
+public:
+	Nec(int x = 0) : mx{x} {}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+	void set(int val)
+	{
+		mx = val;
+	}
+	
+private:
+	int mx;
+};
+
+
+int main()
+{
+	using namespace std;
+	
+	vector<Nec> nvec;
+	Irand myrand{0, 1000};
+	
+	for(int i = 0; i < 100; ++i){
+		nvec.emplace_back(myrand());
+	}
+	
+	for_each(nvec.begin(), nvec.end(), mem_fn(&Nec::print));  // sonda fonk. doğrudan yazarsam olmaz çünkü fonk.
+	doğrudan bu range'deki öğeyi gönderir. 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec;
+	svec.reserve(1000);
+	rfill(svec, 1000, []{return rname() + ' ' + rfname(); });
+	print(svec, "\n");
+	
+	vector<size_t> lenvec(1000); // vector sıfırlarla doldu !!!
+	
+	// transform(svec.begin(), svec.end(), lenvec.begin(), [](const std::string& s) {return s.length(); });
+	transform(svec.begin(), svec.end(), lenvec.begin(),mem_fn(&string::size));
+	
+	print(lenvec);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : ben bir fonk. adresinin bir pointer değişkende tutmak istesem nasıl bir pointer'da tutabilirim ?
+
+cevap : global fonk. adresinin nasıl bir pointer değişkende tutabiliyorsam bunun da aynı şekilde
+
+-------------------- 
+
+class Myclass{
+public:
+	static int foo(int x)
+	{
+		std::cout << "int Myclass(int x) x = " << x << "\n";
+		return x * x;
+	}
+};
+
+int func(int);
+
+int main()
+{
+	auto fptr = Myclass::foo;  // auto fptr = &Myclass::foo;  // fark yok
+	int(*fp)(int) = Myclass::foo;  // int(*fp)(int) = &Myclass::foo;
+	
+	std::cout << fptr(10) << "\n";
+	std::cout << fp(20) << "\n";
+	
+	//&func
+	//&Myclass::foo
+}
+
+----------------------------
+
+sonuç : bir sınıfın static üye fonk.'nun adresi olan tür ile benzer parametrik yapıda global fonk.
+adresi olan bir tür arasında hiçbir fark yok 
+
+*----------------------------------------------------------------------------------------------------- 
+
+Fakat programcılar non-static üye fonk. adreslerini bir function pointer değişkende tutmak istediklerinde
+şaşırıyorlar. Çünkü henüz tanışmadıkları başka bir adres türü sözkonusu.
+
+class Myclass{
+public:
+	int foo(int x)
+	{
+		return x * x;
+	}
+};
+
+int main()
+{
+	int(*fp)(int) = Myclass::foo;  // hata, uyumlu değil, foo fonk. aslında iki parametre var, this
+}
+
+------------------------------------------ 
+
+Myclass::foo  => örtülü olarak üye fonk. adresine dönüştüğü yer var dönüşmediği yer var.
+o yüzden siz  &Myclass::foo  kullanın.
+
+------------------------------------------- 
+
+class Myclass{
+public:
+	int foo(int x)
+	{
+		return x * x;
+	}
+};
+
+int main()
+{
+	int (Myclass::*)(int)  // Bu tür Myclass'in foo fonk.'nun adresinin türü
+	
+	auto fn = &Myclass::foo; // bu da ispatı, fn'in türüne bakın
+	
+	int(Myclass::*fp2)(int) = &Myclass::foo;  // ok
+}
+
+---------------------------------------
+
+özet : bir sınıfın non-static üye fonk.'nun adresi olan tür ile 
+bir sınıfın static üye fonk.'nun adresi olan tür birbirinden farklı türler !!
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	Myclass(int val = 0) : mx{val} {}
+	
+	int foo(int x)
+	{
+		return x * mx;
+	}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+private:
+	int mx;
+};
+
+
+int main()
+{
+	auto fp1 = &Myclass::foo; // bu da ispatı, fn'in türüne bakın
+	int(Myclass::*fp2)(int) = &Myclass::foo;  // ok
+	
+	// auto fpr = &Myclass::print;
+	void(Myclass::* fpr)()const = &Myclass::print;  // const da üye fonk.'nun imzası
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+non-static üye fonk. adresi tutmanın diğer yolları : 
+
+
+class Myclass{
+public:
+	Myclass(int val = 0) : mx{val} {}
+	
+	int foo(int x)
+	{
+		return x * mx;
+	}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+private:
+	int mx;
+};
+
+using mf_type = int(Myclass::*)(int);
+
+int main()
+{
+	auto fp1 = &Myclass::foo; // bu da ispatı, fn'in türüne bakın
+	int(Myclass::*fp2)(int) = &Myclass::foo;  // ok
+	
+	// auto fpr = &Myclass::print;
+	void(Myclass::* fpr)()const = &Myclass::print;  // const da üye fonk.'nun imzası
+	
+	my_type fptr = &Myclass::foo;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	int f1(int);
+	int f2(int);
+	int f3(int);
+	///
+};
+
+using mf_type = int(Myclass::*)(int);
+
+int main()
+{
+	auto fp1 = &Myclass::f1;
+	int (Myclass::* fp2)(int) = &Myclass::f1;
+	mf_type fp3 = &Myclass::f1;
+	
+	int(Myclass:: * * fp2)(int) = &fp1;
+	mf_type *fpp = & fp1; // daha kolay yolu
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+öyle bir dizi oluştur ki dizinin elemanları  int(Myclass::*)(int) türden olsun.
+Diziye de Myclass'ın f1, f2, f3, f4 fonk.'nın adresleri ile ilk değer vereyim.
+
+
+class Myclass{
+public:
+	int f1(int);
+	int f2(int);
+	int f3(int);
+	int f4(int);
+	///
+};
+
+using mf_type = int(Myclass::*)(int);
+
+int main()
+{
+	int (Myclass::* fa[])(int) = {
+		&Myclass::f1,
+		&Myclass::f2,
+		&Myclass::f3,
+		&Myclass::f4,
+	};
+	
+}
+
+--------------------------------------------- 
+
+daha kolayı :
+
+class Myclass{
+public:
+	int f1(int);
+	int f2(int);
+	int f3(int);
+	int f4(int);
+	///
+};
+
+using mf_type = int(Myclass::*)(int);
+
+int main()
+{
+	mf_type fa[] = {
+		&Myclass::f1,
+		&Myclass::f2,
+		&Myclass::f3,
+		&Myclass::f4,
+	};
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : bir sınıfın üye fonk.'unu gösteren bir pointer'ın gösterdiği fonk.'u nasıl çağıracağız ?
+
+class Myclass{
+public:
+	Myclass(int val = 0) : mx{val} {}
+	
+	int foo(int x)
+	{
+		return x * mx;
+	}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+private:
+	int mx;
+};
+
+int main()
+{
+	auto fp = &Myclass::foo;
+	
+	Myclass m{ 47 };
+	
+	m.fp; // hata, fp class'in bir member'i değil
+	
+	fp(m, 23);  // hata
+	
+	// özel bir operator gerekli, daha önce öğrenmediniz !!!
+	
+}
+
+----------------------------------------------
+
+sınıf pointer'i ile non-static member'i gösteren function pointer'la fonk. çağırma operatorleri : 
+
+member function pointer operatorleri:
+
+.*
+->*
+
+*this olarak kullanılacak nesne varsa .*
+ this pointer'ı olarak kullanılacak nesne adresi varsa ->*
+kullanılır
+
+------------------------------------------------ 
+
+class Myclass{
+public:
+	Myclass(int val = 0) : mx{val} {}
+	
+	int foo(int x)
+	{
+		std::cout << "this = " << this << "\n";
+		
+		return x * mx;
+	}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+private:
+	int mx;
+};
+
+int main()
+{
+	auto fp = &Myclass::foo;
+	
+	Myclass m{ 10 };
+	std::cout << "&m = " << &m << "\n";
+	
+	// m.*fp(32)  // hata, operator önceliği
+	
+	auto val = (m.*fp)(5);
+	std::cout << "val = " << val << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	Myclass(int val = 0) : mx{val} {}
+	
+	int foo(int x)
+	{
+		std::cout << "this = " << this << "\n";
+		
+		return x * mx;
+	}
+	
+	void print()const
+	{
+		std::cout << "(" << mx << ")\n";
+	}
+	
+private:
+	int mx;
+};
+
+int main()
+{
+	auto fp = &Myclass::foo;
+	
+	Myclass m{ 10 };
+	std::cout << "&m = " << &m << "\n";
+	
+	Myclass* pm = &m;
+	
+	auto val = ((*pm).*fp)(5);  // kolay yolu :  auto val = (pm->*fp)(5);
+	
+	std::cout << "val = " << val << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kullanım şekli :
+
+(object.*fp)(args)
+(object_pointer->*fp)(args)
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func(Myclass& m, int(Myclass::* fp)(int))
+{
+	(m.*fp)(10);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void gf(const Date& date, int(Date::* fp)()const)
+{
+	auto val = (date.*fp)();
+}
+
+int main()
+{
+	Date mydate{3, 5, 1987};
+	
+	gf(mydate, &Date::month_day);
+	gf(mydate, &Date::month);
+	gf(mydate, &Date::year);
+	gf(mydate, &Date::year_day);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+	Nec() = default;
+	///
+	
+	void foo(int x)
+	{
+		(this->*mfp)(x);
+	}
+	
+	void set_f(int (Nec::*f)(int))
+	{
+		mfp = f;
+	}
+	
+	int f1(int);
+	int f2(int);
+	int f3(int);
+	int f4(int);
+	int f5(int);
+	
+private:
+	int (Nec::*mfp)(int) {&Nec::f1}
+};
+
+int main()
+{
+	Nec mynec;
+	
+	mynec.foo(10);
+	mynec.set_f(&Nec::f3);
+	mynec.foo(20);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+birden fazla üye fonk.'nun adresini bir function pointer'da tutup 
+çağırılmasını sağlayabilirim
+
+class Nec{
+public:
+	Nec() = default;
+	///
+	
+	int f1(int);
+	int f2(int);
+	int f3(int);
+	int f4(int);
+	int f5(int);
+};
+
+using mftype = int(Nec::*)(int);
+
+int main()
+{
+	using namespace std;
+	
+	vector<mftype> vec{
+		&Nec::f1,
+		&Nec::f2,
+		&Nec::f3,
+		&Nec::f4,
+		&Nec::f5,
+	};
+	
+	Nec mynec;
+	
+	for(auto f : vec){
+		auto val = (mynec.*f)(10);
+		///
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	int x{ 3 };
+	int y{ 10 };
+	int z{ 40 };
+};
+
+int main()
+{
+	Nec mynec;
+	
+	auto p = &mynec.x;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	int x{ 3 };
+	int y{ 10 };
+	int z{ 40 };
+};
+
+int main()
+{
+	// auto ptr= &Nec::x;  // bir adres değil bir offset'tir !!!
+	int Nec::*ptr = &Nec::x;
+	// böyle bir pointer'ı kullanabilmek için elimde Nec nesnesi olmalı
+	
+	Nec mynec;
+	
+	std::cout << "mynec.x = " << mynec.x << "\n";
+	
+	mynec.*ptr = 6778; 
+	
+	std::cout << "mynec.x = " << mynec.x << "\n";
+}
+
+-------------------------------------------------------- 
+
+iyi de ne işe yaracak bu ?
+
+client kodun sınıfın hangi elemanının kullanılacağı konusunda
+seçme şansı olacak
+
+struct Nec{
+
+	int x{ 3 };
+	int y{ 10 };
+	int z{ 40 };
+};
+
+void func(Nec& nx, int Nec::*p)
+{
+	// aşağıdaki işlemde sınıf nesnesinin hangi elemanın kullanılacağı 
+	kararını fonk.'u çağıran koda bırakmak istiyorum
+	auto val = nx.*p;
+	
+	std::cout << "val = " << val << "\n";
+}
+
+int main()
+{
+	Nec mynec;
+	
+	func(mynec, &Nec::x);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	void foo()
+	{
+		auto val = this->*mp;
+	}
+private:
+	int mx, my, mz;
+	Myclass::*mp{&Myclass::mx};
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+öğrendiğimiz yeni kavramlar :
+
+static member function adress
+non static member function address ayrı türler
+
+address of static data member
+address of non static data member
+
+.*
+->*
+
+*----------------------------------------------------------------------------------------------------- 
+
+yok mu bu işin bir kolay yolu ?
+
+std::invoke : ben her nevi callable'i çağırırım, yeterki bana callable'i ve
+ona gönderilecek argümanları gönder. Ben o callable'i senin verdiğin
+argümanları ona forward ederek çağırabilirim. Bu durumda senin
+callable'i doğrudan çağırmanla bana çağırtman arasında fark olmayacak.
+
+---------------------------------------------- 
+
+#include <functional>
+
+int sum(int x, int y, int z)
+{
+	return x + y + z;
+}
+
+int main()
+{
+	using namespace std;
+	
+	int a{3 }, b{5}, c{987};
+	
+	 // auto val = sum(a, b, c);
+	auto val = invoke(sum, a, b, c);
+	
+	std::cout << "val = " << val << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+neden ivoke'u kullanayım ?
+
+invoke daha çok template kodda kullanılacak 
+template kodda bunun bir fonk. olduğunu bilmiyoruz
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <functional>
+
+int sum(int x, int y, int z)
+{
+	return x + y + z;
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto f =[](int a, int b){
+		return a + b;
+	};
+	
+	auto val = invoke(f, 109, 20);
+	std::cout << "val = " << val << "\n";
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Pred{
+	Pred(char c) : mc{c} {}
+	
+	bool operator()(const std::string &s)const
+	{
+		return s.contains(mc);
+	}
+
+private:
+	char mc;
+};
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Pred{
+public:
+
+	Pred(char c) : mc{c} {}
+	
+	bool operator()(const std::string &s)const
+	{
+		return s.find(mc) != std::string::npos;
+	}
+
+private:
+	char mc;
+};
+
+int main()
+{
+	std::string name{"mustafa"};
+	
+	Pred f{ 'a' };
+	std::invoke(f, name);
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+member function pointer örneği :
+
+class Myclass{
+public:
+	int foo(int);
+};
+
+int main()
+{
+	Myclass m;
+	
+	auto mfp = &Myclass::foo;
+	
+	auto val = std::invoke(mfp, m, 23);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
