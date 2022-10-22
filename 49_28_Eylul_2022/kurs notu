@@ -1,0 +1,1223 @@
+
+İçerik:
+
+Dinamik ömürlü nesneler 
+smart pointers
+unique_ptr
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+operator new, delete fonk.
+placement new operator
+nothrow new operator
+array new operator
+yalın new operator
+
+konularını işledik. operator new ve delete fonk. global düzeyde overload edilebileceğini ya da
+sınıfın static üye fonk. olarak overload edilebilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : aynı parametrik yapıda tanımladığımıza göre bunlara nasıl overload diyebiliyoruz ?
+
+bu fonk.'ların özel durumu var. Bu fonk.'lar için yeni tanım verilebiliyor. 
+
+Bir tanesi overload edilemiyor. Hangisi ?
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <new>
+
+int main()
+{
+	auto fp = std::get_new_handler();
+	
+	std::cout << (fp == nullptr);  // true, global göstericisinin değeri nullptr'dir
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <new>
+
+typedef void (*new_handler)(void);
+
+new_handler get_new_handler(void);
+new_handler set_new_handler(new_handler);
+
+void* operator new(size_t n)
+{
+	for(;;){
+		void*vp = std::malloc(n);
+		if(vp){
+			return vp;
+		}
+		auto fp = get_new_handler();     // fp'nin değerinin nullptr olması herhangi bir fonk.'nun kayıt edilmediği anlamına gelir !!!
+		if(!fp){
+			throw std::bad_alloc{};  // nullptr ise exception throw eder.
+		}
+		
+		fp();  // aksi halde set_new_handler ile kayıt ettiğimiz fonk. çağırılacak
+	}
+}
+
+int main()
+{
+	auto fp = std::get_new_handler();
+	
+	std::cout << (fp == nullptr);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <new>
+
+std::vector<void*> pvec;
+
+void func()
+{
+	for(int i{}; i < 1000'000; ++i){
+		std::cout << i << "\n";
+		pvec.push_back(operator new(1024 * 1024 * 10));
+	}
+}
+
+void another_alloc()
+{
+	static int cnt{};
+	std::cout << "myalloc islevine yapilan " << ++cnt << ". cagri\n";
+	if(cnt == 10)
+		std::set_new_handler(nullptr);  
+	(void)getchar();
+}
+
+void myalloc()
+{
+	static int cnt{};
+	std::cout << "myalloc islevine yapilan " << ++cnt << ". cagri\n";
+	if(cnt == 10)
+		std::set_new_handler(nullptr);  // std::set_new_handler(another_alloc);
+	(void)getchar();
+}
+
+
+int main()
+{
+	std:::set_new_handler(myalloc);  // fonksiyonu kayıt ettirmiş oldum, başarısız olduğunda
+	// bad_alloc throw etmek yerine döngüsel bir yapı içerisinde benim fonk.'umu çağıracak
+	
+	try{
+		func();
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << "\n";
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bu durumda set_new_handler ile kaydı yapılan fonksiyon neler yapabilir ?
+
+1. bir takım işlemlerle dinamik bellek alanı elde edilmesine yönelik şartları sağlar
+
+2. set_new_handler'a çağrı yapar, 
+	a) nullptr gönderir, döngüden çıkışı sağlar
+	b) başka bir fonksiyonu kayda alır. (ben başaramadım başka bir fonk. çağırabilir)
+
+3. kayıt edilen fonksiyonun kendisi std::bad_alloc ya da bad_alloc sınıfından
+kalıtım yoluyla elde edilmiş bir exception throw eder.
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru :
+
+eğer bir sınıf nesnesini moved-from state'te bırakırsanız
+bu durumda nesne geçerli bir durumdadır. Ancak değerinin
+ne olduğu konusunda garanti yoktur. 
+
+void func(std::string& str)
+{
+	using namespace std;
+	
+	ifstream ifs{"textfile.txt};
+	if(!ifs){
+		cerr << "cannot open file\n";
+	}
+	
+	std::string sline;
+	vector<string> svec;
+	
+	// sline burada moved-from state'e sahip olabilir (kaynağı çalınmış bir nesne olabilir)
+	while(getline(ifs, sline)){
+		svec.push_back(std::move(sline));
+	}
+	
+}
+
+------------------------------------------------------ 
+
+int main()
+{
+	using namespace std;
+	
+	std::string str(10'000, 'a');
+	
+	auto s = move(str);  // str moved-from state'de
+	
+	std::cout << "str.length() = " << str.length() << "\n";
+	
+	vector<int> ivec;
+	
+	ivec.resize(120000);
+	auto xvec = std::move(ivec);
+	
+	std::cout << "ivec.size() = " << ivec.size() << "\n";
+	
+}
+
+// en kolay karşılanacak valid garantisi uzunluğun sıfır olması
+
+--------------------------------------------- 
+
+class Sentence{
+
+public:
+	Sentence(Sentence &&other) : mlen(other.mlen), mp(other.mp)
+	{
+		other.mp = nullptr;
+		other.mlen = 0;
+		///
+	}
+private:
+	size_t mlen;
+	char* mp;
+};
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : str'nin kaynağı çalındı, uzunluğu şu anda ne olabilir ?
+cevap : "std::move doesn't move". str'e sadece ref. sağlamış olduk,
+str'de değişen hiçbir şey yok. Sadece ifadenin değerini sol taraf değeri
+kategorisinden sağ taraf kategorisine aldı. Str'de değişen birşey yok.
+
+int main()
+{
+	std::string str(100'000, 'a');
+	
+	std::string&&  r = std::move(str);  
+}
+
+--------------------------------------------------------- 
+
+int main()
+{
+	std::string str(100'000, 'a');
+	
+	std::string&&  r = std::move(str);  
+	std::string s;
+	
+	auto s = std::move(r);  // kaynak çalındı, bunu yapan move assignment ya da move const. !!!
+}
+
+----------------------------------------------------------------------- 
+---------------------smart pointers--------------------------
+-------------------------------------------------------------------
+
+Dinamik ömürlü nesnelerin hayatlarını kontrol etmek üzere kullanılacak
+pointer-like (pointer benzeri) sınıflara smart pointers denir. Pointer
+benzeri bir arayüze sahip ama kendisi pointer değil. Böyle sınıflar pointer-like 
+classes denir.
+
+operator overloading mekanizması kullanılıyor. 
+
+daha önce kullandığımız pointer'lara (gerçek pointerlar) popüler terim olarak raw pointers denir.
+
+Ama örneğin container'lardaki öğelerin konumlarını tutan tipik olarak iteratör paternini
+implemente eden sınıflara iterator sınıfları deniyor. 
+
+nesneleri pointer gibi kullanılacak sınıflardan bahsediyorsanız onlara smart
+pointers demeyin. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+gerçek pointer'ların dezavantajları : (neden smart pointer'lara ihtiyaç var ?)
+
+1) 
+T* p;
+
+//
+p
+
+//
+
+pointer'in gösterdiği nesne dinamik ömürlü bir nesne mi ?
+anlayamam
+
+2) pointer dinamik ömürlü bir nesneyi gösteriyor(du).
+Şu anda dangling pointer mi ? 
+
+dangling ile wild pointer genel olarak aynı anlamda kullanılmıyorlar. (bunlar standart terim değilller)
+
+int main()
+{
+	int* p;  //  otomatik ömürlü pointer'lara wild pointer deniyor.
+
+}
+
+3) bu pointer'ın dinamik ömürlü bir nesneyi gösterdiğini düşünelim. 
+gösterdiği dizi mi ? yoksa tekil bir nesne mi ?
+
+delete p;
+delete[] p;  
+p->~Fighter(); / placement new ile dinamik ömürlü nesneyi gösterdiyse destructor çağırılmalı
+
+mi kullanacam ?
+
+4) dinamik ömürlü bir nesneyi gösteriyor olsun.
+onu göstermekte olan tek pointer bu mu? 
+
+5) sadece delete etmek yeterli mi?
+belki her delete edilen nesne belki bir loglama söz konusu olabilir
+
+ya delete etmemiz gerekiyor delete etmeyi unutursak
+
+dinamik ömürlü nesnelerin hayatını ham pointer'lar ile yapmak çok çok hataya açık.
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Fighter{
+
+};
+
+void func();
+
+int main()
+{
+	auto p = new Fighter;
+	
+	func();
+	
+	delete p;
+}
+
+ya bu programın akışı exception handling'e giderse, programın akışı bu delete'e gelmez.
+Dolayısıyla delete edilmeyecek. Bu sebeble her fonk. akışında try bloğu mu oluşturacağız?
+
+*----------------------------------------------------------------------------------------------------- 
+
+eskiden smart pointers yerine auto ptr sınıfı vardı. Taşıma semantiği yoktu.
+kullanımı risk içeriyordu. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+1) std::unique_ptr
+2) std::shared_ptr
+	std::weak_ptr (özel durumlarda shared_ptr'nin sorunlarını çözüyor.)
+
+%80 unique_ptr, %20 shared_ptr kullanılıyor. 
+
+----------------------------------------------------- 
+
+ std::unique_ptr : exclusive ownership (tek sahiplik ilkesi)
+
+bir kaynağın tek bir sahibi olur. O kaynağa yalnızca o sahibi vasıtasıyla erişebilirsiniz. 
+kaynağın sahibi olan nesne'nin (pointer) hayatı bittiğinde kaynak 
+illa new ile oluşturulması gerekmiyor. (illa dinamik ömürlü olması gerekmiyor)
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir tek şeyi gösteren şeyi bir şekilde değiştirmek mümkün değil mi ?
+yanlış kod yazarsan olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique ptr : non-copyable but movable
+
+*----------------------------------------------------------------------------------------------------- 
+
+en çok sorulan soru : smart pointer'ların hatalı kullanım senaryoları
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::shared_ptr
+shared ownership : bir kaynağa birden fazla (akıllı) pointer erişim sağlayabilir.
+Ama o kaynağı gösteren son pointer değişkeninin hayatı bittiğinde kaynak sonlandırılır. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+reference counting : aynı kaynağı kaç pointer'ın gösterdiğinin sayılması
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory> (smart pointer için)
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique_ptr : bir sınıf şablonu. Normal pointer'i sarmalar. Wrapper sınıf şablonudur
+unique_ptr is a thin wrapper over a raw pointer. 
+
+
+template <typename T, typename D = default_delete<T>>
+class unique_ptr{
+
+public:
+	~unique_ptr()
+	{
+		//
+		D{}(p);
+	}
+	
+private:
+	T* p;
+}
+
+template<typename T>
+struct default_delete{
+	void operator()(T *p)
+	{
+		delete p;
+	}
+};
+
+default_delete : std'nin sınıf şablonu. 
+
+pointer kullanmanın maliyeti ile aynı. C++'in en önemli başarılarından biri budur. 
+Ama compile time'da olağan üstü bir güvenlik sağlıyor. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<int> uptr;
+	
+	cout << "sizeof(int*) = " << sizeof(int*) <<  "\n";
+	cout << "sizeof(uptr) = " <<size(uptr) << "\n";
+	
+	cout << typeid(uptr).name() << "\n";
+}
+
+// gördüğünüz gibi unique_ptr kullanmak bir dezavantaj oluşturmuyor !!!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+int main()
+{
+	using namespace std;
+	unique_ptr<int> uptr;  // empty ptr denilir. 
+	// unique_ptr<int> uptr{};
+}
+
+default const. ile hayata getirebilirim. ister value init edin ister default init edin default const.
+çağırılacaktır. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+int main()
+{
+	using namespace std;
+	unique_ptr<int> uptr;  
+	
+	if(uptr){       // uptr.operator bool() fonksiyonu
+		cout << "dolu\n";
+	}
+	else{
+		cout << "bos\n";
+	}
+	
+	
+	// veya
+	if(uptr == nullptr)  // bunu yapabilme nedeni : sınıfın bir karşılaştırma operator fonk. olması
+		cout << "dolu\n";
+	}
+	else{
+		cout << "bos\n";
+	}
+	
+	if(uptr != nullptr)
+		cout << "dolu\n";
+	}
+	else{
+		cout << "bos\n";
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<int> uptr;
+	
+	uptr.get();  // sınıfın get isimli bir fonk. var. unique_ptr nesnesinin sarmaladığı pointer'in değerini get eder. 
+	// boşsa nullptr döndürür.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Point{
+public:
+	Point() = default;
+	Point(int x, int y, int z) : mx{}, my{y}, mz{z}
+	{
+		cout << "Point(int, int, int) this = " << this << "\n";
+	}
+	
+	~Point()
+	{
+		cout << "Point destructor this = " << this << "\n";
+	}
+	
+	friend std::ostream& operator<<(std::ostream& os, const Point& p)
+	{
+		return os << "(" << p.mx << ", " << p.my << ", " << p.mz << ")";
+	}
+	
+	void set(int x, int y, int z)
+	{
+		mx = x;
+		my = y;
+		mz = z;
+	}
+	
+private:
+	int mx{}, my{}, mz{};
+};
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr;
+	
+	*uptr; // undefined behavior, boş bir unique_ptr nesnesinin derefence edince exception throw etmez
+}
+
+---------------------------------------- 
+
+// exception edince throw etmez, ispatlayalım.
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr;
+	
+	try{
+		auto x = *uptr;
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << "\n";
+	}
+}
+
+---------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr;
+	
+	cout << *uptr << "\n";
+	uptr -> set(4, 4, 4);
+	cout << *uptr << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+dinamik ömürlü nesnenin hayatını kontrol etmesi:
+
+birçok yolu var, en çok kullanılan yolu dinamik ömürlü nesnenin adresini
+constr.'a argüman olarak göndermek. 
+Yani bu şu demek  unique_ptr'nin T açılımının T* parametreli bir const.'ı var.
+
+template<typename T>
+class unique_ptr{
+public:
+	unique_ptr(T* p) : mp{p} {};
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	Point mypoint{2, 3, 45};
+	Point* p = &mypoint;
+	
+	unique_ptr<Point> uptr(p);  // derleyici bunu bilemez, destruc. çağırılınca bu adresi delete edecek.
+	// buraya dinamik ömürlü nesnenin adresini geçmekten siz sorumlusunuz.
+	
+	cout << *uptr << "\n";
+	uptr -> set(4, 4, 4);
+	cout << *uptr << "\n";
+}
+
+---------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr(new Point{2, 34, 45});  
+	
+	cout << *uptr << "\n";
+	uptr -> set(4, 4, 4);
+	cout << *uptr << "\n";
+}
+
+--------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	{
+		unique_ptr<Point> uptr(new Point{2, 34, 45});  
+		cout << *uptr << "\n";
+		uptr -> set(4, 4, 4);
+		cout << *uptr << "\n";
+	}
+	// burada unique_ptr'nin hayatı biter yani delete edilir, önce destructor'ı çağırılacak, sonra sizeof boyu kadar 
+	// operator delete'e çağrı yapılarak geri verilecek. 
+	
+	std::cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+boş bir unique_ptr nesnesi oluşturmanın diğer yolu 
+
+int main()
+{
+	using namespace std;
+	
+		unique_ptr<Point> uptr{nullptr};
+	
+	{
+		unique_ptr<Point> uptr(new Point{2, 34, 45});  
+		cout << *uptr << "\n";
+		uptr -> set(4, 4, 4);
+		cout << *uptr << "\n";
+	}
+	
+	std::cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : unique_ptr nesnesi bir dinamik ömürlü nesnenin hayatını kontrol ederken
+başka bir dinamik ömürlü nesnenin hayatını kontrol ediyor hale gelebilir mi ?
+evet, başka bir yolu var.
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr(new Point{2, 34, 45});
+	
+	uptr = new Point{12, 5, 7};  // hata !! bu şekilde değil
+}  
+
+---------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr(new Point{2, 34, 45});
+	
+	uptr.reset(new Point{12, 5, 7});  // doğru yol
+}  
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique_ptr sınıfının T* parametreli const.'ı explicit'tir.
+ne demek otomatik dönüşümü sentax hatası kılar. 
+Tür dönüştürme operatörünü kullanabilirsiniz.  
+copy init.'i geçersiz hale getirir.
+Ya direk ya list init olmak zorunda
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<Point> uptr = new Point(1, 3, 6);  // sentax hatası
+}
+
+------------------------------------------ 
+
+int main()
+{
+	using namespace std;
+
+	unique_ptr<Point> uptr(new Point(1, 3, 6));  // ok
+	unique_ptr<Point> uptr{new Point(1, 3, 6)};  // ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func(std::unique_ptr<Point> up)
+
+int main()
+{
+	func(new Point); // hata, çünkü const. explicit
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique_ptr nesnesi oluşturmanın daha kolay bir yolu
+
+template<typename T, typename ...Args>  // variadic template
+std::unique_ptr<T> MakeUnique(Args&& ...args)
+{
+	return std::unique_ptr<T>{new T(std::forward<Args>(args)...)};  // mandotary copy elision
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto uptr = MakeUnique<Point>(2, 4, 6);
+	
+	cout <<  *uptr << "\n";
+	uptr->set(1, 1, 1);
+	cout << *uptr << "\n";
+	
+	cout << "main devam ediyor\n";
+}
+
+----------------------------------------------------- 
+
+// make_unique kullanalım.
+int main()
+{
+	using namespace std;
+	
+	auto uptr = make_unique<Point>(2, 4, 6);
+	
+	cout <<  *uptr << "\n";
+	uptr->set(1, 1, 1);
+	cout << *uptr << "\n";
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	{
+		auto dp = make_unique<Date>(15, 7, 1996);
+		
+		cout <<  *dp << "\n";
+		++* dp;
+		cout << *dp << "\n";
+		cout << dp->month_day() << "\n";
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir unique_ptr nesneleri ile neler yapabiliriz ?
+
+unique_ptr nesneleri kopyalamaya karşı kapatılmış durumda.
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(3, 5, 8);
+	
+	auto upy = upx; // hata, delete edilmiş bir fonk. çağrı, copy const. is deleted
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+atama için de aynı şey geçerli 
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(3, 5, 8);
+	auto upy = make_unique<Point>(1, 4, 9);
+	
+	upx = upy; // hata, copy assignment is deleted
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique_ptr nesneleri movable
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(3, 5, 8);
+	
+	cout << (upx ? "dolu" : "bos") << "\n";
+	
+	auto upy = std::move(upx);  // move const., mülkiyeti devraldı, kaynak el değiştirdi, kaynağın sahibi upy
+	
+	cout << "upx = " << (upx ? "dolu" : "bos") << "\n";  // upx = nullptr oldu
+	cout << "upy = " << (upy ? "dolu" : "bos") << "\n";
+	
+	(void)getchar();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Point{
+public:
+	Point() = default;
+	Point(int x, int y, int z) : mx{}, my{y}, mz{z}
+	{
+		cout << "Point(int, int, int) this = " << this << "\n";
+	}
+	
+	~Point()
+	{
+		cout << "Point destructor  " << *this << "\n";
+	}
+	
+	friend std::ostream& operator<<(std::ostream& os, const Point& p)
+	{
+		return os << "(" << p.mx << ", " << p.my << ", " << p.mz << ")";
+	}
+	
+	void set(int x, int y, int z)
+	{
+		mx = x;
+		my = y;
+		mz = z;
+	}
+	
+private:
+	int mx{}, my{}, mz{};
+};
+
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(3, 5, 8);
+	auto upy = make_unique<Point>(6, 6, 6);
+	
+	cout << *upx << "\n";
+	cout << *upy << "\n";
+	
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << "upy => " << (upy ? "dolu" : "bos") << "\n";
+
+	upx = std::move(upy);  // ok, önce ilk upx önce kaynağını geri verecek, destructor'ı çağırıldı
+	// diğer kaynağı geri alacak
+	
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << "upy => " << (upy ? "dolu" : "bos") << "\n";
+	(void)getchar();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru 1: Bir uptr nesnesinin hayatı devam ederken kontrol ettiği kaynağı delete edebilir mi?
+evet, birden fazla yolu var.
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(3, 5, 8);
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	
+	upx = nullptr;  // nullptr_t parametreli bir atama operator fonk. var. nullptr'i alınca kaynağı sonlandırıyor.
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	(void)getchar();
+}
+
+--------------------------------------------------------- 
+
+diğer yolu : reset fonk.'nu parametresiz çağırmak
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(3, 5, 8);
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	
+	upx.reset();
+	upx.reset(nullptr);
+	
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	(void)getchar();
+}
+
+------------------------------------------------------ 
+
+reset fonk.'na bir adres geçerseniz unique_ptr nesnesi o adresteki dinamik ömürlü
+nesnenin hayatını kontrol etmeye başlıyor.
+
+
+int main()
+{
+	using namespace std;
+	
+	{
+		unique_ptr<Point> uptr;
+		cout << "uptr => " << (uptr ? "dolu" : "bos") << "\n";
+		uptr.reset(new Point{2, 5, 9});
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// eğer zaten bir nesneyi gösteriyorsa 
+
+int main()
+{
+	using namespace std;
+	
+	{
+		auto up{ make_unique<Point>(2, 4, 8)}; // reset çağırılınca destroy olur
+		up.reset(new Point{ 9, 2, 3});  // ok, kendi kaynağını bırakacak yeni kaynağı üstlenecek !!!
+		// up(new Point{ 9, 2, 3});  // hata
+		(void)getchar();
+		cout << "main devam ediyor\n";
+	}
+	// burada {9,2,3} destroy olur
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+new yerine make_unique'i kullanın !!! Hatalara sebeb olur.
+
+int main()
+{
+	using namespace std;
+	
+	auto p = new Point{ 2, 4, 6};
+	
+	unique_ptr<Point> upx{ p };   
+	{
+		unique_ptr<Point> upy{ p };  // upx'in içindeki pointer dangling oldu.
+	}
+	
+	
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << *p << "\n";  // tanımsız davranış
+	cout << *upx << "\n"; // tanımsız davranış
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+release : mülkiyeti bırakıyor ama kaynağı sonlandırmıyor (delete edilmiyor)
+
+int main()
+{
+	using namespace std;
+	
+	auto upx = make_unique<Point>(1, 4, 7);
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << *upx << "\n"; 
+	
+	Point* ptr = upx.release();
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	(void)getchar();
+	
+	delete ptr;  // delete bizim sorumluluğumuzda
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	auto upx = make_unique<Point>(1, 4, 7);
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << *upx << "\n"; 
+	
+	unique_ptr<Point> upy{upx.release()};  // bir nevi move yapmış olduk
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << "upy => " << (upy ? "dolu" : "bos") << "\n";
+	(void)getchar();
+}
+
+--------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	auto upx = make_unique<Point>(1, 4, 7);
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << *upx << "\n"; 
+	
+	unique_ptr<Point> upy;
+	upy.reset(upx.release());  // aynı anlamlı olan =>  upy = std::move(upx);
+	
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << "upy => " << (upy ? "dolu" : "bos") << "\n";
+	(void)getchar();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	auto upx = make_unique<Point>(1, 4, 7);
+	cout << "upx => " << (upx ? "dolu" : "bos") << "\n";
+	cout << *upx << "\n"; 
+	
+	upx.release();  // bunu bir yerde tutmazsak hem memory leak hem resource leak olacak
+	// çünkü bu nesneyi delete etme şansı kalmayacak
+	// destructor çağırılmayacağı için kaynaklar geri verilmeyecekti
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	auto p = new string(10000, 'a');
+	// delete edilmedi, 24 bytelik bellek bloğu geri verilmedi, destructor da çağrılmadı
+	ayrıca 10000 byte'in da geri verilmesi gerekiyordu
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+get() : kaynağı bırakmıyor, reset de etmiyor, sadece o pointer'i geri döndürür.
+
+int main()
+{
+	using namespace std;
+	
+	{
+		auto upx = make_unique<Point>(1, 4, 7);
+		
+		std::cout << "upx ==> " << (upx ? "dolu" : "bos") << "\n";
+		Point* p = upx.get();
+		std::cout << "upx ==> " << (upx ? "dolu" : "bos") << "\n";
+		cout << *upx << "\n";  // akıllı pointer
+		cout << *p << "\n"; // normal pointer
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	Point* p;
+	
+	{
+		auto upx = make_unique<Point>(1, 4, 7);
+		p = upx.get();
+		cout << *upx << "\n";  // akıllı pointer
+	}
+	
+	cout << *p << "\n";  // tanımsız davranış, dangling pointer
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(1, 4, 7);
+	{
+		unique_ptr<Point> upy;
+		upy.reset(upx.get());
+	}
+	
+	cout << *upx << "\n"; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+insert'i var
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(1, 4, 7);
+	
+	cout << *upx << "\n";
+	// bu fonksiyon nedeniyle insert ediyorum => friend std::ostream& operator<<(std::ostream& os, const Point& p)
+	
+	
+	cout << upx << "\n";
+	// ham pointer'in kendi inserteri
+	cout << upx.get() << "\n";  // aynısı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	auto upx = make_unique<Point>(1, 4, 7);
+	
+	if(upx.get() == nullptr){
+	
+	}
+	
+	if(upx == nullptr){ // üsttekinin aynısı
+		
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include "car.h"
+#include <memory>
+
+int main()
+{
+	using namespace std;
+	
+	for(int i = 0; i < 10; ++i)
+		unique_ptr<Car>up(create_random_car());
+		up->start();
+		up->run();
+		up->stop();
+		cout << *up << "\n"; 
+		(void)getchar();
+	}
+}
+
+// polymorphism'in devreye girmesinde herhangi bir sorun yok
+
+*----------------------------------------------------------------------------------------------------- 
+
+deleter konusu:
+istersek kendi deleter'ini oluşturma
+
+struct PointDeleter{
+
+	void operator()(Point* p)
+	{
+		std::cout << p << " adresindeki Point nesnesi delete ediliyor\n";
+		delete p;
+	}
+};
+
+int main()
+{
+	using namespace std;
+	
+	{
+		unique_ptr<Point, PointDeleter> uptr{new Point{4, 7, 9}};
+		cout << uptr << "\n";
+		cout << *uptr << "\n";
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void del_point(Point* p)
+{
+	std::cout << p << " adresindeki Point nesnesi delete ediliyor\n";
+	delete p;
+}
+
+int main()
+{
+	using namespace std;
+	
+	{
+		unique_ptr<Point, void (Point *)> uptr{new Point{4, 7, 9}, del_point };
+		// veya =>    unique_ptr<Point, decltype (&del_point)> uptr{new Point{4, 7, 9}, del_point };
+		cout << uptr << "\n";
+		cout << *uptr << "\n";
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	
+	auto fdel = [](Point* p){
+		cout << p << " adresindeki Point nesnesi delete ediliyor\n";
+		delete p;
+	};
+	
+	{
+		unique_ptr<Point, decltype (fdel)> uptr{new Point{4, 7, 9}};  // C++ 20 lambda kullanıp bu argümanı göndermemek
+		// unique_ptr<Point, decltype (fdel)> uptr{new Point{4, 7, 9}, fdel}; // C++ 20 öncesi
+		cout << uptr << "\n";
+		cout << *uptr << "\n";
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	using namespace std;
+	auto fdel = [](FILE* f) {fclose(f); };
+	{
+		unique_ptr<FILE, decltype(fdel)> up(fopen("deneme.txt", "w"));
+		// fclose'u çağırmam gerekmeyecek
+		// unique_ptr'nin destructor ile olur.
+	}
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+typedef void* WindowHandle;
+
+WindowHandle create_window(void);
+void destroy_window(WindowHandle);
+
+int main()
+{
+	using namespace std;
+	
+	auto fdel = [](WindowHandle handle){
+		destroy_window(handle);
+	};
+	
+	unique_ptr<void, decltype(fdel)> uptr{create_window() };
+}
+
+----------------------------------------------------- 
+
+// sadece new ifadesi ile oluşturulmuş dinamik ömürlü nesnenin hayatını kontrol etmek 
+zorundaymış gibi bir izlenime kapılmayın !!!
+
+*----------------------------------------------------------------------------------------------------- 
