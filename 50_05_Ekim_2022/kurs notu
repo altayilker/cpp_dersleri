@@ -1,0 +1,1294 @@
+
+İçerik:
+
+unique_ptr
+move algorithm
+move_iterator
+make_move_iterator
+pimpl idiom
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr;
+	// ya da unique_ptr<string> uptr{nullptr};
+	// ya da unique_ptr<string> uptr{new string};
+	
+	// new operatorünü açıkça kullanmak istemiyorsak
+	auto uptr = make_unique<string>();
+	
+	// eğer parametreli const.'a çağrı yapacaksam perfect forwarding mekanizmasından faydalanıyorum
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	auto uptr = make_unique<string>(100, 'A');
+	// iki allocation yapar
+	// 24 bytelik allocation string nesnesi için
+	// 112 bytelik allocation yazının tutulduğu bellek alanı için
+}
+
+-------------------------------------------------------- 
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	auto uptr = make_unique<string>(10, 'A');  
+	//tek allocation yapar
+	// yazıyı doğrudan string nesnesinin içindeki buffer'da tuttu. 
+	// small string (buffer) optimization
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// unique_ptr sınıfının üye fonk.'larından bahsettik
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	*uptr;  // içerik operator fonk. , dinamik ömürlü nesneye eriştiriyor
+	uptr->size(); // ok operator fonk., dinamik ömürlü nesnenin fonk.'larını çağırabiliyorsunuz
+	
+}  
+
+*----------------------------------------------------------------------------------------------------- 
+
+eğer unique_ptr'niz boş ise bu durumda içerik veya ok operatorünü kullandığınızda 
+exception throw etmez, tanımsız davranış olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+// unique_ptr'nin kaynağını çalabiliyorum
+// move const. veya move assignment ile
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	auto x = std::move(uptr); // kaynak çalma
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// operator bool fonk. ile boş mu dolu mu olduğuna bakabilirim.
+// boş olup olmadığını bilmiyorsam dereference etmem büyük risk
+// boş olmadığını kontrol edersem sorun olmaz
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	if(uptr)
+		*uptr;
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// boş olup olmadığınız kontrol etmenin birden fazla yolu var
+
+1) if(uptr)
+
+2) uptr.operator bool()
+
+3)  if(uptr != nullptr)
+
+4) if(uptr.get())  // sarmalanan pointer'i get ediyor
+if(uptr.get() != nullptr) 
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+ikinci template argümanı deleter
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique_ptr sınıfını bol bol tekrar edin. Üretimde çok kullanılıyor.
+En önemli akıllı pointer sınıfı.
+
+*----------------------------------------------------------------------------------------------------- 
+
+// nesneyi delete etme (deleter'i çağırıyor)
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	uptr.reset();
+	uptr.reset(nullptr);
+	uptr = nullptr;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// gösterdiği nesneyi sonlandırsın ama başka bir nesnenin de mülkiyetini alsın
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	uptr.reset(new string{"alican"});
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// release fonk.
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	auto ptr = uptr.release();  // mülkiyeti bırakıyor, uptr boşa çıkar
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// get fonk.
+mülkiyeti bırakmaz, reset de etmez, sadece adresi döndürüyor.
+
+#include <memory>
+
+using namespace std;
+
+int main()
+{
+	unique_ptr<string> uptr{ new string};
+	
+	auto ptr = uptr.get();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+eğer ikinci template argümanı olarak default delete'i kullanmışsanız delete
+edilecek. Ama kendi custom deleter'inizi kullanabilirsiniz. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+using namespace std;
+
+class Nec{
+public:
+	Nec()
+	{
+		cout << "ctor\n";
+	}
+	
+	~Nec()
+	{
+		ctor << "destructor\n";
+	}
+};
+
+int main()
+{
+	cout << "main basladi\n";
+	{
+		const auto f = [](Nec* p){delete [] p};
+		unique_ptr<int> uptr(new int[5]{});   // ciddi bir kodlama hatası
+		// array delete ile delete etmek yerine normal yalın delete ile delete eder.
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+--------------------------------------------------- 
+
+unique_ptr<int> uptr(new int[5]{1, 2, 3, 4, 5});  // ciddi bir kodlama hatası
+// array delete ile delete etmek yerine yalın delete ile delete edildi.
+
+-------------------------------------------------- 
+
+// eskiden şu şekilde çözülürdü
+
+int main()
+{
+	cout << "main basladi\n";
+	{
+		const auto f = [](Nec* p){delete[]p};  // kendi deleterimizi kullanıyoruz, array delete çalıştı
+		unique_ptr<Nec, decltype(f)> uptr(new int[5]{});     // ok
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+----------------------------------------------------- 
+
+partial specialization :
+
+template<typename T>
+std::unique_ptr<T[]> {
+
+}
+
+farklı bir interface'i olabiliyor. Bu zaten var
+
+----------------------------------------------- 
+
+int main()
+{
+	cout << "main basladi\n";
+	{
+		unique_ptr<Nec[]> uptr{new Nec[5]{} };     // ok
+		// *uptr yok
+		// uptr[] kullanılabilir
+		
+		for(int i = 0; i < 5; ++i){
+			uptr[i];
+		}
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+---------------------------------------------------------- 
+
+// şimdiki çözüm, make_unique'in array specialization
+int main()
+{
+	auto uptr = make_unique<Nec[]> (5);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+smart pointer'ların en büyük faydası exception safety sağlaması:
+
+#include <memory>
+
+using namespace std;
+
+class Nec{
+public:
+	Nec()
+	{
+		cout << "ctor\n";
+	}
+	
+	~Nec()
+	{
+		ctor << "destructor\n";
+	}
+};
+
+void func()
+{
+	auto pd = new Nec;
+	
+	delete pd;
+}
+
+int main()
+{
+	func();
+}
+
+--------------------------------------------------------------- 
+
+void foo()
+{
+	throw std::runtime_error{  "hata hata\n" };
+}
+
+void func()
+{
+	auto pd = new Nec;
+	foo();
+	
+	delete pd;
+}
+
+int main()
+{
+	try{
+		func();
+	}
+	catch(const std::exception& ex){
+		cout << "exception caught: " << ex.what() << "\n";
+	}
+}
+
+// exception yakalandığında destructor çağırılmadı. Bu da kaynak sızıntısı demek.
+
+*----------------------------------------------------------------------------------------------------- 
+
+// raw pointer'ı smart pointer ile değiştirsem
+void foo()
+{
+	throw std::runtime_error{  "hata hata\n" };
+}
+
+void func()
+{
+	auto pd = make_unique<Nec>();
+	foo();
+}
+
+int main()
+{
+	try{
+		func();
+	}
+	catch(const std::exception& ex){
+		cout << "exception caught: " << ex.what() << "\n";
+	}
+}
+
+// exception throw ederse stack unwinding yapılacak
+// bütün otomatik ömürlü nesneler için destruc. çağrılacak.
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	~Myclass()
+	{
+		delete mp;
+	}
+public:
+	Nec* mp; //
+};
+
+exception safety:
+// akıllı pointer olsa idi hem destructor içinde delete etmem gerekmeyecekti. 
+// hem exception gönderildiğinde stack unwinding ile nesne delete edilecekti
+dolayısıyla dinamik nesneleri kaynakları unique_ptr ile kontrol etmek çok daha
+güvenli. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+resource leak hatası minimize edilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+// Date sınıfına ekleme yapıyoruz
+// Date'e #include <iostream>'ı da ekle
+
+~Date()
+{
+	cout << *this << " icin destructor cagirildi";
+}
+
+int main()
+{
+	cout << "main basladi\n";
+	
+	if(1){
+		auto uptr = make_unique<Date>(12, 7, 1998);
+	}
+	// burada uptr'nin destructor'ı cagrilacak
+	
+	cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// dinamik ömürlü nesneleri bir container'da tutmak istesem
+// eski usul :
+
+ int main()
+{
+	vector<Date*> dvec;
+	
+	for(int i = 0; i < = 12; ++i){
+		dvec.push_back(new Date{ i , i, 2022});
+	}
+	
+	for(auto p : dvec){
+		cout << *p << "\n";
+	}
+}
+
+// dikkat, hiçbiri delete edilmedi, çünkü bunlar pointer
+// çok çok tehlikeli 
+// container nesnesi delete ediliyor, içindekiler delete edilmiyor
+
+------------------------------------------- 
+
+ int main()
+{
+	vector<Date*> dvec;
+	
+	for(int i = 0; i < = 12; ++i){
+		dvec.push_back(new Date{ i , i, 2022});
+	}
+	
+	for(auto p : dvec){
+		cout << *p << "\n";
+	}
+	
+	for(auto p: dvec){
+		delete p;
+	}
+}
+
+------------------------------------------- 
+
+// daha da tehlikelisi 
+
+ int main()
+{
+	vector<Date*> dvec;
+	
+	for(int i = 0; i < = 12; ++i){
+		dvec.push_back(new Date{ i , i, 2022});
+	}
+	
+	for(auto p : dvec){
+		cout << *p << "\n";
+	}
+	
+	dvec.erase(dvec.begin()); // container'den pointer'i sildim
+	
+	cout << "dvec.size() = " << dvec.size() << "\n";
+}
+
+ // container'den pointer'i sildim
+// silinen öğe için destructor çağırılmadı, çok tehlikeli
+
+------------------------------------------- 
+
+dolayısıyla dinamik ömürlü nesnelerin adreslerini container'da tutabilirsiniz
+ama çok problemli 
+
+------------------------------------------- 
+
+// ama container'da unique_ptr tutmak istesem bu problemli değil
+// ama unique_ptr kopyalamaya kapatılmış bir sınıf, container'a kopyalama yoluyla 
+koyamazsınız. Öğeyi taşıma semantiği ile ekleyebilirsiniz
+
+
+#include <conio.h>
+
+using DatePtr = std::unique_ptr<Date>
+
+int main()
+{
+	vector<DatePtr> vec;
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}});  // veya DatePtr<Date{new Date{1, 5, 1998}}
+	// push_back'in sağ taraf ref. parametreli olan fonk. çalıştı
+	
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	
+	
+	vec.emplace_back(new Date{2, 10, 1991});  
+	// argüman olarak container'da tutulan öğenin const.'ına gönderilecek argümanı göndermem
+	gerekir, unique_ptr'nin const.'ına ya nullptr ya dinamik bir date nesnesinin adresi
+	
+	for(int i = 0; i < 5; ++i){
+		vec.push_back(make_unique<Date>(i, i, 2011 + i));
+	}
+	
+	cout << "vec.size() = " << vec.size() << "\n";
+	
+	_getch();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// emplace fonk.'ları kopyalama, taşıma olmadan doğrudan container'in sağladığı bellek alanında 
+nesneyi oluşturur
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir vector'ün içinde tuttuğu öğeler ne zaman destroy ediliyor ?
+
+ya vector nesnesinin hayatı bitecek, vector'ün kendi destructor'i bütün öğeleri destro edecek
+ya biz vector'ün silme fonk. birini çağıracaz, silinen öğe sınıf ise onun destr. çağırılır, tutulan
+öğeler unique_ptr türünden olduğundan onun destructor'i çağırıldığında o da dinamik ömürlü 
+nesneyi delete eder. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <conio.h>
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});  
+	
+	for(int i = 0; i < 5; ++i){
+		vec.push_back(make_unique<Date>(i, i, 2011 + i));
+	}
+	
+	while(!vec.empty()){
+		vec.pop_back();
+		_getch();
+	}
+	
+}
+
+---------------------------------------------
+
+container'da dinamik ömürlü nesnelerin adreslerini tutmak hiç iyi bir fikir değil. 
+her zaman unique_ptr'nin çok daha iyi bir fikir. Çünkü container'dan nesneyi sildiğimde
+onun kontrol ettiği dinamik ömürlü nesne de delete edilmiş olur. 
+Exception safety açısından avantajları var. Container'da unique_ptr tutmak avantajlı. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	vector<DatePtr> destvec(5);
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});  
+	
+	for(int i = 0; i < 5; ++i){
+		vec.push_back(make_unique<Date>(i, i, 2011 + i));
+	}
+	
+	Copy(vec.begin(), vec.end(), destvec.begin());  // bir range'deki öğeleri başka bir range kopyalar
+	// sentax hatası, unique_ptr kopyalamaya kapalı !!!
+}
+
+----------------------------------------------- 
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)
+{
+	while(beg != end){
+		*destbeg++ = *beg++;  // sentax hatası
+	}
+	
+	return destbeg;
+}
+
+----------------------------------------------- 
+
+template <typename InIter, typename OutIter>
+OutIter Copy(InIter beg, InIter end, OutIter destbeg)
+{
+	while(beg != end){
+		*destbeg++ = std::move(*beg++);  // ok 
+	}
+	
+	return destbeg;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir çok programcı zannediyor ki bir tane move var.
+hayır iki tane move var. 
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	vector<DatePtr> destvec(5);
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});  
+	
+	for(int i = 0; i < 5; ++i){
+		vec.push_back(make_unique<Date>(i, i, 2011 + i));
+	}
+	
+	move(vec.begin(), vec.end(), destvec.begin());  
+	
+	cout << "vec.size() = " << vec.size() << "\n";
+	cout << "destvec.size() = " << destvec.size() << "\n";
+	
+	for(auto &p : vec){
+		if(p)
+			cout << "dolu ";
+		else
+			cout << "bos ";
+	}
+	
+	cout << "\n";
+	
+	for(auto &p : destvec){
+		if(p)
+			cout << "dolu ";
+		else
+			cout << "bos ";
+	}
+	
+	_getch();
+	cout << "main devam ediyor\n";
+}
+
+// move'dan sonra destructor çağırılmayacak çünkü sadece taşındı
+// destvec'in ömrü bittiğinde destructor çağrılacak
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::move algoritması var !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <algorithm>
+#include <iterator>
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});
+	
+	
+	auto x = *vec.begin(); // sentax hatası, çünkü kopyalamaya kapatılmıştır
+}
+
+----------------------------------------------------- 
+
+#include <algorithm>
+#include <iterator>
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});
+	
+	
+	auto x = std::move(*vec.begin());  // ok !!!
+}
+
+----------------------------------------------------- 
+
+başka bir yolu : move_iterator
+
+#include <algorithm>
+#include <iterator>
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});
+	
+	move_iterator<vector<DatePtr>::iterator>  miter{ vec.begin() };
+	
+	auto x = *miter;  // ok
+}
+
+----------------------------------------------------- 
+
+daha kolay yazma yolu :  make_move_iterator
+
+#include <algorithm>
+#include <iterator>
+
+using DatePtr = std::unique_ptr<Date>
+using namespace std;
+
+int main()
+{
+	vector<DatePtr> vec;
+	
+	vec.push_back(unique_ptr<Date{new Date{1, 5, 1998}}); 
+	vec.push_back(make_unique<Date> (4, 8, 2011));
+	vec.emplace_back(new Date{2, 10, 1991});
+	
+	
+	cout << (vec[0] ? "dolu" : "bos") << "\n";
+	auto x = *make_move_iterator(vec.begin());
+	
+	cout << *x << "\n";
+	
+	cout << (vec[0] ? "dolu" : "bos") << "\n";
+	_getch();
+}
+
+----------------------------------------------------- 
+
+	move_iterator<vector<DatePtr>::iterator> 
+	// move_iterator bir iteratör adaptörü. Tür argümanı olarak normal bir iteratör verdiğinizde
+	// dereference ettiğinizde onu sağ taraf değeri yapıyor
+
+*----------------------------------------------------------------------------------------------------- 
+
+*iter : lvalue
+
+auto uptr = *iter;  // hata, çünkü unique_ptr kopyalamaya kapalı
+
+auto uptr = *miter; // rvalue, taşıma semantiği devreye girer
+
+*----------------------------------------------------------------------------------------------------- 
+
+gördüklerimiz :
+
+move_iterator<iter_type>
+
+make_move_iterator(iter)
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+
+private: 
+	//
+	std::unique_ptr<std::string> mptr;
+};
+
+int main()
+{
+	Myclass m1;
+	Myclass m2{m1}; // hata
+	m2 = m1;  // hata
+}
+
+soru 1: Myclass sınıfının default const.'ı var mı ?
+tabiki var.
+
+soru 2: Myclass sınıfının copy const.'ı deleted mi ?
+deleted.
+
+copy assignment'i deleted mi ?
+deleted.
+
+neden deleted ? *this mptr'sini copy const. edecek diğerinin mptr'si ile
+copy const. delete edilmiş olduğu için sentax hatası vermek yerine copy
+const.'ını delete eder. 
+
+------------------------------------------------ 
+
+class Myclass{
+
+private: 
+	//
+	std::unique_ptr<std::string> mptr;
+};
+
+int main()
+{
+	Myclass m1;
+	Myclass m2(std::move(m1));  // ok
+	
+	m1 = std::move(m2);  // ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir sınıfın unique_ptr elemanı varsa ve siz herhangi birşekilde fonk.
+yazmadıysanız move only type haline geliyor. 
+Zaten doğal olan bu. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	Myclass(const Myclass& other) : mptr(other.mptr) {}  // sentax hatası verir. Ama
+	derleyici yazarsa hata vermemek için delete eder. 
+private: 
+	//
+	std::unique_ptr<std::string> mptr;
+};
+
+----------------------------------------- 
+
+class Myclass{
+public:
+	Myclass(const Myclass& other) = delete;
+private: 
+	//
+	std::unique_ptr<std::string> mptr;
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : ben Myclass nesnelerinin kopyalanabilir olmasını istiyorsam ?
+deep copy yapacaz !!!
+
+class Myclass{
+	Myclass(const Myclass& other) : mptr{ other.mptr ? new std::string(*other.mptr) : nullptr}
+	// veya mptr{new std::make_unique<std::string>(*other.mptr) }
+	// other'in mptr'si boş olmamalı
+	
+	Myclass& operator = (const Myclass& other)
+	{
+		mptr.reset(other.mptr ? new std::string(*other.mptr) : nullptr);
+	}
+	
+private: 
+	//
+	std::unique_ptr<std::string> mptr;
+};
+
+int main()
+{
+	Myclass m1;
+	
+	Myclass m2 = m1; // hata
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass;
+
+int main()
+{
+	std::unique_ptr<Myclass> uptr;
+}
+
+sentax hatası neden ?
+incomplete type mi 
+
+------------------------------------------------ 
+
+class Myclass;
+
+Myclass* foo();
+
+int main()
+{
+	Myclass* p = foo();  
+	
+	delete p;  // hata, incomplete type'i delete ettiğimde destructor'ı çağırılır
+	// Myclass delete edilebilmesi için complete type olması gerekiyor. 
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+class Nec;
+
+class Myclass{
+
+private:
+	std::unique_ptr<Nec> mp;
+};
+
+
+#include "myclass.h"
+
+int main()
+{
+	Myclass m;  // sentax hatası !!!
+}
+
+neden sentax hatası oldu ?
+çok kolay değil sorunun cevabı. Sınıfın default const. default init eder, problem yok.
+Destructor non-static, public, inline fonksiyonu.
+mp'nin destructor'ını çağırır. mp'nin destructor'ı Nec'in destructor'ını çağırır. 
+Nec incomplete type olduğu için sentax hatası oldu.
+Yani kodu sınıfın içinde, bütün problem bu inline olması
+
+class Nec;
+
+class Myclass{
+public:
+	~Myclass()
+	{
+		// mp'nin destructor'ını çağırır.
+		// mp.~
+	}
+private:
+	std::unique_ptr<Nec> mp;
+};
+
+
+#include "myclass.h"
+
+int main()
+{
+	Myclass m;  // sentax hatası !!!
+}
+
+-------------------------------------------------- 
+
+bu kodu legal hale getirmenin yolu var mı ? 
+
+class Myclass{
+public:
+	~Myclass();
+	
+private:
+	std::unique_ptr<Nec> mp;
+};
+
+
+#include "myclass.h"
+
+class Nec{  // complete type
+
+};
+
+Myclass::~Myclass() = default; 
+//bu bildirimi görünce default edecek
+// artık complete type olduğu için bir problem olmayacak
+
+
+void func()
+{
+	Myclass m;  // ok !!!
+}
+
+--------------------------------------------------------- 
+
+bu özellik nerede işime yarayacak ?
+
+#include "myclass.h"
+
+class Erg;
+
+int main()
+{
+	Erg* p;
+	
+	delete p;  // sentax hatası, delete ettiğim yerde erg sınıfı complete type olsa
+	// problem olmayacaktı.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+pimpl idiom : (pointer implementation'ın kısaltılması)
+
+üretimde en fazla kullanılan tekniklerden biri
+
+diğer isimleri : handle-body idiom
+cheshire cat 
+opaque pointer
+
+bu idiom ile bir sınıfın private bölümünü client kodlardan gizliyoruz. 
+
+--------------------------------------------- 
+
+#include <string>
+#include "date.h"
+#include <vector>
+
+class Student{
+public:
+
+private:
+	std::string m_name;
+	Date m_bdate;
+	std::vector<int> m_grades;
+	// ...
+}
+
+------------------------------------------- 
+
+ama eğer bu sınıfın private bölümünü bir şekilde gizleyebilirsem 
+başlık dosyalarını da include etmem gerekmez.
+
+Bir sınıfın private veri elemanlarını neden gizlemek isteyelim ki ?
+çünkü bunlar sınıf tanımı içinde olursa h dosyalarını include etmek
+zorunda kalacağım.
+
+Olası dezavantajlar:
+1) hangi veri elemanlarının kullandığınızı herkese deklere etmiş oluyorsunuz
+(en önemsizi, bilmesi çok da önemli değil)
+2) bu h. fileların include ettiği h. file'ların da client kodlar tarafından
+include edilmesi demek.
+40 tane 50 tane başlık dosyasını eklemiş olur. Bunlar bildirim kod size'i etkilemiyor
+ama compile time daha uzun sürecek. 
+3) en önemli problem bağımlılık.
+Bu başlık dosyalarında bir değişiklik olursa o başlık dosyasını include eden bütün 
+kodların yeniden derlenmesi gerekecek. Bu yapılmazsa abstract interface farkı olacak
+bu da tanımsız davranış demek
+
+------------------------------------------------------- 
+ 
+#include <string>
+#include "date.h"
+#include <vector>
+
+class Student{
+public:
+	void print()const;
+private:
+	std::string m_name;
+	Date m_bdate;
+	std::vector<int> m_grades;
+	// ...
+};
+
+---------- 
+
+// student.cpp
+#include "student.h"
+#include <iostream>
+
+void Student::print()const
+{
+	std::cout << m_name << "\n";
+	std::cout << m_bdate << "\n";
+	
+	for(const auto i : m_grades)
+		std::cout << i << " ";
+		
+	std::cout << "\n";
+}
+
+---------------------------------------------- 
+
+pimple idiom'u ne yapıyor ?
+// başlık dosyalarına gerek yok 
+
+// Student.h
+class Student{
+public:
+	Student();
+	~Student();
+	void print()const;
+	void set();
+	int get_best_grade()const;
+private:
+	struct pimpl;
+	pimpl* mp;
+
+};
+
+// Student.cpp  // bunun client'lar ile alakası yok
+#include "student.h"
+#include <string>
+#include "date.h"
+#include <vector>
+#include <algorithm>
+
+struct Student:pimpl{
+	std::string m_name;
+	Date m_bdate;
+	std::vector<int> m_grades;
+	
+	void print()const
+	{
+		std::cout << mp->m_name <<  "\n";
+		std::cout << mp->m_bdate <<  "\n";
+		for(const auto i : mp->m_grades)
+			std::cout << i << " ";
+		std::cout << "\n";
+	}
+};
+
+Student::Student() : mp{new pimpl} {
+
+}
+
+void Student::print()const
+{
+	mp->print();  // daha önce doğrudan eriştiğim yerde pointer ile erişim
+}
+
+Student::~Student()
+{
+	delete mp;
+}
+
+int Student::get_best_grade()const
+{
+	return *std::max_element(mp->m_grades.begin(), mp->m_grades.end());
+}
+
+// main.cpp
+#include "student.h"
+
+int main()
+{
+	Student s;
+	
+	s.print();
+	s.set();
+	auto grade = s.get_best_grade();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+dezavantajları : 
+her Student nesnesi için dinamik ömürlü bir pimple nesnesi oluşturulacak,
+bunun için allocation yapılacak ve bunun bir maliyeti var.
+
+büyük projelerde bütün bağımlılıklarını kaldırması açısından
+tercih edilir. 
+
+daha önce doğrudan eriştiğim yerde pointer ile erişim
+pimple pointer'in gösterdiği nesnenin elemanlarına erişecem, maliyeti var
+
+*----------------------------------------------------------------------------------------------------- 
+
+pimpl'i geleneksel yöntemlerle yapıldı ama
+ya destructor çağırılmadan bir exception throw ederse resource
+leak olur. 
+
+pimpl idiomunu unique_ptr ile implemente edin.  Bunu yapabilmeniz için
+sizin sınıfınızın elemanının unique_ptr'nin bir incomplete type olması gerekiyor. 
+Bu durumda sınıfın destruc.'ını derleyicinin yazmasını sağlarsanız, derleyicinin
+yazdığı inline fonk.  incomplete type türünden bir nesneyi delete ettiği için
+problem olur. 
+
+-----------------------------
+
+unique_ptr ile implementasyon :
+
+// Student.h
+#include <memory>
+class Student{
+public:
+	Student();
+	~Student();
+	void print()const;
+	void set();
+	int get_best_grade()const;
+private:
+	struct pimpl;
+	std::unique_ptr<pimpl> mp;
+};
+
+
+// Student.cpp  // bunun client'lar ile alakası yok
+#include "student.h"
+#include <string>
+#include "date.h"
+#include <vector>
+#include <algorithm>
+
+struct Student:pimpl{
+	std::string m_name;
+	Date m_bdate;
+	std::vector<int> m_grades;
+	
+	void print()const
+	{
+		std::cout << mp->m_name <<  "\n";
+		std::cout << mp->m_bdate <<  "\n";
+		for(const auto i : mp->m_grades)
+			std::cout << i << " ";
+		std::cout << "\n";
+	}
+};
+
+Student::Student() : mp{ std::make_unique<pimpl>()} { // new pimpl
+
+}
+
+Student::~Student() = default;
+
+void Student::print()const
+{
+	mp->print();  // daha önce doğrudan eriştiğim yerde pointer ile erişim
+}
+
+int Student::get_best_grade()const
+{
+	return *std::max_element(mp->m_grades.begin(), mp->m_grades.end());
+}
+
+// main.cpp
+#include "student.h"
+
+int main()
+{
+	Student s;
+	
+	s.print();
+	s.set();
+	auto grade = s.get_best_grade();
+}
+
+destructor'in kodu görüldüğü noktada student'in pimple'i complete type haline
+gelir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+eğer pimpl idiomunu unique_ptr ile init ediyorsanız, mutlaka
+unique_ptr<pimple> açılımı incomplete type açılım olduğu için,
+derleyicinin yazdığı fonk. inline olursa incomplete type'i delete etmiş olur.
+
+önce unique_ptr'nin incomplete type açılımı kullanılabilir, ama 
+unique_ptr'nin destructor'i çağrıldığında sarmaladığı pointer'i delete
+ettiğinde incomplete type'i delete etmiş oluyor. Sentax hatası. Delete
+edildiği noktada complete type olması gerekir.
+ 
+*----------------------------------------------------------------------------------------------------- 
+
+fast pimple idiom : ileri C++
+neden hızlı ? çünkü dinamik allocation yapmıyor
+
+*-----------------------------------------------------------------------------------------------------
+
+unique_ptr array partial specialization
+unique_ptr ve exception handling
+						unique_ptr hataları
+					
+pimple idiom
+	pointer implementation
+	unique_ptr implementation
+
+elemanı unique_ptr olan sınıflar
+unique_ptr for incomplete types
+
+anlatıldı🙂
+
+factory functions
+sink functions
+pass through
+
+*----------------------------------------------------------------------------------------------------- 
+
