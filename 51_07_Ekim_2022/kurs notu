@@ -1,0 +1,1220 @@
+
+İçerik:
+
+factory function
+pass through
+hatalar
+shared_ptr
+weak_ptr sınıfı : 
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+unique_ptr için bir inserter var, adresi yazdırmak istersem doğrudan insert'i kullanabiliyorum.
+inserter neye deniyordu ? bir çıkış akımına bir nesnenin değerini formatlı olarak yazdırmak 
+için operator left shift'i overload eder.
+
+#include <memory>
+#include <string>
+
+int main()
+{
+	using namespace std;
+	
+	auto uptr = make_unique<string>(100, 'a');
+
+	cout << (void*)uptr->data() << "\n";   // 100 tane 'a' karakteri tutuluyor.
+	cout << *uptr << "\n";
+	cout << (void*)uptr.get() << "\n";  // string nesnesi var dinamik ömürlü
+	
+	cout <<  uptr << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void sink : eğer bir fonk. dinamik ömürlü nesnenin veya bir kaynağın mülkiyetini
+almaya yönelikse sink denir.  sink fonk. bende dinamik ömürlü nesne kullanılacak ve
+ölecek mesajı veriyorlar.
+
+*-----------------------------------------------------------------------------------------------------
+
+struct Nec{
+	Nec() {std::cout << "Nec default ctor this : "  << this << "\n";}
+	~Nec() {std::cout << "Nec destructor this : "  << this << "\n";}
+	void func()
+	{
+		std::cout << "Nec::func() this  = " << this << "\n";
+	}
+};
+
+void foo(Nec* np)
+{
+	np->func();
+	delete np;
+}
+
+int main()
+{
+	auto p = new Nec;
+	std::cout << "p = " << p << "\n";
+	
+	foo(p); // amacımız mulkiyeti buraya vermek
+	p = nullptr;
+	
+	std::cout << "main devam ediyor\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+struct Nec{
+	Nec() {std::cout << "Nec default ctor this : "  << this << "\n";}
+	~Nec() {std::cout << "Nec destructor this : "  << this << "\n";}
+	void func()
+	{
+		std::cout << "Nec::func() this  = " << this << "\n";
+	}
+};
+
+void foo(std::unique_ptr<Nec> up)
+{
+	up->func();
+}
+
+int main()
+{
+	// foo(std::unique_ptr<Nec>{new Nec}); 
+	// foo(std::make_unique<Nec>());
+	auto uptr = std::make_unique<Nec> ();
+	
+	foo(std::move(uptr));
+	std::cout << "main devam ediyor\n";
+}
+
+// böyle fonk.'lara sink deniyor. Bana nesneyi gönder, kullanıp çöpe atayım.
+Sen mülkiyeti bana bırak. unique_ptr burada avantaj sağlar. 
+Hem exception handling açısından hem dinamik ömürlü nesneleri ham pointer'lar
+ile yönettiğimiz zaman karşılaştığımız problemler burada olma.
+
+*-----------------------------------------------------------------------------------------------------
+
+factory function : eğer bir fonk. amacı nesne oluşturmaksa ve oluşturduğu 
+nesneyi döndürüyorsa bu fonk. denir. İlla dinamik ömürlü olması gerekmiyor.
+
+Nec* create_nec()
+{
+	Nec* p;
+	
+	return p;
+}
+ --------------------
+
+std::unique_ptr<Nec> create_nec()
+{
+	auto uptr = std::make_unique<Nec>();
+	uptr->func();
+	
+	return std::move(uptr); // hata, otomatik ömürlü nesneyi bu şekilde move yapmayın
+}
+
+ --------------------
+
+// factory function
+
+std::unique_ptr<Nec> create_nec()
+{
+	auto uptr = std::make_unique<Nec>();
+	uptr->func();
+	
+	return uptr; // ok
+}
+
+int main()
+{    
+	std::cout << "main basladi\n";
+	{
+		auto uptr = create_nec;
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+her ne kadar bu fonksiyonun geri dönüş değer unique_ptr olsa da
+siz tek sahiplik ilkesi ile kullanmak zorunda değilsiniz.
+
+ --------------------
+
+// factory function
+
+std::unique_ptr<Nec> create_nec()
+{
+	auto uptr = std::make_unique<Nec>();
+	uptr->func();
+	
+	return uptr; // ok
+}
+
+int main()
+{    
+	std::cout << "main basladi\n";
+	{
+		std::shared_ptr<Nec> sptr = create_nec;  // enterasan !!
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+struct Nec{
+	Nec() {std::cout << "Nec default ctor this : "  << this << "\n";}
+	~Nec() {std::cout << "Nec destructor this : "  << this << "\n";}
+	void func()
+	{
+		std::cout << "Nec::func() this  = " << this << "\n";
+	}
+};
+
+// pass through  (cagirana mulkiyeti geri verir)
+std::unique_ptr<Nec> fpass(std::unique_ptr<Nec> uptr)
+{
+	uptr->func();
+	return uptr;
+}
+
+int main()
+{
+	auto uptr = std::make_unique<Nec>();
+	
+	up = fpass(std::move(up));
+	
+	std::cout << "main devam ediyor\n";
+	(void)getchar();
+	
+	// buraya kadar hiç destructor çağırılmadı !!!!
+}
+
+
+-----------------------------------------------------------------------------------------
+---------------------------------HATALAR -------------------------------------------
+-----------------------------------------------------------------------------------------
+
+1) 
+struct Nec{
+	Nec() {std::cout << "Nec default ctor this : "  << this << "\n";}
+	~Nec() {std::cout << "Nec destructor this : "  << this << "\n";}
+	void func()
+	{
+		std::cout << "Nec::func() this  = " << this << "\n";
+	}
+};
+
+
+std::unique_ptr<Nec> fpass(std::unique_ptr<Nec> uptr)
+{
+	uptr->func();
+	return uptr;
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto p = new Nec;
+	{
+		auto up1 = unique_ptr<Nec>{ p };
+		auto up2 = unique_ptr<Nec>{ p };
+	}
+	
+	cout << "main devam ediyor\n";
+}
+
+// aynı adresi sarmalar, birinin destructor'i delete ettiğinde
+diğeri zaten dangling olacak. runtime hatası !!!
+
+--------------------------------------------
+
+2) unique_ptr boşken dereference etmek
+
+int main()
+{
+	using namespace std;
+	
+	unique_ptr<string> up1;
+	unique_ptr<string> up2{};
+	unique_ptr<string> up3{nullptr};
+	// üç pointer da boş 
+	
+	cout << (up1 ? "dolu" : "bos") << "\n";
+	cout << (up2 ? "dolu" : "bos") << "\n";
+	cout << (up3 ? "dolu" : "bos") << "\n";
+	
+	
+	cout << *up1; // hata, runtime error
+}
+
+--------------------------------------------
+
+3) unique_ptr dolu ama mülkiyeti bırakıp boş hale geçmiş olabilir
+
+int main()
+{
+	using namespace std;
+	
+	auto up = make_unique<string>("necati ergin");
+	
+	auto ptr = up.release();
+}
+
+resource leak, nesne delete edilmedi ama unique_ptr nesnemiz mülkiyeti bıraktı.
+delete ptr;  kodu eklenmeli
+
+--------------------------------------------
+
+4) get fonk. çağırılır, fakat get'in geri dönüş değeri ile bir unique_ptr daha oluşturmak
+
+int main()
+{
+	using namespace std;
+	
+	auto up = make_unique<string>("necati ergin");
+	
+	auto ptr = up.get();
+	
+	auto up2 = unique_ptr<string>(ptr);
+}
+
+get fonk. dinamik ömürlü string nesnesinin adresini döndürdü. 
+Ama ben ondan bir unique_ptr daha oluşturdum.
+
+
+--------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto up = make_unique<string>("necati ergin");
+	
+	auto ptr = up.get();
+	
+	delete ptr;
+}
+
+get mülkiyeti bırakmıyor. Aldığınız adresi delete ettiniz. Dolayısıyla destructor
+çağırıldı. Ama unique_ptr'nin destructor'i çağırıldığında o da delete edecek.
+// double deletion
+
+*-----------------------------------------------------------------------------------------------------
+
+genel tavsiye şu :
+
+işinizi görüyorsa önce make_unique_ptr kullanın. New operatörü
+ortada görünmesin. Doğrudan unique_ptr elde edin. 
+Raw pointer'i kullanmayın.
+
+*-----------------------------------------------------------------------------------------------------
+
+shared_ptr : unique_ptr'ye göre daha az kullanılıyor. Daha zor bir konu.
+shared ownership
+
+#include <memory> 
+
+birden fazla pointer bir kaynağı gösterirse ortada şöyle bir problem var,
+sahibi kim ? hiç kimse o sorumluluğu yüklenmek istemiyor
+
+iki risk var :
+1) hiçkimsenin bu sorumluluğu almaması, dolayısıyla kaynağın geri verilmemesi,
+resource leak olması
+2) pointer'lardan biri delete edilecek, bu durumda diğer pointer'lar dangling
+olacak
+3) bir pointer'i kullanırken onun kopyaları başka yerde olduğundan onun 
+delete edilip edilmediğini anlama şansımız da yok
+
+--------------------------------
+
+int main()
+{
+	int* pd = (int*) std::malloc(100 * sizeof(int));
+	
+	if(pd dangling pointer mi ?) // böyle bir sorgulama yok 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+some : bir tür ismi
+
+shared pointer nesnesi isem bir bellek bloğuna pointer tutuyorum. O bellek bloğunda
+reference counter var. 
+
+shared_ptr iki tane pointer tutar, biri dinamik ömürlü nesnenin adresi, diğeri
+control bloğunun adresini tutacak. 
+
+unique_ptr'nin hayatı bitince gösterdiği kaynağı sonlandırıyordu. Nasıl sonlandırıyor ?
+Orada şöyle bir hile yapılıyordu.  ikinci bir template parametresi var, buna deleter denir. 
+Aslında sarmaladığı adresi callable'a argüman olarak gönderiyor. Eğer biz default
+template argümanını kullandığımızda yalın delete işlemi yapılır. Custom deleter da 
+kullanabiliriz.  Deleter doğrudan template argümanı. 
+
+Fakat shared_ptr'de yine bir deleter var ama type-erased. İleri C++ konusu.
+shared_ptr sınıfında deleter türü. Template argümanı değil const. argümanı olarak
+geçiyorsunuz. shared_ptr sınıfı gerçekte deleter'in hangi tür olduğunu bilmiyor.
+
+template<typename T>
+class shared_ptr{
+
+public:
+	
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+using uptr = unique_ptr<string>;
+using sptr = shared_ptr<string>
+
+int main()
+{
+	cout << "sizeof(string*) =  " << sizeof(string*) << "\n";
+	cout << "sizeof(uptr) =  " << sizeof(uptr) << "\n";
+	cout << "sizeof(sptr) =  " << sizeof(sptr) << "\n";
+}
+
+string* = 4 byte
+unique_ptr = 4 byte
+shared_ptr = 8 byte  // içinde ayrıca control bloğunun adresini tutuyor, referans sayacına ulaşacak
+
+
+*-----------------------------------------------------------------------------------------------------
+
+shared_ptr oluşturmanın yolları :
+
+
+#include <memory>
+#include <string>
+#include <iostream>
+#include "date.h"
+
+int main()
+{
+	using namespace std;
+	
+	shared_ptr<Date> sp1;
+	shared_ptr<Date> sp2{};
+	shared_ptr<Date> sp1{nullptr};
+	
+	cout << "sp1 : " << (sp1 ? "dolu" : "bos") << "\n";
+	cout << "sp2 : " << (sp2 ? "dolu" : "bos") << "\n";
+	cout << "sp3 : " << (sp3 ? "dolu" : "bos") << "\n";
+}
+
+-------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	{
+		shared_ptr<Date> sp1 {new Date{1, 5, 1978} };
+		cout << "sp : " << (sp ? "dolu" : "bos") << "\n";
+		cout << *sp << "\n";
+		cout << sp->month_day() << "\n";
+	}
+	cout << "main devam ediyor\n";
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	shared_ptr<Date> sp;
+	
+	shared_ptr<Date> sp1 {new Date{1, 5, 1978} };
+	auto sp2 = sp1;
+	auto sp3 = sp2;
+	sp = sp3;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	shared_ptr<Date> sp;
+	
+	{
+		shared_ptr<Date> sp1 {new Date{1, 5, 1978} };
+		{
+			auto sp2 = sp1;
+			{
+				auto sp3 = sp2;
+				sp = sp3;
+			}
+		}
+	}
+		cout << "main devam ediyor\n";
+		(void)getchar();
+		// destructor burada çağırıldı !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// use_count() : shared_ptr gösterdiği kaynağı gösteren kaç pointer var ? 
+
+int main()
+{
+	using namespace std;
+	shared_ptr<Date> sp;
+	
+	{
+		shared_ptr<Date> sp1 {new Date{1, 5, 1978} };
+		{
+			auto sp2 = sp1;
+			{
+				auto sp3 = sp2;
+				sp = sp3;
+				cout << "sp.use_count() = " << sp.use_count() << "\n";  // cevap 4
+				cout << "sp3.use_count() = " << sp3.use_count() << "\n";  // cevap 4
+				cout << "sp2.use_count() = " << sp2.use_count() << "\n";  // cevap 4
+				cout << "s1.use_count() = " << sp1.use_count() << "\n";  // cevap 4
+			}
+			
+			cout << "sp2.use_count() = " << sp2.use_count() << "\n";  // cevap 3
+		}
+		cout << "sp1.use_count() = " << sp1.use_count() << "\n";  // cevap 2
+	}
+	
+		cout << "sp.use_count() = " << sp.use_count() << "\n";  // cevap 1
+		cout << "main devam ediyor\n";
+		(void)getchar();
+		// destructor burada çağırıldı !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+operator bool : dolu mu boş mu
+*   : içerik operator fonksiyonu, gösterilen nesneye erişim sağlıyor
+->   : ok operator fonksiyonu, gösterilen nesnenin elemanlarına erişim sağlıyor
+use_count : kaç tane pointer var
+
+*-----------------------------------------------------------------------------------------------------
+
+// make_shared :
+
+int main()
+{
+	using namespace std;
+
+	auto sp1 = make_shared<Date>(5, 8, 1998);
+	auto sp2 = make_shared<Date>(4, 4, 1944);
+	
+	sp1 = sp2;  // sp1 için destructor çağrılır !!! , sp1 kendi nesnesinini bırakır !!!
+	(void)getchar();
+};
+
+-----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	auto sp = make_shared<Date>(5, 8, 1998);
+	auto x = sp;
+	auto y = sp;
+
+	auto sptr = make_shared<Date>(1, 1, 2001);
+	cout << "sptr.use_count() = " << sptr.use_count() << "\n";   // 1 
+	
+	cout << "x.use_count() = " << x.use_count() << "\n";  // 3
+	(void)getchar();
+	
+	sp = sptr; // sp kendi nesnesini bırakır
+	
+	cout << "sptr.use_count() = " << sptr.use_count() << "\n";   // 2
+	cout << "x.use_count() = " << x.use_count() << "\n";  // 2
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+// reset fonksiyonu biraz farklı, eğer argüman geçmezsem hayatını sonlandırıyor, kaynağı geri veriyordu
+// bir adres geçersem kendi kaynağını sonlandırıp onu alır.
+
+int main()
+{
+	using namespace std;
+	
+	auto up = make_unique<Date>(1, 1, 1987);
+	cout << *up << "\n";
+	
+	up.reset();
+	up = nullptr;
+	up = {};  // üçü de aynı anlamda
+}
+
+---------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto up = make_unique<Date>(1, 1, 1987);
+	cout << *up << "\n";
+	
+	up.reset(new Date{2, 3, 1933});
+	(void) getchar();
+}
+
+----------------------------------------------------
+
+// fakat shared_ptr'de böyle değil, reset'i çağırdığınızda nesne destroy edilmiyor.
+// sadece referans sayacı bir azalır
+
+int main()
+{
+	using namespace std;
+	
+	auto sp1 = make_shared<Date>(12, 12, 2012);
+	auto sp2 = sp1;
+	auto sp3 = sp2;
+	auto sp4 = sp2;
+	
+	cout << "sp4.use_count() = " << sp4.use_count() << "\n";  // 4
+	sp1.reset();
+	// sp1 = nullptr;
+	// sp1 = {};  // aynı anlamda
+	(void)getchar(();
+	cout << "sp4.use_count() = " << sp4.use_count() << "\n";  // 3
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+burada release fonk. yok.
+
+*-----------------------------------------------------------------------------------------------------
+
+void print(std::shared_ptr<Date> spx)
+{
+	std::cout << "spx.use_count() = " << spx.use_count() << "\n";
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto sp1 = make_shared<Date>(12, 12, 2012);
+	cout << "sp1.use_count() = " << sp1.use_count() << "\n";   // 1
+	
+	print(sp1);  // 2
+	
+	std::cout << "sp1.use_count() = " << sp1.use_count() << "\n";  // 1
+	(void)getchar();
+}
+
+-----------------------------------------------------
+
+ // referans'i kullansam yeni shared_ptr nesnesi oluşturulmaz
+void print(std::shared_ptr<Date>& spx) 
+{
+	std::cout << "spx.use_count() = " << spx.use_count() << "\n";
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto sp1 = make_shared<Date>(12, 12, 2012);
+	cout << "sp1.use_count() = " << sp1.use_count() << "\n";   // 1
+	
+	print(sp1);  // 2
+	
+	std::cout << "sp1.use_count() = " << sp1.use_count() << "\n";  // 1
+	(void)getchar();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+shared_ptr içinde iki pointer tutuyor, biri dinamik ömürlü nesneyi, diğeri
+kontrol bloğunu gösteriyor. make_shared ile oluşturulduğunda 
+derleyiciler iki tane bellek bloğu allocate etmek yerine tek bir bellek bloğu 
+allocate edebiliyor. Tek bellek bloğu daha hızlı çalışır. 
+Dinamik ömürlü nesne ile hayata getirirsek optimizasyon yapmaz. İki bellek
+bloğu ayrı ayrı oluşur.
+
+----------------------------------------------
+
+void* operator new(std::size_t sz)
+{
+	std::cout << "operator new called for the size of : " << sz << "\n";
+
+	if(sz == 0)
+		++sz;
+		
+	if(void* ptr = std::malloc(sz))
+		return ptr;
+		
+	throw std::bad_alloc{};
+}
+
+class Myclass{
+
+	unsigned char buffer[32]{};
+};
+
+int main()
+{
+	std::cout << "sizeof(Myclass) = " << sizeof(Myclass) << "\n";
+	
+	shared_ptr<Myclass> sp{new Myclass};
+}
+
+
+32 byte'lik dinamik ömürlü Myclass nesnesi için
+16 byte'lik control bloğu
+
+--------------------------------------------------
+
+void* operator new(std::size_t sz)
+{
+	std::cout << "operator new called for the size of : " << sz << "\n";
+
+	if(sz == 0)
+		++sz;
+		
+	if(void* ptr = std::malloc(sz))
+		return ptr;
+		
+	throw std::bad_alloc{};
+}
+
+class Myclass{
+
+	unsigned char buffer[32]{};
+};
+
+int main()
+{
+	std::cout << "sizeof(Myclass) = " << sizeof(Myclass) << "\n";
+	
+	auto sp = make_shared<Myclass> ();
+}
+
+// 44 byte'lik bir bellek bloğu
+// dinamik ömürlü nesne ve control bloğu beraber 
+// make_shared daha verimli
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	void foo(){};
+	unsigned char buffer[32]{};
+};
+
+int main()
+{
+	using namespace std;
+	
+	{
+		shared<Myclass[]> sptr(new Myclass[5]);
+		
+		sptr[2].foo();
+	}
+	
+	std::cout << "main devam ediyor\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<string>("necati ergin eray goksu musa sertkaya");
+	
+	cout << sp << "\n";   // dinamik ömürlü nesnenin adresi
+	cout <<  sp.get() << "\n";
+	cout << (void*)sp->data() << "\n";  // yazının tutulduğu adres
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	auto sp1 = make_shared<string>("necati ergin");
+	auto sp2 = make_shared<string>("necati ergin");
+	
+	cout << boolalpha;
+	
+	cout << (sp1->data() == sp2->data() ); // false, çünkü yazıların tutulduğu adresler farklı adresler
+	
+	
+	cout << (sp1 == sp2) << "\n";  // false
+	cout << (*sp1 == *sp2) << "\n";  // true
+	sp2 = sp1;
+	cout << (sp1 == sp2) << "\n";  // true
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// deleter
+// shared_ptr'nin ikinci bir template parametresi yok
+// deleter type erased
+// ama const.'a kendi deleter'inizi geçebilirsiniz
+// bu durumda make_shared kullanılamaz
+
+
+int main()
+{
+	using namespace std;
+	
+	const auto f = [](string*){
+		std::cout << "custom deleter\n";
+		delete p;
+	};
+	
+	{
+		shared_ptr<string> sptr{new string{ "necati ergin },  f};  
+	}
+	
+	std::cout << "main devam ediyor\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// shared_ptr nesnelerini container'da tuttuğumuz zaman
+// onlar arasında bir kopyalama yaptığımız zaman kopyalar
+// aynı dinamik ömürlü nesneyi gösterir
+
+using sptr = std::shared_ptr<std::string>;
+
+int main()
+{
+	using namespace std;
+	
+	list<sptr> mylist;
+	
+	for(int i = 0; i < 20; ++i){
+		mylist.push_back(make_shared<string>(rname() + ' ' + rfname()));
+	}
+	
+	for(const auto& sp : mylist){
+		std::cout << *sp << "\n";
+	}
+	
+	vector<sptr> myvec(mylist.begin(), mylist.end());  // vector'deki ve list'tedeki shared_ptr'ler aynı nesneyi 
+	// gösteriyor, aynı referans semantiği gibi
+	 
+	sort(myvec.begin(), myvec.end(), [](const auto& sp1, const auto& sp2){return *sp1 < *sp2; });
+	
+	std::cout << "\nsiralanmis bicimde\n";
+	for(const auto& sp : myvec){
+		std::cout << *sp << " ";
+	}
+}
+
+// aynı listeye bağlı listeden de vector'den de erişebilirim
+
+------------------------------------------------------------
+
+shared_ptr nesnelerini bir container'da tutabilirim.
+örneğin vector'den bir öğeyi silsem, listedeki silinmiş olmaz.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+private:
+	std::shared_ptr<std::vector<std::string>> mp;  // string vectorü
+};
+
+birden fazla Myclass nesnesi aynı kaynağı paylaşacak !!!!
+böyle yapacağıma static eleman koyardım diyor bazıları, aynı şey değil
+static veri elemanı olsaydı bütün Myclass nesneleri aynı kaynağı kullanıyor olacaktı,
+
+--------------------------------------------------------
+
+
+using svec = std::vector<std::string>;
+
+class NameList{
+
+public:
+	NameList(std::initializer_list<std::string> list) : mp{new svec{list}} {}
+	void print()const
+	{
+		for(const auto& s : *mp){
+			std::cout << s << " ";
+		}
+		std::cout << "\n";
+	}
+	
+	void add_name(const string& name)
+	{
+		mp->push_back(name);
+	}
+	
+	void sort()
+	{
+		std::shared_ptr<svec> mp;
+	}
+	
+private:
+	std::shared_ptr<svec> mp;  // dinamik ömürlü string vector'ünü gösterir
+};
+
+int main()
+{
+	NameList male_list{"ferhat", "volkan", "safa"};
+	NameList female_list{"esra", "demet", "aleyna", "fadime"};
+
+	male_list.print();
+	female_list.print();
+	
+	auto m1_list = male_list;
+	auto m2_list = male_list;
+	auto m3_list = male_list;  // 3'ü de aynı listeyi kullanır
+	
+	m3_list.print();
+	
+	m1_list.add_name("hakan");
+	m2_list.add_name("samet");
+	m3_list.add_name("necati");
+	
+	male_list.print();
+	
+	m1_list.sort();
+	m2_list.print();
+	
+	auto f1_list = female_list;
+	f1_list.add_name("canan");
+	f1_list.add_name("yelda");
+	f1_list.add_name("aysenur");
+	
+	f1_list.sort();
+	female_list.print();
+}
+
+aynı sınıf türünden birden fazla nesne aynı kaynağı kullanıyor
+
+*-----------------------------------------------------------------------------------------------------
+
+weak_ptr sınıfı : shared_ptr sınıfının yardımcısı, 
+weak_ptr nesnesini shared_ptr nesnesi ile init ettiğinizde onun ref. sayacını arttırmıyor.
+Ama weak_ptr'den shared_ptr oluşturabiliyorsunuz. 
+
+weak_ptr nesnelerini default veya shared_ptr ile init. edebilirsiniz.
+
+
+----------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto sp1 = make_shared<Date>(1, 2, 1992);
+	auto sp2 = sp1;
+	
+	std::cout << "sp1.use_count() = " << sp1.use_count << "\n";  // 2
+	
+	weak_ptr<Date> wp = sp1;
+	
+	std::cout << "sp1.use_count() = " << sp1.use_count << "\n";  // 2
+	std::cout << "wp.use_count() = " << wp.use_count << "\n";  // 2
+	
+	sp1.reset();
+	std::cout << "sp2.use_count() = " << sp2.use_count << "\n";  // 1
+	std::cout << "wp.use_count() = " << wp.use_count << "\n";  // 1
+	(void)getchar();
+}
+
+------------------------------------------------------
+
+weak_ptr'ler * (içerik) operatörü ile ok operatörü ile dereference edilemiyor.
+
+------------------------------------------------------
+
+ne işe yarayacak bu ?
+
+expired fonk :
+operator bool fonk. yok ama weak_ptr sınıfının expired fonk. var. Bool döndürür. 
+weak_ptr'yi hayata getiren shared_ptr'nin kaynağı geri verilmiş mi verilmemiş mi ? 
+
+------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<Date>(1, 2, 1992);
+
+	weak_ptr<Date> wp = sp;
+	
+	cout << boolalpha << wp.expired() << "\n";  // false
+	cout << wp.use_count() << "\n";  // 1
+	
+	(void)getchar();
+	
+	sp.reset();
+	cout << boolalpha << wp.expired() << "\n";  // true
+	cout << wp.use_count() << "\n";  // 0
+}
+
+------------------------------------------------------
+
+bir shared_ptr'den bir weak_ptr oluşturursam weak_ptr başka bir kodda olsa dahi weak_ptr'yi kullanarak
+onun gözlemcisi olduğu shared_ptr'nin kaynağının geri verilip verilmediğini kontrol edebilirim.
+Bu tıpkı bir pointer'in dangling olup olmadığını kontrol etmek gibi. 
+weak_ptr ile dangling kontrolü de yapabilirsiniz.
+
+------------------------------------------------------
+
+weak_ptr expire olmamış, expire olmayan bir weak_ptr'den tekrar bir shared_ptr oluşturabiliyorum.
+2 yolu var:
+1) sınıfın lock isimli fonk. çağırmak, shared_ptr döndürür
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<Date>(1, 2, 1992);
+
+	weak_ptr<Date> wp = sp;
+	
+	
+	if(auto spx = wp.lock()) { // spx de shared_ptr oldu, kaynağımız geri verilmişse yeni shared_ptr boş olur,
+	// değeri nullptr olur.
+		cout << *spx << "\n";
+		cout << "use_count = " << spx.use_count() << "\n";
+	}
+	else{
+		std::cout << "kaynak geri verilmiş\n";
+	}
+}
+
+------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<Date>(1, 2, 1992);
+
+	weak_ptr<Date> wp = sp;
+	
+	sp.reset();
+	
+	if(auto spx = wp.lock()) { 
+	// değeri nullptr olur.
+		cout << *spx << "\n";
+		cout << "use_count = " << spx.use_count() << "\n";
+	}
+	else{
+		std::cout << "kaynak geri verilmiş\n";
+	}
+}
+
+------------------------------------------------------
+
+2)  expired ile
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<Date>(1, 2, 1992);
+
+	weak_ptr<Date> wp = sp;
+	
+	
+	if(!wp.expired()) {
+		shared_ptr<Date> spx(wp);
+		cout << *spx << "\n";
+	} 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+weak_ptr'nin bool operator fonk. yok
+
+*-----------------------------------------------------------------------------------------------------
+
+ne işe yarar ?
+
+1) mülkiyete karışmıyorum ama gözlemciyim
+
+weak_ptr<T> wp = sptr; 
+
+if(auto sp = wp.lock()){
+	// shared_ptr'nin kaynağı duruyor
+}
+
+veya
+
+if(!wp.expired()){
+	shared_ptr<T> spx = wp;
+}
+
+eğer bu kontrolü yapmadan oluşturursanız
+kaynak gitmemişse problem yok ama kaynak gitmişsse 
+bu durumda exception throw eder.
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<Date>(1, 2, 1992);
+
+	weak_ptr<Date> wp = sp;
+	sp.reset();
+	
+	shared_ptr<Date>spx(wp);  // throws std::bad_weak_ptr, exception'ı yakalamazsam abort fonk. çağrılır.
+	cout << *spx << "\n";
+}
+
+------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto sp = make_shared<Date>(1, 2, 1992);
+
+	weak_ptr<Date> wp = sp;
+	sp.reset();
+	
+	try{
+		shared_ptr<Date>spx(wp);  // throws std::bad_weak_ptr
+		cout << *spx << "\n";
+	}
+	catch(const std::exception& ex){  // veya (const std::bad_weak_ptr& ex)
+		std::cout << "exception caught : " << ex.what() << "\n";
+	}
+}
+
+--------------------------
+
+2) cyclic reference
+
+ortada iki tane shared_ptr var, bir tanesinin delete edilmesi için ref. sayacının 1'e düşmesi
+gerekiyor, kaynağı bir türlü delete edemiyoruz
+
+ahmet'in ref. sayacının 1'e düşmesi için benim hayatımın bitmesi gerekiyor,
+benim ref. sayacımın 1'e düşmesi için ahmet'in hayatının bitmesi gerekiyor
+
+--------------------------
+
+struct B;
+
+struct A{
+	~A() {std::cout << "A destructor\n"; }
+	std::shared_ptr<B> bptr;
+};
+
+struct B{
+	~B() {std::cout << "B destructor\n"; }
+	std::shared_ptr<A> aptr;
+};
+
+int main()
+{
+	using namespace std;
+	
+	auto ap = make_shared<A>();
+	auto bp = make_shared<B>();
+
+	ap->bptr = bp;
+	bp->aptr = ap;
+	
+	cout << "ap.use_count() = " << ap.use_count() << "\n";
+	cout << "bp->aptr.use_count() << "\n";
+	cout << "bp.use_count() = " << bp.use_count() << "\n";
+	cout << "ap->bptr.use_count() << "\n";
+}
+
+--------------------------
+
+cyclic reference'i nasıl kırabilirim ? weak_ptr kullanarak
+
+
+struct B;
+
+struct A{
+	~A() {std::cout << "A destructor\n"; }
+	std::shared_ptr<B> bptr;
+};
+
+struct B{
+	~B() {std::cout << "B destructor\n"; }
+	std::weak_ptr<A> aptr;
+};
+
+int main()
+{
+	using namespace std;
+	
+	auto ap = make_shared<A>();
+	auto bp = make_shared<B>();
+
+	ap->bptr = bp;
+	bp->aptr = ap;
+	
+	cout << "ap.use_count() = " << ap.use_count() << "\n";
+	cout << "bp->aptr.use_count() << "\n";
+	cout << "bp.use_count() = " << bp.use_count() << "\n";
+	cout << "ap->bptr.use_count() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+struct B;
+
+struct A{
+	~A() {std::cout << "A destructor\n"; }
+	std::shared_ptr<B> bptr;
+	void afunc();
+};
+
+struct B{
+	~B() {std::cout << "B destructor\n"; }
+	std::shared_ptr<A> aptr;
+	
+	void bfoo()
+	{
+		aptr->afunc();
+	}
+};
+
+----------------------------------------------------
+
+// weak_ptr olunca diğerinin hayat olup olmadığını kontrol etmeli
+
+struct B;
+
+struct A{
+	~A() {std::cout << "A destructor\n"; }
+	std::shared_ptr<B> bptr;
+	void afunc();
+};
+
+struct B{
+	~B() {std::cout << "B destructor\n"; }
+	std::weak_ptr<A> aptr;
+	
+	void bfoo()
+	{
+		if(auto sp = aptr.lock()){
+			sp->afunc();
+		}
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
