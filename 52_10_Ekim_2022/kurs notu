@@ -1,0 +1,1028 @@
+
+İçerik:
+
+weak_ptr sınıfı 
+std::enabled_shared_from_this 
+shared_ptr aliasing constructor :
+type_traits kütüphanesi :
+integral constant sınıf şablonu :
+constexpr if :
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+soru :
+
+class Base{
+public:
+	virtual void func()noexcept;  // benim sınıfım exception göndermeyecek
+	// noexcept 2017 ile türün bir parçası oldu
+};
+
+// türemiş sınıf taban sınıfın bu fonk.'nu override ederken daha gevşek bir yapı sağlayamaz
+
+class Der : public Base{
+public:
+	virtual void func()noexcept override;
+};
+
+// Liscov
+void foo(Base& r)  // foo'nun exception göndermeyeceğini garantisine güvenerek kod yazılır.
+{
+	r.func();
+}
+
+// bu garantiyi gevşetemez !!!
+
+-----------------------------------------------------------
+
+SOLID principle : 
+S : single responsibility principle
+O : open closed principle
+L : Liscov substition principle (taban sınıftan bir türetme yapacaksanız türemiş sınıf taban 
+sınıfın yerine geçmeli, yani taban sınıfın verdiği garantileri vermeli, taban sınıfın istediklerinden
+daha çok da talep etmemeli , promise no less - require no more
+
+------------------------------------------------------
+
+class Base{
+public:
+	virtual void func();  
+};
+
+class Der : public Base{
+public:
+	virtual void func()noexcept override;  // ok, taban sınıfın verdiği garantiden daha fazla garanti veriyor
+};
+
+void foo(Base& r) 
+{
+	r.func();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : derleyince hata olur, neden ? 
+
+#include <exception>
+
+class DataException : public std::exception{
+
+public:
+	const char* what()const override;
+};
+
+https://en.cppreference.com/w/cpp/error/exception/what
+
+burada C++ microsoft'ta uyarı vermedi, GCC uyarı verdi. 
+GCC bunu implemente etmiş.
+
+------------------------------------------------------
+
+wandbox.org
+
+-------------------------------------------------------
+
+#include <exception>
+
+void func()noexcept;
+
+int main()
+{
+	void (*fp)() = func;  // ok
+	
+	void (*fp)()noexcept = func; // benim göstereceğim fonk. except göndermeme garantisi var demek
+}
+
+-------------------------------------------------------
+
+#include <exception>
+
+void func();
+
+int main()
+{
+	void (*fp)()noexcept 
+	fp = func; // hata, taahhütü çiğnedik
+	
+	fp();
+}
+
+// noexcept türün bir parçası olduğuna göre imzanın da bir parçası
+// fakat function overloading'de kullanılamayacağı özellikle belirtilmiş
+
+-------------------------------------------------------
+
+#include <exception>
+
+void func();
+void func()noexcept;  // buna izin verilmez !!!
+
+int main()
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Cat{
+
+public:
+	Cat() = default;
+	Cat(const std::string& name ) : m_name{name} {}
+	~Cat()
+	{
+		std::cout << m_name << " oyundan cikiyor\n";
+	}
+	void print()const
+	{
+		std::cout << "benim adim " << m_name << "\n";
+		if(mp_friend){
+			std::cout << " benim bir arkadasim var. onun ismi " << mp_friend->m_name << "\n";
+		}
+		else{
+			std::cout << "benim bir arkadasim yok\n";
+		}
+	}
+	
+	void make_friend(std::shared_ptr<Cat> ptr)
+	{
+		mp_friend = ptr;
+	}
+	
+private:
+	std::string m_name;
+	std::shared_ptr<Cat> mp_friend;
+};
+
+int main()
+{
+	using namespace std;
+	
+	auto cat_p1 = make_shared<Cat>("minnos");
+	cat_p1->print();
+	
+	
+	auto cat_p2 = make_shared<Cat>("karam");
+	cat_p2->print();
+	cat_p1->make_friend(cat_p2);
+	cat_p1->print();
+	cat_p2->make_friend(cat_p1);
+	cat_p2->print();
+}
+
+// oyundan çıkamadılar, cyclic 
+
+-----------------------------------------------------------
+
+// cyclic problemini çözelim
+
+class Cat{
+
+public:
+	Cat() = default;
+	Cat(const std::string& name ) : m_name{name} {}
+	~Cat()
+	{
+		std::cout << m_name << " oyundan cikiyor\n";
+	}
+	void print()const
+	{
+		std::cout << "benim adim " << m_name << "\n";
+		if(!mp_friend.expired()){     //  ya da  if(auto spf = mp_friend.lock())
+			std::cout << " benim bir arkadasim var. onun ismi " << spf->m_name << "\n";
+		}
+		else{
+			std::cout << "benim bir arkadasim yok\n";
+		}
+	}
+	
+	void make_friend(std::shared_ptr<Cat> ptr)
+	{
+		mp_friend = ptr;
+	}
+	
+private:
+	std::string m_name;
+	std::weak_ptr<Cat> mp_friend;
+};
+
+int main()
+{
+	using namespace std;
+	
+	auto cat_p1 = make_shared<Cat>("minnos");
+	cat_p1->print();
+	
+	
+	auto cat_p2 = make_shared<Cat>("karam");
+	cat_p2->print();
+	cat_p1->make_friend(cat_p2);
+	cat_p1->print();
+	cat_p2->make_friend(cat_p1);
+	cat_p2->print();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+std::enabled_shared_from_this :
+
+eğer bir sınıfın üye fonksiyonu içinde shared_ptr ile hayatı kontrol edilen *this nesnesini gösteren
+shared_ptr'nin kopyasını çıkartmak isterseniz sınıfınızı CRTP örüntüsü ile kalıtım yoluyla 
+std::enabled_shared_from_this sınıfından elde etmelisiniz
+
+---------------------------------
+
+#include <memory>
+#include <iostream>
+
+using namespace std;
+
+class Neco : public std::enabled_shared_from_this<Neco> {  // CRTP
+public:
+	Neco()
+	{
+		std::cout << "Neco ctor this : " << this << "\n";
+	}
+	
+	void func()
+	{
+		// ben bu fonksiyonun dinamik ömürlü bir Neco nesnesi için çağırıldığını biliyorum
+		// *this'i gösteren shared_ptr'nin bir kopyasını çıkarmak istiyorum.
+		
+		// std::shared_ptr spx<Neco>(this);  // böyle olmaz, aynı adreste bir başka shared_ptr nesnesi başlatmış olursunuz
+	
+		std::cout << "Neco::func() işlevi : " << this << "\n";
+		// ben func işlevinin bir shared_ptr ile kontrol edilen dinamik Neco nesnesi için 
+		// cagrildigina eminim
+		auto sptr = shared_from_this();
+		std::cout << sptr.get() << "\n";
+		cout << "sptr.use_count() = " << sptr.use_count() << "\n";
+	}
+	
+	~Neco()
+	{
+		cout << "Neco destructor : " << this << "\n";
+	}
+};
+
+int main()
+{
+	auto sp = make_shared<Neco>();
+	
+	
+	std::cout << "sp.use_count() = " << sp.use_count(() << "\n";
+	
+	sp->func();  // amacım : func içinde buradaki dinamik ömürlü nesnesinin  bir kopyasını çıkarmam gerekiyor.
+	
+}
+
+----------------------------------------------------------
+
+CRTP : curiously recurring template pattern
+sınıf şablonlarına ilişkin bir teknik,
+
+template <typename T>
+class Myclass{
+
+};
+
+class Nec : public Myclass<Nec>{ // bu da mümkün !!!, bu tekniğe deniyor
+
+};
+
+------------------------------------------------------
+
+// bu fonk. dinamik ömürlü fakat bir shared_ptr tarafından gösterilmeyen bir nesne 
+// ile çağrılırsa exception throw eder.
+
+ 
+class Neco : public std::enabled_shared_from_this<Neco> {  // CRTP
+public:
+	Neco()
+	{
+		std::cout << "Neco ctor this : " << this << "\n";
+	}
+	
+	void func()
+	{
+		std::cout << "Neco::func() işlevi : " << this << "\n";
+		auto sptr = shared_from_this();
+		std::cout << sptr.get() << "\n";
+		cout << "sptr.use_count() = " << sptr.use_count() << "\n";
+	}
+	
+	~Neco()
+	{
+		cout << "Neco destructor : " << this << "\n";
+	}
+};
+
+int main()
+{
+	auto sp = new Neco;
+	
+	try{
+		p->func();
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << "\n";
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+shared_ptr aliasing constructor :
+shared_ptr ile hayatı kontrol edilen bir sınıf nesnesinin veri elemanlarından birini
+başka bir shared_ptr nesnesinin göstermesini istiyoruz.
+Eğer bir önlem alınmaz ise sahip olan nesneyi gösteren shared_ptr'nin hayatı bitince
+elemanı gösteren shared_ptr dangling hale gelirdi. Buradaki problemi çözmek için
+shared_ptr sınıfının "aliasing ctor" denilen ctor'u ile elemana shared_ptr oluşturuyoruz :
+shared_ptr<Member> spm(spowner, spowner->mx);
+
+----------------------------------
+
+struct Nec{
+	Erg m_erg;
+};
+
+shared_ptr<Nec> sp(new Nec);  // Nec nesnesi dinamik ömürlü
+// m_erg 'i gösterecek bir shared_ptr daha oluşturmak istiyoruz.
+// problem shared_ptr'nin hayatı bittiğinde delete edilecek, elemanı gösteren
+// shared_ptr açıkta kalacak !!!
+// öyle birşey olmalı ki elemanı gösteren bir shared_ptr olduğu sürece 
+// bütün shared_ptr'lerin hayatı bitse dahi Nec nesnesinin hayatta tutulması 
+// gerekir, yoksa elemanı gösteren shared_ptr'ler dangling hale gelir.
+// bunu shared_ptr aliasing constructor ile çözebiliyoruz.
+
+----------------------------------
+
+#include <iostream>
+#include <memory>
+
+class Member{
+public:
+	Member()
+	{
+		std::cout << "Member constructor\n";
+	}
+	
+	~Member()
+	{
+		std::cout << "Member destructor\n";
+	}
+};
+
+class Owner{
+public:
+	Owner()
+	{
+		std::cout << "Owner constructor\n";
+	}
+	
+	~Owner()
+	{
+		std::cout << "Owner destructor\n";
+	}
+	
+	Member mx;
+private:
+
+};
+
+using namespace std;
+
+int main()
+{
+	auto sp = make_shared<Owner>();
+	
+	auto spm = shared_ptr<Member>(sp, &sp->mx);  // sp'nin hayatı bitse dahi Owner nesnesi hayatta kalacak !!!!
+	
+	cout << "spm.use_count() = " << spm.use_count() << "\n";
+	cout << "sp.use_count() = " << sp.use_count() << "\n";
+	(void)getchar();
+	
+	sp.reset();  // Owner'in destructor'i çağırılmaz !!!
+	cout << "after sp.reset() call \n";
+	cout << "spm.use_count() = " << spm.use_count() << "\n";
+	cout << "sp.use_count() = " << sp.use_count() << "\n";
+	(void)getchar();
+	// elamanı gösteren nesnenin de hayatı bitince destructor çağırılır
+}
+
+---------------------------------------------------------
+
+github'da bir iki örnek daha var bu konuda
+
+*-----------------------------------------------------------------------------------------------------
+
+type_traits kütüphanesi :
+
+meta functions library, function dediğine bakmayın
+amacı compile time'da bir değer hesaplamak veya bir tür hesaplamak (tür elde etmek)
+
+3-4 kategoride meta fonk. var
+1) Bir türün belirli bir özelliğe sahip olup olmadığını sınayan meta fonk.
+bu sınıfların value isimli bir elemanı var,  value isimli elemani vasıtasıyla bir türün 
+belirli bir özelliğe sahip olup olmadığını compile time'da iletiyorlar.
+value elemanı çoğunlukla constexpr static bir boolean eleman
+
+#include <type_traits>
+
+int main()
+{
+	using namespace std;
+	
+	// is_pointer<int>::value  // meta fonk. pointer olup olmadığını sınayacak
+	
+	constexpr auto b = is_pointer<int*>::value;  // true olduğunu verir
+	
+}
+
+-------------------------------------
+
+#include <type_traits>
+
+int main()
+{
+	using namespace std;
+	
+	constexpr bool b = is_integral<int>::value;
+}
+
+-------------------------------------
+
+#include <type_traits>
+
+template <typename T>
+constexpr bool IsPointer_v = std::is_pointer<T>::value;
+
+int main()
+{
+	// std::is_pointer<T>::value;
+	IsPointer_v<int> ;  // aynı
+
+}
+
+-------------------------------------
+
+#include <type_traits>
+
+int main()
+{
+	// constexpr bool b = std::is_pointer<int*>::value;
+	constexpr bool b = std::is_pointer_v<int*>;  // aynı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+integral constant sınıf şablonu : varlık nedeni kalıtım yoluyla diğer meta fonk.'ların
+integral contant'tan elde edilmesi
+
+template<typename T, T v>  // v ise non-type parametre
+struct integral_constant{
+	static constexpr T value = v;
+	using value_type = T;
+	using type = integral_constant;   // using injected-class-name
+	constexpr operator value_type() const noexcept {return value; }
+	constexpr value_type operator()() const noexcept {return value; }  // since C++14
+};
+
+int main()
+{
+	integral_constant<int, 5>::value;  // değeri 5
+	
+	integral_constant<bool, true>::value;  // değeri true
+}
+
+----------------------------------------------------
+
+integral_constant<bool, true>::value
+bool_constant<true>; // aynı şey
+
+
+https://en.cppreference.com/w/cpp/types/integral_constant
+
+----------------------------------------------------
+
+using true_type = integral_constant<bool, true>;
+using false_type = integral_constant<bool, false>;
+
+struct Nec : integral_constant<bool, true>
+struct Nec : true_type; // aynısı
+
+----------------------------------------------------
+
+int main()
+{
+	integral_constant<bool, true>::value_type;  // bool'dur
+	integral_constant<bool, true>::type;  //  integral_constant<bool, true>
+}
+
+----------------------------------------------------
+
+// operator value_type() const noexcept  // bool'a dönüştürür, veya int'e dönüştürür
+
+int main()
+{
+	constexpr auto x = integral_const<int, 5>{};  
+	constexpr auto y = integral_const<int, 3>{};  
+	
+	constexpr auto val = x + y ;  // ok, val'in türü ne ? int, değeri 8
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+constexpr value_type operator()() const noexcept {return value; }  // since C++14
+
+function call operatorünün overload eder.
+
+--------------------------------------------
+
+int main()
+{
+	constexpr auto val = integral_constant<int, 5>{ } + integral_constant<int, 3>{ } ;
+	constexpr auto val = integral_constant<int, 5>{ }() + integral_constant<int, 3>{ }() ;  // aynı değer elde edilir
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// kendi is_pointer fonk. yazmak
+
+using true_type = integral_constant<bool, true>;
+using false_type = integral_constant<bool, false>;
+
+template<typename T>
+struct is_pointer : false_type {};  // Inheriting from a template class
+
+// partial specialization
+template<typename T>
+struct is_pointer<T *> : true_type{};
+
+int main()
+{
+	constexpr auto b = is_pointer<int*>::value;  //  true;
+}
+
+
+https://stackoverflow.com/questions/8810224/inheriting-from-a-template-class-in-c
+
+
+*-----------------------------------------------------------------------------------------------------
+
+https://en.cppreference.com/w/cpp/header/type_traits
+
+neler var neler !!!
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	is_pointer_v<int*>;
+}
+
+bunu da eklemek için:
+
+template<typename T>
+constexpr bool is_pointer_v = is_pointer<T>::value;
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+constexpr bool is_pointer_v = is_pointer<T>::value;
+
+int main()
+{
+	constexpr auto b1 = is_pointer<int*>::value;
+	constexpr auto b2 =  is_pointer_v<int*>;   // constexpr olduğund inline kullanmaya gerek yok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+int main()
+{
+	is_void_v<int>;  // değeri false
+}
+
+------------------------------
+
+#include <type_traits>
+
+int main()
+{
+	is_null_pointer_v<nullptr_t>;  // true
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ödev sorusu : is_integral'i implemente edin
+
+github'da yazılmış bazı type_traits fonk. var
+
+*-----------------------------------------------------------------------------------------------------
+
+// fonk. lvalue ile çağırılıp çağırılmadığını anlamak
+
+#include <type_traits>
+
+template <typename T>
+void func(T&& x)  // parametresi universal reference, herşeyle çağırılabilir
+{
+	std::is_lvalue_reference_v<T>;
+}
+
+// bu fonk. Lvalue ile çağırırsam T türü ref. türü olur
+
+*-----------------------------------------------------------------------------------------------------
+
+is_reference
+is_const
+is_empty
+is_abstract
+....
+
+------------
+
+is_copy_assignable
+is_move_constructable
+is_copy_constructable
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void Swap(T& x, T& y)
+{
+	static_assert(std::is_copy_constructible_v<T>, "T turunun copy ctor'i olmali");
+	T temp{ x };
+	x = y;
+	y = temp;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// exception throw edebileceğini sınamak
+
+template<typename T>
+void Swap(T& x, T& y)noexcept(std::is_nothrow_copy_constructible_v<T>)  // true ise no except garantisi verir
+{
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+tür elde eden meta fonk. var
+
+remove_const()
+
+#include <type_traits>
+
+int main()
+{
+	using namespace std;
+	
+	remove_const<const int>::type x;  // türü int olur
+	
+	remove_reference<int&>::type x;  // int
+	
+	add_pointer<int>::type p = nullptr;  // p'nin türü int*
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+remove_reference :
+
+https://en.cppreference.com/w/cpp/types/remove_reference
+
+template< class T > struct remove_reference     
+ { 
+	typedef T type; 
+};
+
+template< class T > struct remove_reference<T&>  
+{ 
+	typedef T type;
+ };
+
+template< class T > struct remove_reference<T&&> 
+{ 
+	typedef T type; 
+};
+
+iki tane partial specialization var
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+int main()
+{
+	using namespace std;
+	
+	is_same<int, int>::value;
+}
+
+------------------------------------------
+
+#include <type_traits>
+
+template<typename T>
+void func(T x)
+{
+	static_assert(std::is_same_v<T, int>);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+template<typename T>
+void func(T x, T y)
+{
+
+}
+
+int main()
+{
+	func(12, 5.6); // hata
+}
+
+-----------------------------------------------------
+
+#include <type_traits>
+
+template <typename T>
+struct type_identity{
+	using type = T;
+};
+
+template <typename T>
+using type_identity_t = typename type_identity<T>::type;
+
+template<typename T>
+void func(T x, type_identity_t<T> y)
+{
+
+}
+
+int main()
+{
+	func(12.5, 20);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+enum Color : unsigned int {Blue, Black, Gray};
+
+int main()
+{
+	using namespace std;
+	
+	is_enum_v<Color>; // true
+	
+	underlying_type_t<Color> x{};  //  unsigned int
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+1) dynamic assertions (run time assertions)
+2) static assertions
+
+static_assert : assertion doğrulama demek, özellikle programlama hatalarını
+bulmak için kullanıyoruz.
+
+---------------------------------------
+
+static assert bir anahtar sözcük. Bir başlık dosyasını include etmeniz gerekmiyor
+
+static_assert(sizeof(int) == 4, "sizeof int must be 4");  // C++17'den önce
+
+void func()
+{
+	static_assert(sizeof(int) >= 2);
+}
+ 
+class Myclass{
+	static_assert(sizeof(int) == 4);
+};
+
+---------------------------------------
+
+assert'in esas gücü template'lerde.
+bir template'i belirli argümanlar için sınırlamak istiyorsanız, belirli koşul sağlanmayınca
+sentax hatası olmasını isterseniz kulllanılabilir
+
+
+#include <type_traits>
+
+template<typename T>
+void func(T)
+{
+	static_assert(std::is_integral_v<T>, "T should be an integral type");  // integral int demek
+}
+
+int main()
+{
+	func(1.2),
+}
+
+---------------------------------------
+
+#include <type_traits>
+
+template<typename T, typename U>
+void func(T, U)
+{
+	static_assert(!(std::is_same<T, U>), "arguments must be of different types");
+}
+
+int main()
+{
+	func(1.2, 23);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : 
+
+template <typename T>
+void func(T) = delete;
+
+void func(int);
+
+int main()
+{
+	func(4.5);
+}
+
+-------------
+
+üstteki static assert ile yazılabilir mi ?
+evet ama o zaman template olmalı
+
+template <typename T>
+void func(T x)
+{
+	static_assert(std::is_same_v<T, int>, "yalnizca int turu");
+}
+
+int main()
+{
+	func(2.3);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ concepts bunları daha kolay çözüyor
+
+*-----------------------------------------------------------------------------------------------------
+
+sınıf içerisinde de kullanılabiliyor
+
+template <typename T, int size>
+class Myclass{
+
+	static_assert( size > 20, "size should be greater than 20");
+	
+	T ar[size]{};
+};
+
+int main()
+{
+	Myclass<int, 10> x;
+}
+
+---------------------------------------------------------
+
+template <typename T, int size>
+class Myclass{
+
+	static_assert( std::is_integral_v<T>&& size > 10);
+	
+	T ar[size]{};
+};
+
+int main()
+{
+	Myclass<int, 20> x;
+}
+*-----------------------------------------------------------------------------------------------------
+
+
+constexpr bool isprime(int val)
+{
+	if(val < 2) return false;
+	
+	if(val % 2) return val == 2;
+	if(val % 3) return val == 3;
+	if(val % 5) return val == 5;
+	
+	for(int i = 7; i * i <= val; i += 2)
+		if(val % i == 0)
+			return false;
+	
+	return true;
+}
+
+template <int n>
+class Myclass{
+	static_assert(isprime(n), "n asal sayi olmali");
+};
+
+int main()
+{
+	Myclass<17> m1;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+tag dispatch : compile time'da kod seçmenin yollarından biri idi.
+
+template <typename T>
+void func(T x)
+{
+	std::is_integral_v<T> 
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+constexpr if : runtime ile alakası yok, derleyicinin compile time'da kod seçimi yapması sağlayan
+bir araç
+
+if constexpr şeklinde kullanılıyor
+
+if constexpr (static if, böyle de denebilir çünkü compile time )
+
+-----------------------------------
+
+#include <type_traits>
+
+template <typename T>
+auto ger_value(T x)
+{
+	// T pointer türü ise if kısmını derleyecek, değil ise else kısmı
+	if constexpr(std::is_pointer_v<T>) {    // önemli olan koşul doğru olan kısmın legal olması
+		return *x;
+	}
+	else{
+		return x + x;  }  // iki pointer toplanmaz, hata vermeli ama vermez, sadece if kısmını derledi
+}
+
+int main()
+{
+	int ival = 10;
+	
+	auto n = get_value(&ival);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+kurallar:
+1) bir isim kullanırsanız ve o isim template parametreleri ile ilgisi yoksa o isim aranır. 
+ister doğru ister yanlış kısmında olsun  sentax hatası olur.
+
+template <typename T>
+void func(T x)
+{
+	if constexpr(std::is_integral_v<T>){
+	
+	}
+	else{
+		foo();  // sentax hatası, foo ismini arar bulamaz
+	}
+}
+
+-----------------------------
+
+template <typename T>
+void func(T x)
+{
+	if constexpr(std::is_integral_v<T>){
+	
+	}
+	else{
+		foo(x);  // ok
+	}
+}
+
+int main()
+{
+	func(1.2);
+
+}
+
+tam sayı türü değilse else kısımını arayacak foo(x)'i bulamayacağı için
+sentax hatası olur. 
+
+
+*-----------------------------------------------------------------------------------------------------
+
