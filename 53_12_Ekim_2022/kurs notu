@@ -1,0 +1,1095 @@
+
+İçerik:
+
+constexpr if :
+SFINAE (Substitution Failure Is Not An Error)
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+diğer programlama dilleri kalıtımı runtime'a yönelik araç olarak kullanırken
+C++ daha çok static - compile time'a yönelik araç olarak kullanıyor. Gücü de 
+buradan geliyor. 
+
+compile time'da tag dispatch, bir koşula bağlı olarak kod seçilmesini sağlıyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+template<typename T, typename U>
+struct isSame : std::false_type{
+
+};
+
+int main()
+{
+	isSame<int, double>::value;  // false
+	isSame<int, int>::value; // false
+}
+
+------------------------------------------
+
+buna bir partial specialization yazarız, partial specialization'i true type'dan türetiriz.
+
+true_type : integral constant'in bool, true açılımının türeş ismi
+false_type : integral constant'in bool, false açılımının türeş ismi
+
+
+
+#include <type_traits>
+
+template<typename T, typename U>
+struct isSame : std::false_type{
+
+};
+
+template<typename T>
+struct isSame<T, T> : std::true_type {};
+
+// variable template yapalım
+template<typename T, typename U>
+constexpr auto isSame_v = isSame<T, U>::value;
+
+
+int main()
+{
+	// constexpr auto b1 = isSame<int, double>::value;
+	constexpr auto b1 = isSame_v<int, double>;
+	
+	// constexpr auto b2 = isSame<int, int>::value;
+	constexpr auto b2 = isSame_v<int, int>;
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// compile time'da kod seçimi yapmak generic programlamanın en önemli öğelerinden biri
+
+bu da bir optimizasyon, compile time'da derleyiciyi yönlendirme, duruma göre farklı bir kaynak kod
+yazacak
+
+buna yönelik üç tane araç var
+1) tag dispatch
+2) SFINAE (gereksiz karmaşık ve concepts kütüphanesi ile kullanımı azaldı)
+substitution failure is not an error
+3) constexpr if (C++ 17)
+4) concepts (C++ 20)
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	if constexpr (constant expression)
+	{
+		// doğru ise derleyici burayı derler
+	{
+	else{
+		// yanlış ise derleyici burayı derler
+	}
+}
+
+// derlemediği kodu bir sentax kontrolüne tabi tutmayacak.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+void func(int x)
+{
+	if constexpr (sizeof(int) == 4){
+		foo(x);
+	}
+}
+
+// ortada template olmadığı için sentax kontrolü doğrudan yapılacak
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include <string>
+#include <type_traits>
+
+template<typename T>
+std::string as_string(T x)
+{
+	if constexpr(std::is_same_v<T, std::string>){
+		return x;
+	}
+	else if constexpr(std::is_arithmetic_v<T>){  // tam sayi veya gerçek sayi türü
+		return std::to_string(x);
+	}
+	else{
+		return std::string(x);
+	}
+}
+
+int main()
+{
+	std::cout << as_string(42) << "\n";  // T türü int olur
+	std::cout << as_string(4.2) << "\n";  // T türü double
+	std::cout << as_string(std::string("hello")) << "\n";  // T türü string
+	std::cout << as_string("hello") << "\n";  // string literali, T türü const char*
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+
+template<typename T>
+void func(T tx)
+{
+	if(constexpr(std::is_integral_v<T>){
+		if(tx != 0) {
+			func(tx--);
+		}
+	}
+	else{
+		// undeclared_f(); // syntax error (name non dependent on template parametre)
+		undeclared(tx); // error if else part instantiated
+		// static_assert(false, "not integral type"); // syntax error
+	}
+}
+
+int main(()
+{
+	func(2);
+	// func(2.5); // else kısmı derlenir, o fonksiyonu bulamaz, hata verir
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include <type_traits>
+
+template<typename T>
+void func(T& tx)
+{
+	if(tx > 0){
+		if(constexpr(std::is_integral_v<T>){
+			++tx;
+		}
+		else{
+			--tx;
+		}
+	}
+}
+
+int main()
+{
+	int ival = 5;
+	double dval = 2.5;
+	func(ival);
+	func(dval);
+	
+	std::cout << "ival = " << ival << "\n";
+	std::cout << "dval = " << dval << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// function return type may be int or double
+
+constexpr auto func()
+{
+	if constexpr (sizeof(int) > 4u){
+		return 1;
+	}
+	else{
+		return 0.5;
+	}
+}
+
+// function return type may be int or void
+
+auto foo()
+{
+	if constexpr (sizeof(int) > 4){
+		return 1;
+	}
+}
+
+int main()
+{
+	constexpr auto val = func();
+}
+
+
+// auto return type'larda geri dönüş türleri if ve else'de aynı olmalı.
+yani burada constexpr if olmasa hata olurdu. 
+
+*-----------------------------------------------------------------------------------------------------
+
+tag dispatch :
+
+derleyicinin compile time'da kod seçimi yapmasının en kolay yolu function overloading.
+
+
+
+
+struct construct_this_way{};  // işte empty class neden kullanılıyor ? tag dispatch
+struct construct_that_way{};
+
+class Myclass{
+public:
+	Myclass(construct_this_way);
+	Myclass(construct_that_way);
+};
+
+int main()
+{
+	Myclass m{construct_this_way{}};
+	Myclass m{construct_that_way{}};
+}
+
+---------------------------------------------
+
+nested type yapalım
+
+class Myclass{
+public:
+	struct construct_this_way{};  // işte empty class neden kullanılıyor ? tag dispatch
+	struct construct_that_way{};
+	
+	Myclass(construct_this_way);
+	Myclass(construct_that_way);
+};
+
+int main()
+{
+	Myclass m{construct_this_way{}};
+	Myclass m{construct_that_way{}};
+}
+
+---------------------------------------------
+
+class Myclass{
+public:
+	struct construct_this_way_t{}construct_this_way; 
+	struct construct_that_way_t{}construct_that_way;
+	
+	Myclass(construct_this_way_t);
+	Myclass(construct_that_way_t);
+};
+
+int main()
+{
+	Myclass m{Myclass::construct_this_way_t};  // sınıfın static veri elemanını const.'a argüman olarak gönderiyorum
+}
+
+---------------------------------------------
+
+class Myclass{
+public:
+	struct construct_this_way_t{}; 
+	struct construct_that_way_t{};
+	
+	static construct_this_way_t construct_this_way;
+	static construct_that_way_t construct_that_way;
+	
+	Myclass(construct_this_way_t);
+	Myclass(construct_that_way_t);
+};
+
+int main()
+{
+	
+}
+
+-------------------------------------
+
+	std::is_integral<T>{};  // türü is_integral_t, bu da kalıtım yoluyla true veya false type'dan elde edilir.
+
+-------------------------------------
+
+tam sayı türleri için ayrı gerçek sayı türleri için ayrı bir kod kullansın
+
+template <typename T>
+void func(T x, std::true_type)  // parametreye isim vermeyin, sadece tag dispatch için var.
+{
+	std::cout << "tam sayi türleri icin implementasyon\n";
+}
+
+template <typename T>
+void func(T x, std::false_type)  
+{
+	std::cout << "tam sayi olmayan türler icin implementasyon\n";
+}
+
+template <typename T>
+void func(T x)
+{
+	func(x, std::is_integral<T>{});
+}
+
+int main()
+{
+	func(12);  // hangi fonk. çağırıldığı compile time'da belli olur.
+	func(5.6);
+}
+
+----------------------------------------------
+
+constexpr if kullanabilir miydim ? 
+
+
+template <typename T>
+void func(T x)
+{
+	if constexpr (std::is_integral_v<T>){
+		std::cout << "tam sayi turleri için kod\n";
+	}
+	else{
+		std::cout << "tam sayi olmayan turler icin kod\n";
+	}
+}
+
+int main()
+{
+	func(12);
+	func(5.6);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace details{
+	template <typename Raniter, typename Distance>
+	void Advance(Raniter& it, Distance n, std::random_access_iterator_tag)
+	{
+		it += n;
+	}
+	
+	template <typename Biditer, typename Distance>
+	void Advance(Biditer& it, Distance n, std::bidirectional_iterator_tag)
+	{
+		if(n > 0){
+			while(n--) ++it;
+		}
+		else{
+			while(n++) --it;
+		}
+	}
+	
+	template <typename Initer, typename Distance>
+	void Advance(Initer& it, Distance n, std::input_iterator_tag)
+	{
+		while(n--){
+			++i;
+		}
+	}
+}
+
+template <typename Initer, typename Distance>
+void Advance(Iter& it, Distance n)
+{
+	details::Advance(it, n, typename std::iterator_traits<Iter>::iterator_category{}),
+}
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec(100);
+	auto iter = iter.begin();
+	Advance(iter, 10);
+	
+	list<int> ilist(100);
+	auto liter = ilist.begin();
+	Advance(liter, 10);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// alternative to tag dispatch mechanism
+
+#include <iterator>
+#include <type_traits>
+
+template <typename Iter, typename Dist>
+void advance(Iter& pos, Dist n)
+{
+	using cat = typename std::iterator_traits<Iter>::iterator_category;
+	
+	if constexpr (std::is_same_v<cat, std::random_access_iterator_tag>){
+		pos += n;
+	}
+	else if constexpr (std::is_same_v<cat, std::bidirectional_iterator_tag>){
+		if(n >= 0){
+			while(n--)
+				++pos;
+		}
+		else{
+			while(n++)
+				--pos;
+		}
+	}
+	else{  // input iterator tag
+		while(n--)
+			++pos;
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// usage in non template function
+
+struct Nec{};
+
+int main()
+{
+	Nec nec;
+	
+	if constexpr (sizeof(int) > 4){
+		++nec;   // syntax error
+	}
+	else{
+		--nec;  // syntax error
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include <memory>
+
+template <typename T>
+auto getval(T t)
+{
+	if constexpr (std::is_pointer_v<T>)
+		return *t;
+	else
+		return t;
+}
+
+int main()
+{
+	int ival{ 87 };
+	double dval{ 4.5 };
+	int* iptr{ &ival };
+	double* dptr{ &dval };
+	
+	std::cout << getval(ival) << "\n";  // 87
+	std::cout << getval(iptr) << "\n";  // 87
+	std::cout << getval(dval) << "\n";
+	std::cout << getval(dptr) << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+std::string tostr(T t)
+{
+	if constexpr (std::is_convertible_v<T, std::string>)
+		return t;
+	else if constexpr (std::is_same_v<T, bool>)
+		return t ? "true" : "false";
+	else
+		return std::to_string(t);
+}
+
+int main()
+{
+	std::string name{ "necati" };
+	
+	std::cout << tostr(name) << "\n";
+	std::cout << tostr(10 > 5) << "\n";
+	std::cout << tostr(3.846) << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T, typename ...Ts>
+void print(const T& x, const Ts& ...args)
+{
+	if constexpr (sizeof...(args) == 0)
+		std::cout << x << "\n";
+	else
+		std::cout << x << ", ";
+		
+	if constexpr (sizeof...(args) != 0)
+		print(args...);
+}
+
+int main()
+{
+	print(12, 3.4, "ali");
+}
+
+-------------------------------------------
+
+derleyicinin gözünden: 
+
+void print(const int& x, const double& p1, const char*& p2)
+{
+	std::cout << x << ", ";
+	print(p1, p2);
+}
+
+void print(const double& x, const char*& p1)
+{
+	std::cout << x << ", ";
+	print(p1);
+}
+
+void print(const char*& x)
+{
+	std::cout << x << "\n";
+}
+
+int main()
+{
+	print(12, 3.4, "ali");
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T, typename ...Ts>
+void print(const T& x, const Ts& ...args)
+{
+	if constexpr (sizeof...(args) == 0)
+		std::cout << x << "\n";
+	else
+		std::cout << x << ", ";
+		
+	if constexpr (sizeof...(args) != 0)
+		print(args...);
+}
+
+int main()
+{
+	print(12, 3.4, 45L, std::string{ "emre" }, std::bitset<32>{37645u}, "ali" );
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+#include <algorithm>
+
+template <typename T, std::size_t N>
+void copy_array(T(&dest)[N], const T(&source)[N])
+{
+	if constexpr (std::is_trivially_copyable_v<T>)
+	{
+		std::memcpy(dest, source, N * sizeof(T));
+	}
+	else
+	{
+		std::copy(source, std::end(source), dest);
+	}
+}
+
+int main()
+{
+	int a[5] = { 3, 6, 7, 9, 1};
+	int b[5];
+	
+	copy_array(b, a);
+	
+	for(auto i : b)
+		std::cout << i;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : compile zamanında dizideki N'nin  değeri nasıl parametre olarak geçilmiş oluyor ?
+
+template <typename T, int N>
+void func(T x);
+
+int main()
+{
+	func<int, 5>(10);
+}
+
+-----------------------
+
+template <typename T>
+void func(T x);
+
+int main()
+{
+	func(10);
+}
+
+-----------------------
+
+template <typename T, int n>
+void func(T(&r)[n]);
+
+int main()
+{
+	int a[10]{};
+	
+	func(a);
+}
+
+-----------------------
+
+template <typename T, std::size_t n>
+constexpr std::size_t asize(const T(&r)[n])
+{
+	return n;
+}
+
+int main()
+{
+	double a[5]{};
+	
+	constexpr auto size = asize(a);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+SFINAE (Substitution Failure Is Not An Error)
+
+
+function overload'da eğer fonksiyon şablonları işin içine girdiğinde, derleyici önce bu fonk. şablonu karşığı argümanların ne olduğunu belirlemek zorunda. Burada substition'da (yani template'de mesela T yerine double yerleştirecek) hata olursa, bu template'i overload setten çıkartır. 
+substitution is not an error.  sonra bu kuraldan faydalanarak compile time'da kod seçimi yaptırabiliyorum.
+
+okunuşu : sfee-nay
+
+--------------------
+
+template <typename T>
+typename T::value_type func(T x);  // double'in value type'i olamaz
+
+void func(int);
+
+int main()
+{
+	func(1.2);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T, unsigned N>
+std::size_t len(T(&)[N])
+{
+	std::cout << 'x';
+	return N;
+}
+
+template<typename T>
+typename T::size_type len(T const& t)   // T = int[10], bunun size_type türü olamaz !!
+{
+	return t.size();
+}
+
+int main()
+{
+	int a[10]{};  // derleyici üsttekini kullanır
+	std::cout << len(a);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+SFINAE
+1) koşula bağlı kod seçimi
+2) restrictions (sadece tam sayı türleri için kullanilabilsin, static assert gibi)
+
+*-----------------------------------------------------------------------------------------------------
+
+hatırlatma:
+
+size_t: 
+
+
+
+size_t is defined as the type used for the size of an object and is platform dependent. (it is never negative)
+container::size_type is the type that is used for the number of elements in the container and is container dependent.
+
+All std containers use size_t as the size_type, but each independent library vendor chooses a type that it finds appropriate for its container.
+
+
+Different implementations use different types to represent sizes, so we cannot write the appropriate type directly and remain implementation-independent. For that reason, it is good programming practice to use the size_type that the library defines to represent container sizes.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T, unsigned N>
+std::size_t len(T(&)[N])
+{
+	std::cout << 'x';
+	return N;
+}
+
+template<typename T>
+typename T::size_type len(T const& t)   // T = int[10], bunun size_type türü olamaz !!
+{
+	return t.size();
+}
+
+int main()
+{
+	int a[10]{};  // derleyici üsttekini kullanır
+	std::cout << len(a);
+	
+	std::cout << len("tmp"); // ilk template çağırılır, fonk. parametresi referans, N = 4 olur, null karakter var
+	
+	
+	int* p{};
+	len(p);  // p dizi değil ilk template elenir, ikinci template SFINAE out olduğu için sentax hatası,
+	
+	
+	std::allocator<int> x;  // allocator'in size_type'i var, ilki viable değil, ikinci template seçilir ama allocator'ın size() fonk. yok hata
+	std::cout << len(x);
+}
+
+// diziler için ilk template'in seçilecektir.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include<vector>
+
+template <typename T, unsigned N>
+std::size_t len(T(&)[N])
+{
+	return N;
+}
+
+template <typename T>
+typename T::size_type len(T const& t)
+{
+	return t.size();
+}
+
+std::size_t len(...)  // variadic fonksiyon, bu sefer her halukarda adayımız var
+{
+	return 0;
+}
+
+int main()
+{
+	int a[10];
+	std::cout << len(a);  // 2 SFINAE out, 1. template çağırılır.
+	
+	
+	std::cout << len("tmp");  // 1. çağırılır
+	
+	
+	std::vector<int> v(10);
+	std::cout << len(v);  // 2. çağırılır, çünkü vector'ün size_type'i var, size fonk. da olduğu için 10 döndürür
+	
+	
+	int* p{};
+	std::cout << len(p);  // 1. viable değil, 2. SFINAE out, 3. sıfır döndürür
+	
+	
+	std::allocator<int> x;
+	std::cout << len(x);  // hata, 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include<vector>
+
+template<typename T, unsigned N>
+T* Begin(T(&array)[N])
+{
+	return array;
+}
+
+tempale<typename Container>
+typename Container::iterator Begin(Container& c)
+{
+	return c.begin();
+}
+
+int main()
+{
+	std:.vector<int> vec;
+	int ar[10]{};
+	
+	Begin(vec);  // ok, 2. seçilir, 1. viable değil, Container'in iterator nested type'i var., begin fonk. var.
+	
+	
+	Begin(ar);  // ok, 2. SFINAE out, 1. seçilir, function to pointer conversion olur.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include<vector>
+#include <array>
+
+template<typename T, unsigned N>
+T* Begin(T(&array)[N])    // gerçek sizi değil
+{
+	std::cout << 1;
+	return array;
+}
+
+tempale<typename Container>
+typename Container::iterator Begin(Container& c)
+{
+	std::cout << 2;
+	return c.begin();
+}
+
+int main()
+{
+	std::array<int, 5> ar;
+	
+	Begin(ar);  // ok, 1. viable değil,  2. seçilir, 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+buraya kadar olan kısım tesadüfen SFINAE keşfetti ve kullanıldı.
+Bir uyanık çıktı ve bunu bir teknik haline getirip standart kütüphanesine eklendi.
+
+enable_if : type_traits başlık dosyası içinde, dünyanın en ilginç metafunction'i
+
+
+template<bool B, class T = void>  // B non-type parametre, ya true ya false, T type parametre
+struct enable_if {};
+
+// yukarıdaki struct'ın partial specialization'i !!! Yani birinci parametre true ise bu, değil ise yukarıdaki kullanılacak !!!
+template<class T>
+struct enable_if<true, T>{
+	typedef T type;
+};
+
+// alias template
+template<bool B, class T = void>
+using enable_if_t = typename enable_if<B, T>::type;
+
+int main()
+{
+	// enable_if<0, int>::type  // sentax hatası. çünkü type'i yok
+	
+	enable_if<true, int>::type;
+	
+	enable_if<true>::type;  // türü void, ikinci template argümanı belirtilmemiş
+	// default argüman olarak void türünü kullanmış oldum
+	
+	//enable_if<true, int>::type yazmak yerine yazma ekonomisi sağlıyor
+	enable_if_t<true, int>
+}
+
+------------------------------------------------
+
+ne işe yarıyacak bu ?
+
+compile time'da is_integral<T>::value  true olduğu için bunun type'i olacak,
+false olduğunda type'i olmayacak SFINAE ile devre dışı kalacak. 
+
+artık neden pek kullanılmıyor ?
+concepts'ler ile daha kolay yapılabiliyor. 
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+#include <iostream>
+
+template <typename T>
+void func(T x, std::enable_if_t<std::is_integral_<T>>* = nullptr)  
+// ikinci parametresi default argüman aldığı için parametre göndermek zorunda değilim
+{
+	std::cout << "integer types\n";
+}
+
+template <typename T>
+void func(T x, std::enable_if_t<!std::is_integral_v<T>>* = nullptr)
+{
+	std::cout << "non integer types\n";
+}
+
+struct A{ };
+
+int main()
+{
+	func(1);  // 1. de std::enable_if_t<true, void açımının type'i>, 2. SFINAE out
+	
+	func(1u);
+	func('A');
+	func(true);
+	func(1.1);
+	func(A{});
+}
+
+// istediğimiz SNIFAE out olcak devre dışı kalacak
+
+*-----------------------------------------------------------------------------------------------------
+
+// burada da argüman template'in parametresi için
+
+
+#include <type_traits>
+#include <iostream>
+
+template<typename T, std::enable_if_t<std::is_pointer_v<T>>* = nullptr>  
+// ikinci parametresi non type parametre, çünkü pointer
+void func(T x)
+{
+	std::cout << "template\n";
+}
+
+int func(double x)
+{
+	std::cout << "func double\n";
+	return 1;
+}
+
+int main()
+{
+	func(0);  // pointer türü olmadığı için 1. SFINAE out oldu, 2. cağrıldı
+	
+	func((int*)0);  // true oldu, true'nun da type'i var, 1. kullanıldı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+#include <iostream>
+
+// trailing return type !!!
+// SFINAE out olmazsa geri dönüş değeri void, çünkü ikinci argüman verilmediğine göre default argüman kullanılmış
+// alias template kullanmasam  std::enable_if_t<std::is_integral_v<T>>::type yazacaktım, bu tür void
+template<typename T>
+auto foo(T)-> typename std::enable_if_t<std::is_integral_v<T>>
+{
+	std::cout << "integer types\n";
+}
+
+template<typename T>
+auto foo(T)->typename std::enable_if_t<std::is_floating_point_v<T>>
+{
+	std::cout << "floating types\n";
+}
+
+int main(9
+{
+	foo(1);  // 2. SFINAE out oldu
+	foo(1.);  // 1. SFINAE out oldu
+}
+
+// bu örneği tag dispatch ile yapabilirdim, ama daha basit if constexpr ile yapardım.
+// bu örnekler sadece SFINAE'i göstermek için yoksa en iyi bunla yapılıyor diye değil
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+#include <iostream>
+
+template<typename T>
+std::enable_if_t<std::is_integral_v<T>, T> func(T t)
+// geri dönüş türü T int ise int olur
+// SFINAE out olmaması için integral type olması gerekiyor
+{
+	std::cout << "func<integral T> " << "\n";
+	return t;
+}
+
+template<typename T>
+std::enable_if_t<!std::is_integral_v<T>, T> func(T t)
+{
+	std::cout << "not integral\n";
+	return t;
+}
+
+int main()
+{
+	func(10);
+	func(10.5f);
+}
+
+// concepts ile çok kolay bunlar !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+
+template<int I>  // I is non-type parameter
+void func(char(*)[I % 2 == 0] == nullptr)
+{
+	std::cout << "even numbers\n";
+}
+
+template<int I>
+void func(char(*)[I % 2 == 1] == nullptr)
+{
+	std::cout << "odd numbers\n";
+}
+
+int main()
+{
+	func<6>();
+	func<13>();
+}
+
+
+// char(*)[I % 2 == 0]  : pointer to array
+// çift sayılar için 2. SFINAE out olur, çünkü sıfır elemanları dizi olmaz 
+
+*-----------------------------------------------------------------------------------------------------
+
+kaç tane template parametre tipi var?
+
+type parameter
+non-type parameter
+template template parameter (görmedik !!)
+
+*-----------------------------------------------------------------------------------------------------
+
+ödev : asal sayılar için ayrı asal olmayanlar için ayrı kod yaz
+
+
+#include <iostream>
+
+template<int I>
+void func(char(*)[isprime(I)] = nullptr)  // isprime fonk. çağrı ifadesi olmaz burada
+{
+	std::cout << "prime numbers\n";
+}
+
+int main()
+{
+	func<19>();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <type_traits>
+#include <iostream>
+
+template<class T>
+typename std::enable_if_t<std::is_aritmetic_v<T>, T>
+func(T t)
+{
+	std::cout << "func<aritmetic T>\n";
+	return t;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// daha önce yazdığımız Advance'i SFINAE out ile yazmak
+
+#include <iterator>
+#include <type_traits>
+#include <list>
+
+template <typename T>
+using isBidirIter = std::enable_if_t<std::is_same_v<typename T::iterator_category,
+std::bidirectional_iterator_tag>>;
+
+template <typename Iter, typename = isBidirIter<Iter>>
+void Advance(Iter& iter, int n)
+{
+	while(n--)
+		++iter;
+}
+
+int main()
+{
+	using namespace std;
+	list<int> ilist(10);
+	
+	auto iter = ilist.begin();
+	Advance(iter, 5);
+}
