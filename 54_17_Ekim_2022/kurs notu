@@ -1,0 +1,940 @@
+
+İçerik:
+
+giriş çıkış kütüphanesi (iostream kütüphanesi)
+
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+giriş çıkış kütüphanesi (iostream kütüphanesi):
+
+programın dış dünya ile bağlantısı. stream terimi devreye giriyor.
+
+stream nedir ?
+byte'lardan oluşan bir küme, bu byte'lar akış içinde
+byte inflow, bu byte'lar programımıza doğru veya programımızdan dışarıya doğru akıyor
+olabilir. 
+
+----------------------------
+100001000100100010
+------------------------------
+
+bu bir kanal, bu byte'lar programımıza doğru geliyorsa input stream,
+bu byte'lar programımızın dışarıya çıkarttığı byte'larsa output stream diyoruz.
+Programımıza bağlanmış adeta bir tünel(kanal) var, bu kanaldan geliyor veya
+gidiyor. 
+
+Bunlar tünelden bir kere geldiğinde bunları bir kez alabiliyoruz, ikinci kez alamıyoruz.
+Gelen byte'lar ile aramızda bufferlama katmanı var. Bir bellek alanında bu byte'lar
+tutuluyor. Bu bellek alanında bizim programımız bu alana erişim sağlıyor.
+Stream'in bir buffer'inin olması gerekiyor.
+
+3. tane stream var:
+input stream
+output stream
+error stream
+
+*-----------------------------------------------------------------------------------------------------
+
+bir giriş çıkış işlemleri için devasa bir kütüphane var. 
+
+iostream : kütüphanenin bize sunduğu başlık dosyalarından birinin ismi, bir sınıfın ismi
+
+kütüphanedeki çoğu öğe generic programlama içerir.
+
+ostream sınıfı bir sınıf şablonunun bir specialization ile verilen türeş ismi.
+string benzer. String bir sınıf şablonu.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <string>
+#include <ostream>
+
+using namespace std;
+
+int main()
+{
+	// basic_ostream<char, char_traits<char>>
+	// basic_ostream<char>  // buna verilen türeş isim ostream
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+cout, cin  bir sınıf türünden nesne
+
+*-----------------------------------------------------------------------------------------------------
+
+
+stream dediğimizde byte kümesinden bahsediyoruz.
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+ios_base : en tepede, giriş çıkış sınıflarının taban sınıfı
+bunun char açılımı yok,
+
+kalıtım da önem taşıyacak, çünkü bazı özellikler taban sınıftan geliyor.
+ios_base sınıf şablonu değil, çünkü akımdaki karakter türünden bağımsız
+
+basic_ios ve sonrası sınıf şablonu, akımdaki karakter türüne bağlı
+giriş ya  da çıkış olduğundan bağımsız 
+
+trait : akımdaki karakterler arasındaki işlemlerin nasıl yapılacağınızı belirler,
+sınıf türü
+
+basic_ios'tan virtual inheritance ile basic_ostream, basic_istream elde edilmiş
+
+bir dosyayı hem okuma hem yazma amaçlı kullanmak istiyoruz
+basic_fstream sınıfı türünden bir nesne kullanacağız.
+
+Bu resimde gösterilmeyen basic_stream_buff sınıfı
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+cout'un kendisi fonksiyon değil
+
+cout, cin : bir sınıf türünden global sınıf nesnesidir. 
+
+global sınıf nesneleri:
+std::cout
+std::cin
+std::cerr
+std::clog
+
+bunları kullanacaksak <iostream> başlık dosyasını include edin.
+
+*-----------------------------------------------------------------------------------------------------
+
+include ederken sadece ilgili header file'i ekle
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+
+int main()
+{
+	
+	std::ios;  // aynısı std::basic_ios<char>
+	
+	using namespace std;
+	
+	auto n1 = ios_base::badbit;
+	auto n2 = basic_ios<char>badbit;
+	auto n3 = ios::badbit;  
+	auto n4 = ostream::badbit;  // hepsi aynı
+	
+	auto n5 = cout.badbit; // bu sınıfın static veri elemanı, cout'un diye birşey yok
+	// isim arama yapılır, aslında static olduğundan ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+stream'lerin ilk dikkatiniz çekmesi gereken özelliği
+
+alma-gönderme tarafı ayrı soyutlama
+formatlama tarafı ayrı bir soyutlama
+bunlar birbirinden izole edilmiş
+
+*-----------------------------------------------------------------------------------------------------
+
+
+bir ostream nesnesi hex yazma formatında iken 
+bir başkası decimal formatta olabilir.
+
+konsola yazmanın farklı yolları var
+farklı bir ostream nesnesi oluşturabilirsin,
+
+int main()
+{
+	cout << x;
+	mycout << x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ios_base x;  //hata, constructor protected yapılmıs
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+formatlama konusunu konuşacağız
+iostream kütüphanesinde formatlamanın kullanılması biraz hantal
+yeni bir format kütüphanesi C++ 20 ile eklendi.
+
+https://en.cppreference.com/w/cpp/utility/format
+
+
+------------------------------------------------
+
+her stream nesnesi kendi içerisinde bir format state'ini tutuyor.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+formatli giriş çıkış işlemleri C++'da operator left shift
+ve operator right shift fonksiyonları ile gerçekleştiriliyor.
+
+cout << x
+
+stream nesnesi : cout
+<< bitsel kaydırma operatörü
+yön de belirtir, stream'e insert etmek
+<< operator left shift fonk.'a insertor da denir, akıma insert ediyor
+
+cin >> x;
+cin stream'den set edilecek nesneye doğru
+operator right shift fonk.'a da extractor da denir (karakterleri almak)
+
+--------------------------------
+
+bunların formatsız fonk. da var mı ?
+put, get gibi formatsiz fonk. var.
+Daha önce kullanmadık.
+
+int main()
+{
+	using namespace std;
+	
+	cout.put('A');  // bu karakteri stream'e verir
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ostream sınıfının formatli çıkış fonk. ile başlayacağız
+iki kategoride 
+1) ostream sınıfının member functions
+2) cstring veya tek bir char'i yazdıran global fonk.
+
+class ostream{
+
+public:
+	ostream& operator<<(int);
+	ostream& operator<<(double);
+	ostream& operator<<(long);
+	ostream& operator<<(void*); // bu ile global olan kariştiriliyor
+	ostream& operator<<(ostream& (*)(ostream&));  // parametresi func. pointer
+};
+
+std::ostream& operator<<(std::ostream&, const char*);
+
+*-----------------------------------------------------------------------------------------------------
+
+mülakat soruları:
+
+int main()
+{
+	using namespace std;
+
+	cout << 1; // cagirilan fonk.  cout.operator<<(1);
+	
+	cout.operator<< ("sofia"); // çağırılan fonk. ostream& operator<<(void*);
+	// neden sofia yazmadı ekrana ? ekrana sofia yazacak fonk. global
+	// sofia'nın tutulduğu bellek bloğunun adresini yazdırır
+	
+	operator<<(cout, "sofia");  // global fonk. çağırmak
+}
+
+--------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	char c = 'A';
+	
+	cout.operator <<(c); // çağırılan fonk. int parametreli
+	
+	operator<<(cout, c); // çağırılan fonk. global fonk., bu olmalı !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	int ival = 54807;
+	
+	cout << ival;  // neden decimal yazdı ? neden hexadecimal yazmadı ?
+}
+
+// çünkü cout nesnemiz hayata geldiğinde onun bir format state'i var
+// default bir format state'i var.
+// ben değiştirmediğim sürece default formatta yazacak
+
+-------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	int ival = 54807;
+	
+	cout.setf(ios::hex, ios::basefield); // 16'lik sayi sistemi
+	cout << ival;  
+}
+
+setf : set format
+tekrar format state'ini değiştirene kadar hex yazacak :)
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include <cstdio>
+
+using namespace std;
+
+int main()
+{
+	int x = 10;
+	
+	printf("%p\n", &x);  // C'de formatlama işi
+	
+	cout << &x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	int x = 10;
+	
+	cout << x;
+	
+	cout.operator <<(x);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+üretimde microsoft visual studio veya clion kullanıyormuş hoca.
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cout << (10 > 5);
+	// öncelik parantezine almasam
+	// cout.operator<<(10)  ifadesi ostream& döndürür
+	cout.operator<<(10) > 5;  // hata
+	// karşılaştırma operatorlerinin önceliği operator left shiftten daha düşük
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cout << true ? 10 : 20;
+	// cout.operator bool(true) ? 10 : 20;
+	// cout.operator<<(true).operator bool() ? 10 : 20;
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cout << ( 20  > 10);
+	// neden 1 yazdı ? çünkü bu da format state'in bir sonucu
+	
+	cout.setf(ios::boolalpha);
+	cout << (20 > 10);
+	
+	cout.unsetf(ios::boolalpha);
+	cout << (20 > 10);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ostream os{ cout.rdbuf() };
+	os << hex << showbase << uppercase;
+	
+	int x = 47804, y = 54807;
+	
+	cout << x << " " << y <<  '\n';
+	os << x << " " << y << '\n';
+}
+
+// iki tane ostream nesnesi var, fakat ikisinin formatı birbirinden farklı
+// ikisi de konsola yazdı
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ostream os{ cout.rdbuf() };
+	os << hex << showbase << uppercase << boolalpha;
+	
+	int x = 47804, y = 54807;
+	
+	cout << x << " " << y <<  " " << true << '\n';
+	os << x << " " << y <<  " " << true << '\n';
+}
+
+// iki nesne de aynı buffer'i kullanıyor 
+
+*-----------------------------------------------------------------------------------------------------
+
+format state:
+
+ortada bir state varsa onu get, set eden fonk.lar olur.
+ostream sınıfının da var.
+
+bir kısmı boolean bilgilerden oluşuyor. 
+
+boolean değerler :
+	true false
+	0 - 1
+
+bir bitte tutulabilir. İşaretsiz tam sayının bitinde tutar.
+
+boolean formatlama özellikleri : (iostream kütüphanesi için)
+
+uppercase 
+showbase  noshowbase
+showpos 
+showpoint
+skip whitespace
+unit buffering
+
+bunlar çıkış değil aynı zamanda giriş işlemleri için geçerli
+
+----------
+
+boolean olmayan formatlama özellikleri:
+yazma alanı genişliği
+vs.
+
+*-----------------------------------------------------------------------------------------------------
+
+formatlama state'inin bir kısmı taban sınıftan gelen fmtflags olan bir türde
+ifade ediliyor. 
+
+int main()
+{
+	using namespace std;
+	
+	ios_base::fmtflags;  // en tepedeki 
+
+}
+
+bunu set eden get eden fonk. çağırıyoruz
+
+----------------------------------------------
+
+class ostream{
+
+	fmt_flags mf;
+};
+
+-------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout.flags();   // fmtflags döndürür
+
+}
+
+fmtflags'in türü derleyiciye bırakılmış
+
+-------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << typeid(ios::fmtflags).name() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bitsel manipülasyon işlemleri : bir tam sayının belirli bir bitini set, reset, flip, get
+etme işlemleri. Bu işlemleri yapmak için bitmask lazım.
+constexpr static türü fmtflags olan maskeler var.
+Bu maskeleri nasıl isimlendirilmiş :
+
+ios:uppercase
+
+----------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << ios::uppercase <<  "\n";  // 2'nin kuvvetini yazdıracak
+	cout << ios::boolalpha <<  "\n";
+	cout << ios::showbase <<  "\n";
+	cout << ios::showpoint <<  "\n";
+	cout << ios::showpos <<  "\n";
+}
+
+-------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << (10 > 5) << "\n";
+	cout.setf(ios::boolalpha);
+	cout << (10 > 5) << "\n";
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << (10 > 5) << "\n";
+	cout.setf(ios::boolalpha |  ios::showbase | ios::show);
+	cout << (10 > 5) << "\n";
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << (10 > 5) << "\n";
+	cout.setf(ios::boolalpha);
+	cout << (10 > 5) << "\n";
+	cout.unsetf(ios::boolalpha);
+	cout << (10 > 5) << "\n";
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout.flags(cout.flags() | ios::boolalpha );   // aynısı =>    cout.setf(ios::boolalpha);
+	
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout.flags(cout.flags() & ~ios::boolalpha );   // aynısı =>    cout.unsetf(ios::boolalpha);
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+elimizde bir ostream nesnesi var, 
+şu sorunun cevabını almak istiyorsunuz 
+boolean yazdırsam true false mu yoksa 0 1 olarak mı yazar
+
+boolalpha bitini get etmem gerekiyor
+
+
+int main()
+{
+	using namespace std;
+	
+	if(cout.flags() & ios::boolalpha)
+		std::cout << "true false olarak yazar";
+	else
+		std::cout << "1 0 olarak yazar";
+		
+	cout.setf(ios::boolalpha);
+	
+	if(cout.flags() & ios::boolalpha)
+		std::cout << "true false olarak yazar";
+	else
+		std::cout << "1 0 olarak yazar";
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << (cout.flags() & ios::showbase ? "gosterir" : "gostermez");  // sayi sistemi tabani
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << (cout.flags() & ios::showpos ? "gosterir" : "gostermez");  // sayi sistemi tabani
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void display_on_off_flags(std::ios_base& ib)
+{
+	if( ib.flags() & std::ios::boolalpha)
+}
+
+int main()
+{
+	using namespace std;
+	
+	cout << (cout.flags() & ios::showpos ? "gosterir" : "gostermez");  // sayi sistemi tabani
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+default olarak 
+
+uppercase 
+showbase  noshowbase
+showpos 
+showpoint
+skip whitespace : setedilmiş durumda
+unit buffering
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << bitset<16>(ios::showcase) << "\n";
+	cout << bitset<16>(ios::boolalpha) << "\n";
+	cout << bitset<16>(ios::showpos) << "\n";
+}
+
+https://www.geeksforgeeks.org/c-bitset-and-its-application/
+
+*-----------------------------------------------------------------------------------------------------
+
+radiobutton : birbirini dışlayan tuşlar
+
+hex
+dec 
+oct
+
+sayı sistemlerinde yazdıracak
+
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << bitset<16>(ios::hex) << "\n";
+	cout << bitset<16>(ios::dec) << "\n";
+	cout << bitset<16>(ios::oct) << "\n";
+	cout << bitset<16>(ios::basefield) << "\n";
+}
+
+hex sayı sisteminde yazdırmak için hex bitini birleyip
+diğer iki biti sıfırlamayalım.
+octal'de octal bitini birleyip diğerlerini sıfırlamalıyım
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << 0xBABA << "\n"
+	cout.setf(ios::hex, ios::basefield);
+	cout << 0xBABA << "\n"
+	cout.setf(ios::oct, ios::basefield);
+	cout << 0xBABA << "\n"
+	cout.setf(ios::dec, ios::basefield);
+	cout << 0xBABA << "\n"
+}
+
+default decimal sayi sistemidir
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << "dec : " << (cout.flags() & ios::dec ? "set" : "unset") << "\n";
+	cout << "oct : " << (cout.flags() & ios::oct ? "set" : "unset") << "\n";
+	cout << "hex : " << (cout.flags() & ios::hex ? "set" : "unset") << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dec'i reset etsem:
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout.unsetf(ios::dec);
+	
+	cout << "dec : " << (cout.flags() & ios::dec ? "set" : "unset") << "\n";
+	cout << "oct : " << (cout.flags() & ios::oct ? "set" : "unset") << "\n";
+	cout << "hex : " << (cout.flags() & ios::hex ? "set" : "unset") << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bir alan bayraği (bileşke maske)
+ios::basefield
+
+üç tane maske 
+ios::dec
+ios::oct
+ios::hex
+
+iki parametreli setf'yi çağır ikinci parametresine basefield, birinci parametresine
+hangisini set edecekseniz onu geçeceksiniz
+
+*-----------------------------------------------------------------------------------------------------
+
+alan bayrağı olan ikincisi
+
+sağa mı sola mi dayalı, internal mi
+
+internal çok saçma bir isim olmuş center yerine
+
+output width
+
+int ival = 456;
+
+-----------456
+456-----------
++               723. (internal)
+-              7856
+ 
+----------------------------------------------------------------
+
+ios:adjustfield
+
+ios::left
+ios::right
+ios::internal
+
+-----------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout.width(20);
+	
+	cout <<  127 << "eray"; 
+}
+
+// default sağa dayalı !!!
+
+------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout.setf(iso::left, ios::adjustfield);
+	cout.width(20);
+	
+	cout <<  127 << "eray"; 
+}
+
+// yazma alanı genişliği sadece şlk çıkış operasyonu için geçerli, sonra sıfıra çekiliyor
+
+-------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << "left : " << (cout.flags() & ios::left ? "set" : "unset") << "\n";
+	cout << "right : " << (cout.flags() & ios::right ? "set" : "unset") << "\n";
+	cout << "internal : " << (cout.flags() & ios::internal ? "set" : "unset") << "\n";
+	
+	cout << 2345678 << "\n";
+}
+
+default hepsi unset, defaultta sağa dayalı yazıyor
+
+*-----------------------------------------------------------------------------------------------------
+
+printf'i inceleseniz bunların hepsi var !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+fixed notation 
+scientific notation
+fixed mi scientific mi kendi karar verdiği mod
+
+ios:floatfield
+
+------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << "fixed : " << (cout.flags() & ios::fixed ? "set" : "unset") << "\n";
+	cout << "scientific : " << (cout.flags() & ios::scientific ? "set" : "unset") << "\n";
+	
+	cout << 2345678 << "\n";
+}
+
+ikisi de unset ise kendisi karar veriyor, üçüncü mod
+ikisi de set edilmişse 16'lık sayi sisteminde yazacak
+
+------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << 23456.43453 << "\n";
+	cout << 2345645345346.43453554 << "\n";
+	
+	cout.setf(ios::fixed, ios::floatfield);
+	cout << 2345645345346.43453554 << "\n";
+	
+	cout.setf(ios::scientific, ios::floatfield);
+	cout << 2345645345346.43453554 << "\n";
+	
+	cout.setf(ios::fixed);
+	cout << 2345645345346.43453554 << "\n";  // hex float moduna geçiyor
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+output width
+
+cout.width(); 
+cout.width(12);
+
+*-----------------------------------------------------------------------------------------------------
+
+cout.fill();  // geri dönüş değeri char, ekrana yazdırırsan birşey göremezsin, cast edilmeli
+cout.fill('-')
+
+*-----------------------------------------------------------------------------------------------------
+
+hepsinin get ve set fonk. var !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+cout.precision()
+cout.precision(6)
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout.setf(ios::left, ios::adjustfield);
+	
+	cout.width(40);
+	cout << 3456 << "ali" << "\n";
+	
+	cout << 3456 << "ali";
+}
+
+yazma alanı genişliği kalıcı değil !!!
+
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout.setf(ios::left, ios::adjustfield);
+	
+	cout.fill('&');
+	cout.width(40);
+	cout << 3456 << "ali" << "\n";
+}
+
+default fill boşluk karakteridir !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+
+	cout << "fill character code : " << static_cast<int>(cout.fill()) << "\n";
+}
+
+// boşluk karakteri decimal 32
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout.width(3);
+	
+	cout <<  98753312;
+}
+
+yazma alanı genişliği asla budamaya neden olmaz (truncate etmez !!!)
+default'u sıfır
+
+*-----------------------------------------------------------------------------------------------------
