@@ -1,0 +1,1303 @@
+
+İçerik:
+
+giriş çıkış kütüphanesi (iostream kütüphanesi)
+standart kütüphanedeki manipülatörler :
+ios kütüphanesindeki manipülatörler
+stringstream sınıfları :
+Stream state:
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
+https://en.cppreference.com/w/cpp/io/ios_base
+
+bazı formatlama ios_base'de
+
+örneğin flags, setf, unsetf, precision, width fonk.
+fmtflags türünden dec, oct vs.
+
+bütün bu özellikler taban sınıftan geliyor.
+
+ios_base nesnesi copy const. delete edilmiş, kopyalamaya karşı kapatılmış
+
+destructor'i virtual'dir. Polymorfik bir sınıf demek.
+
+*-----------------------------------------------------------------------------------------------------
+
+basic_ios, ios_base'den kalıtımla elde edilmiş. Yani ios_base gereken her yerde basic_ios
+kullanabiliriz demek.
+
+https://en.cppreference.com/w/cpp/io/basic_ios
+
+basic_ios, basic_streambuf nesnesi ile ilişkili. Arka planda bütün operasyonlari gerçekleştiren
+basic_streambuf nesnesi.
+
+bugün state functions'larını göreceğiz
+her stream'in bir state'i var, bu akımın sağlık durumudur.
+
+*-----------------------------------------------------------------------------------------------------
+
+ios  : basic_ios<char>'un türeş ismi
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto n = cout.width();  // yazma alanı genişliğini döndürür
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto n = cout.width(20);  // ilk yazma alanı genişliğini 20'ye çekti, bir önceki genişliği de geri döndürdü
+}
+
+-------------------------------------------------------------------
+
+get (1)
+```
+streamsize width() const;
+```
+set (2)
+```
+streamsize width (streamsize wide);
+```
+Get/set field width
+
+The first form (1) returns the current value of the field width.
+
+The second form (2) also sets a new field width for the stream
+
+-------------------------------------------------------------------
+
+width budamaya neden olmaz
+
+int main()
+{
+	using namespace std;
+	cout.width(3);
+	
+	int x = 456456;
+	
+	cout << x;
+}
+
+output width'i geçerseniz herhangi bir budama sözkonusu değil
+
+*-----------------------------------------------------------------------------------------------------
+
+fill fonksiyonu, hem get hem set fonk.
+geri dönüş değeri char,
+
+int main()
+{
+	using namespace std;
+
+	cout << static_cast<int>(cout.fill()) << "\n";  // fill fonk.'u karakter döndürür, 
+	// karakter kodunu yazdırmak için kullanılır
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	auto c = cout.fill('+');
+	cout << (int)c << "\n";  // bunu kullanma, C tarzı dönüşüm için kullanılır
+	
+	cout.width(40);
+	cout << 345 << "murat";
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout.setf(ios::left, ios::adjustfield);
+	auto c = cout.fill('+');  // boşluk karakterine yerine yazar
+	cout << (int)c << "\n";  // bunu kullanma C tarzı dönüşüm için
+	
+	cout.width(40);
+	cout << 345 << "murat";
+}
+
+// fill karakter olarak sıfırlanmıyor ama width sıfırlanıyor
+
+------------------------------------------------------------
+
+int main()
+{
+    using namespace std;
+
+    cout.setf(ios::left, ios::adjustfield);
+    auto c = cout.fill('+');  // boşluk karakterine yerine yazar
+    cout << (int)c << "\n";  // bunu kullanma C tarzı dönüşüm için
+
+    cout.width(40);
+    cout << 345 << "murat" << " ilker\n";
+    cout.width(40);
+}
+
+------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout.setf(ios::left, ios::adjustfield);
+	auto c = cout.fill('+');
+	cout << (int)c << "\n";  // bunu kullanma C tarzı dönüşüm için
+	
+	cout.width(40);
+	cout << 345 << "murat" << "\n";
+	
+	cout << (int)cout.fill() << " ";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout << typeid(streamsize).name() << "\n";  // int64, 8 bytelik int türü
+	
+	cout << cout.precision(); // printf de 6 değeri ise burada da 6 'dır
+	
+	cout << "n = " << n << "\n";
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout << typeid(streamsize).name() << "\n";  // int64, 8 bytelik int türü
+	
+	cout.precision(12); // noktadan sonra 12 basamak yazacağı anlamına gelmiyor
+	// burada kurallar biraz karmaşık
+	
+	cout <<  736245.8723457834958234;
+}
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout << typeid(streamsize).name() << "\n"; 
+	
+	cout.setf(ios::fixed, ios::floatfield);
+	cout.precision(12); 
+	
+	cout <<  736245.8723457834958234;
+}
+
+// precision değerinin ne olduğu ayrı
+// precision değerinin gerçek sayının formatlı çıkışında ne şekilde ele alınacağı ayrı !!!
+
+https://en.cppreference.com/w/cpp/io/manip/fixed
+
+https://en.cppreference.com/w/cpp/io/manip/setprecision
+
+
+*-----------------------------------------------------------------------------------------------------
+
+bir ostream nesnesinin formatlama state'ini bir başka ostream nesnesine kopyalabiliriz.
+
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+
+	cout.setf(ios::boolalpha | ios::uppercase | ios::showbase);  
+	// sanırım alan maskesi ve maske harici
+	// olunca veya ile belirtilmesi gerekiyor !!!
+	
+	cout.setf(ios::hex, ios::basefield);
+	
+	cout <<  47802 << ' ' << (3 > 5) << "\n";
+	
+	ostringstream oss;
+	
+	oss.copyfmt(cout);
+	
+	oss << 57054 << ' ' << true;
+	
+	cout << oss.str() << '\n';
+}
+
+
+// ostringstream sınıfı kalıtım yoluyla ostream sınıfından elde edilir.
+birbirlerinin yerine kullanılabilirler. 
+cout'un format state'ini oss'ye kopyalarsam oss doğrudan cout'un format
+state'ini kullanacak. Bunun için copyfmt fonk. çağrılır.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+mülakat soru : elinde ostream nesnesi var, ama sen bu nesnenin formatlama özelliklerini,
+değiştireceksin  fakat sonra eski haline geri getir.
+
+RAII idiomu, cout'u sarmalasan ve sarmalayan sınıf cout'un format özelliklerini tutsa
+destructor'ı da eski haline getirse
+
+
+
+#include <iostream>
+#include <sstream>
+
+class fmt{
+public:
+	fmt(std::ostream& os) : m_os{os}, m_flags{os.flags()} {}
+	~fmt()
+	{
+		m_os.flags(m_flags);
+	}
+private:
+	std::ostream& m_os;
+	std::ios::fmtflags m_flags;
+};
+
+int main()
+{
+	using namespace std;
+
+	{
+		fmt fm{ cout };
+		cout.setf(ios::boolalpha | ios::uppercase | ios::showpos);
+		cout.setf(ios::hex, ios::basefield);
+		cout << 47802 << " " <<  57054 << "\n";
+	}
+	
+	cout << 47802 << " " <<  57054 << "\n";
+	
+}
+
+github'da çözümü var !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+çıkış işlemlerinde chaining'i çok kullanıyoruz
+x'yi yazdırdıktan sonra format state'ini değiştirmek istersem bunu nasıl yapacağım ?
+çözümü : manipülatör kavramı
+
+ostream manipülatörü nedir ne işe yarıyor ?
+
+#include <iostream>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	int x = 813643;
+	int y = 98345;
+	int z = 34875;
+	
+	cout << x << " " << y << " " << z;
+
+}
+
+-----------------------------------------------------------
+
+class ostream{
+
+public:
+	ostream& operator<<(ostream& (*fp)(ostream&));
+	{
+		return fp(*this);
+	}
+};
+
+// böyle fonk.'lara manipülatör deniyor
+// cout'u alacak ve değiştirecek, geri dönüş değeri de cout olacak
+
+-------------------------------------------------------------------
+
+#include <iostream>
+#include <sstream>
+
+std::ostream& Endl(std::ostream& os)    // os nesnesini manipüle etti !!!
+{
+	os.put('\n');
+	os.flush();
+	return os;
+}
+
+// ostream nesnesini aldı, ona bir new line verdi, buffer'ini flush etti, ve aynı nesneyi döndürdü
+
+int main()
+{
+	using namespace std;
+	
+	cout <<  12 << Endl << 34 << Endl;;
+}
+
+-------------------------------------------------------------------
+
+#include <iostream>
+#include <sstream>
+
+std::ostream& sl(std::ostream& os)    
+{
+	os << "\n*****************\n";
+	os.flush();
+	return os;
+}
+
+int main()
+{
+	using namespace std;
+	
+	cout <<  12 << sl << 34 << sl << 4.5 << "alican" << sl;
+}
+
+-----------------------------------------------------------
+
+class ostream{
+
+public:
+	ostream& operator<<(ostream& (*fp)(ostream&));
+	{
+		fp(*this);
+	}
+};
+
+// manipülatörlerin kullanılabilirliğini sağlayan ostream sınıfındaki 
+member function, bu fonks.
+
+*-----------------------------------------------------------------------------------------------------
+
+standart kütüphanedeki manipülatörler :
+
+
+std::ostream& BoolAlpha(std::ostream& os)    
+{
+	os.setf(std::ios::boolalpha);
+	return os;
+}
+
+std::ostream& NoBoolAlpha(std::ostream& os)    
+{
+	os.unsetf(std::ios::boolalpha);
+	return os;
+}
+
+int main()
+{
+	using namespace std;
+	
+	cout <<  (10 > 5) << BoolAlpha << (10 > 5) << NoBoolAlpha << 'n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bir tane hex manipülatörü yazın:
+
+std::ostream& BoolAlpha(std::ostream& os)    
+{
+	os.setf(std::ios::boolalpha);
+	return os;
+}
+
+std::ostream& NoBoolAlpha(std::ostream& os)    
+{
+	os.unsetf(std::ios::boolalpha);
+	return os;
+}
+
+std::ostream& Hex(std::ostream& os)    
+{
+	os.setf(std::ios::hex, std::ios::basefield);
+	return os;
+}
+
+std::ostream& HexFloat(std::ostream& os)    
+{
+	os.setf(std::ios::hex::fixed | std::ios::scientific);
+	return os;
+}
+
+
+int main()
+{
+	using namespace std;
+	
+	cout <<  (10 > 5) << BoolAlpha << (10 > 5) << NoBoolAlpha << 'n';
+	cout << 57054 << Hex << 57054 << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout <<  boolalpha;  // cout.setf(ios::boolalpha) yazmak aynı ama bunun avantajları var
+	// birden fazla formatlama özelliğini kolayca değiştirebilirim, aşağıdaki gibi
+	
+	cout <<  boolalpha << left << showpos << showbase << hex;  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+kendimiz için de manipülatör yapabiliriz : 
+
+std::ostream& necfm(std::ostream& os)    
+{
+	return os << std::boolalpha << std::left << std::hex << std::showbase << std::showpoint << std:fixed;
+}
+
+int main()
+{
+	using namespace std;
+	
+	cout << necfm;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ostream manipülatör çeşitleri :
+1) parametreli manipülatörler
+2) parametresiz manipülatörler
+
+*-----------------------------------------------------------------------------------------------------
+
+yazma alanı genişliği : parametreli manipülatörler
+
+
+
+int main()
+{
+	using namespace std;
+	int ival = 43563;
+	double dval = 35.7;
+	string s{ "murathan"};
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+https://en.cppreference.com/w/cpp/io/manip/boolalpha
+
+ios kütüphanesindeki manipülatörler, functions başlığı altında:
+https://en.cppreference.com/w/cpp/header/ios
+
+
+
+https://en.cppreference.com/w/cpp/io/manip
+
+*-----------------------------------------------------------------------------------------------------
+
+parametreli manipülatörlerin kullanacaksanız iomanip'i dahil etmelisiniz
+
+https://en.cppreference.com/w/cpp/header/iomanip
+
+setw
+setprecision
+setfill
+setbase
+setiosflags
+resetiosflags
+...
+
+-------------------------------------------------------------------
+
+#include <iomanip>
+
+int main()
+{
+	using namespace std;
+	
+	cout << left << setfill( '.' );  // boşluk yerine nokta yazar !!!
+	
+	cout << setw(16) << "neco" << setw(20) << 34 << setw(12) << 'A' << "volkan gundogdu;
+}
+
+// neco 16 karakterlik alana, 34'ü 20 karakterlik alana yazdı.
+// volkan gundogdu'yu yazarken width sıfıra çekilmiş olacak
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iomanip>
+
+int main()
+{
+	using namespace std;
+	ios::fmtflags myflags;
+	
+	cout << setiosflags(myflags) << 12; 
+	
+	cout <<  setbase();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+parametreli manipülatör yazmak baya bir challange
+
+ödev :
+parametreli manipülatörleri implemente ediniz.
+
+	nl(5); // newline, hangi parametreyi geçersem o kadar newline verecek
+
+
+int main()
+{
+	using namespace std;
+	
+	int x = 35;
+	double dval = 56.12;
+	string name{ "eray" };
+	
+	cout << x << nl(5) << dval << nl(7) << name;
+}
+
+----------------------------------------------------------
+
+hoca standart kütüphanenin uygulamadığı bir yöntem uygulayacak
+
+	cout << x << nl(5) << dval << nl(7) << name;
+	
+legal olması için nl nasıl olmalı ?
+nl fonksiyon, fonksiyon adresi olabilir
+geri dönüş değeri öyle bir varlık olmalı ki o varlığı çıkış akımına insert edebileyim
+
+
+class nl{
+public:
+	nl(int val) : mc{val} { };
+	friend std::ostream& operator<<(std::ostream& os, const nl& nx)                                                                                                         
+	{
+			for(int i = 0; i < nx.mc; ++i){
+				os.put('\n');
+			}
+			return os;
+	}
+private:
+	int mc;
+};
+
+
+int main()
+{
+	using namespace std;
+	
+	int x = 35;
+	double dval = 56.12;
+	string name{ "eray" };
+	
+	cout << x << nl(5) << dval << nl(7) << name;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+manipülatörlerin önemli bir kısmı tepedeki taban sınıfta.
+Yani giriş çıkış işlemlerinden bağımsız. 
+
+*-----------------------------------------------------------------------------------------------------
+
+istream nesneleri ile de manipülatörleri kullanabilirsiniz
+
+int main()
+{
+	using namespace std;
+	
+	char str[10];
+
+	cin >> setw(10) >> str;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+hatırlatma :
+
+ostream sınıfının formatli çıkış fonk. ile başlayacağız
+iki kategoride 
+1) ostream sınıfının member functions
+2) cstring veya tek bir char'i yazdıran global fonk.
+
+class ostream{
+
+public:
+	ostream& operator<<(int);
+	ostream& operator<<(double);
+	ostream& operator<<(long);
+	ostream& operator<<(void*); // bu ile global olan kariştiriliyor
+	ostream& operator<<(ostream& (*)(ostream&));  // parametresi func. pointer
+};
+
+std::ostream& operator<<(std::ostream&, const char*);
+
+-------------------------------------------------------
+
+	cout  << x << " " << dval << " " << c << endl;
+	// operator<<(operator<<(operator<<(cout.operator<<(x), " ").operator<<(dval), " "), c).operator<<(endl);
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iomanip>
+
+int main()
+{
+	using namespace std;
+	
+	int ival{ };
+	
+	cout << "bir tam sayi giriniz :  ";
+	cin >> ival;  // örneğin "ali" yi kabul etmez
+	
+	cout << "ival = " << ival << "\n";
+}
+
+------------------------------------------------------------
+
+// hex manipülatörünü girişte kullanmak
+
+#include <iomanip>
+
+int main()
+{
+	using namespace std;
+	
+	int ival{ };
+	
+	cout << "bir tam sayi giriniz :  ";
+	cin >> hex >> ival;
+	
+	cout << "ival = " << ival << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iomanip>
+
+int main()
+{
+	using namespace std;
+	
+	bool flag{};
+	
+	cout << "bir giris yapin : ";  // true dogru calismaz !!! 
+	cin >> flag;
+	
+	cout << boolalpha << flag << "\n";
+}
+
+---------------------------------------------------------
+
+#include <iomanip>
+
+int main()
+{
+	using namespace std;
+	
+	bool flag{};
+	
+	cout << "bir giris yapin : ";   // true dogru calisir
+	cin >> boolalpha >> flag;
+	
+	cout << boolalpha << flag << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bütün bu detaylar Nicolai M. Josuttis kitabında veya cppreference.com'da var
+
+*-----------------------------------------------------------------------------------------------------
+
+bellek, dosya üstünde yapılan okuma yazma işlemlerinde de bu özellikler kullanılır.
+
+----------------------------------------------------
+
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <fstream>
+#include <random>
+
+int main()
+{
+	std::ofstream ofs{ "out.txt" };
+	if(!ofs){
+		std::cerr << "out.txt dosyasi olusturulamadi\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	std::mt19937 eng;
+	std::uniform_int_distribution dist{ 0, 1'000'000 };  // CTAD'tan int distribution oldugu cikarimi yapilir
+	
+	std::cout << std::hex << std::uppercase << std::showbase;  // hex sisteminde yazar
+	ofs << std::hex << std::uppercase << std::showbase;  // hex sisteminde yazar
+	
+	for(int i = 0; i < 1000; ++i){
+		ofs << dist(eng) << "\n";
+	}
+
+}
+
+// standart output'a yazmak yerine dosyaya yazacağım. Format state'ini ben belirledim :)
+
+*-----------------------------------------------------------------------------------------------------
+
+Kursun sonunda videodan izlenebilecek konular :
+
+random kütüphanesi, rejex, std::variant, std:optional, std::any
+concurency konusu var. Toplamda 20-25 saatlik ilave gerekiyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+std::quoted  :   çift tırnak içinde yazar !!!
+
+
+#include <iostream>
+#include <string>
+#include <iomanip>
+
+int main()
+{
+	std::string str{ "samet yazici" };
+	
+	std::cout << str << " " << "musa sertkaya" << "\n";
+}
+
+---------------------------------------------------------------------
+
+#include <iostream>
+#include <string>
+#include <iomanip>
+
+int main()
+{
+	std::string str{ "samet yazici" };
+	
+	std::cout << std::quoted(str) << " " << std::quoted("musa sertkaya") << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+standart kütüphane belirli türler için operator left shift'i kendisi overload ediyor
+
+#include <string>
+
+int main()
+{
+	// string : standart bir inserter var
+	// pair : standart bir inserter yok, bu nedenle kendi inserter'imizi yazmıştık
+}
+
+---------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << pair{ 345, 7.89 }; // legal değil
+}
+
+---------------------------------------------------------------
+
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	cout << pair{ 345, 7.89 }; // şimdi legal,  inserter'i biz yazmıştık
+}
+
+--------------------------------------------------------
+
+std::array'in var mı ? yok, bunun için de bir inserter yazmıştık
+std::tuple'in yok
+
+
+template <typename T, std::size_t size>
+std::ostream& operator<<(std::ostream& os, const std::array<T, size>& ar)
+{
+	for(std::size_t i{};  i < ar.size() - 1;  ++i){
+		os << ar[i] << ", ";
+	}
+	
+	return os << ar.back() << ']';
+}
+// array'in size'i sıfırsa problem yaratır :)
+
+
+int main()
+{
+	using namespace std;
+	
+	array a{ 2, 6, 8, 9};
+	
+	cout << a << '\n';
+}
+
+----------------------------------------------------------
+
+std::bitset'in inserter'i var.
+
+
+#include <bitset>
+
+int main()
+{
+	using namespace std;
+	
+	cout << bitset<16>(456u) << '\n' << bitset<64>(763242345) << '\n';
+}
+
+------------------------------------------------------------------
+
+complex sınıfının inserter'i var.
+
+#include <complex>
+
+int main()
+{
+	using namespace std;
+	
+	cout << complex{1.2, 6.7} << '\n';
+	
+	// template olmasına rağmen, template argümanını yazmamış olmama rağmen
+	// CTAD'dan dolayı hata vermez.  <double>
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <complex>
+#include "date.h"
+
+int main()
+{
+	using namespace std;
+
+	auto up = make_unique<Date>(3, 6, 1987);
+	
+	cout << *up << " " << up << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// serialization : bir sınıf nesnesinin değerini, state'ini bir string'e dönüştürerek bir yerde saklamak
+
+// bir sınıf nesnesinin bir network üzerinden bir yere gönderemezsiniz, string'e dönüştürüp 
+string'i gönderip o sınıf nesnesi diğer tarafta tekrar oluşturulabilirsiniz
+
+
+#include <complex>
+#include "date.h"
+
+int main()
+{
+	using namespace std;
+	
+	std::mt19937 eng;
+	
+	for(int i = 0; i < 10; ++i){
+		auto n = eng();
+	}
+	
+	cout << eng;  // state'in bir yazıya dönüştürülmesi gösteriliyor
+}
+
+---------------------------------------------------------------
+
+bu yazıyı ya dosyaya ya da belleğe yazacağım
+
+*-----------------------------------------------------------------------------------------------------
+
+stringstream sınıfları : amaç okuma-yazma işlemlerini bellek üstünde yapmak
+
+çıkış işlemini doğrudan bellek alanına yapacaksınız, sonra çıkışı text olarak
+kullanabileceksiniz
+
+
+#include <sstream>
+
+// ostringstream
+// istringstream
+// stringstream (hem okuma hem yazma)
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// bir çıkış işlemini bir ostringstream sınıf nesnesine verirseniz çıkışı belleğe yapmış oluyorsunuz
+
+#include <sstream>
+
+int main()
+{
+	int x = 10;
+	double dval = 4.5;
+	
+	ostringstream oss;
+	oss << hex << x << '-' << dval;  // belleğe yazdık !!! 
+	
+	cout << oss.str() << "\n";   // şimdi bu string'i istediğiniz şekilde kullanabilirsiniz
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// 19_10_2022 böyle bir yazı elde etmek
+// akla ilk gelen ostringstream sınıfı olmalı
+
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	int ival = 1243;
+	char c{ ':' };
+	double dval{ 435.7456};
+	
+	auto s = (ostringstream { } << ival << c << dval).str();  
+	// ostringstream { }  geçici nesne
+	
+	cout << s << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+chrono kütüphanesi gelecek derslerde anlatılacak 
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+
+	time_t timer;
+	time(&timer);
+	auto tp = localtime(&timer);
+	
+	ostringstream oss;
+	
+	oss << setfill('0');
+	
+	oss << setw(2) << tp->tm_mday << '-' << setw(2) << tp->tm_mon + 1 << '-' << tp->tm_year + 1900;
+	
+	cout << "(" << oss.str() << ")";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ostringstream sınıfını kullanırken yapılan tipik hatalar
+
+1) her str fonk. çağırıldıktan sonra ostringstream'in bufferindaki karakterler 
+buffer'dan çıkarılıyormuş zannetmek
+
+int main()
+{
+	using namespace std;
+	
+	ostringstream oss;
+	Irand rand{ 0, 7000};
+	
+	for(int i = 0; i < 10; ++i){
+		oss << '\' << rand() << '\n';
+		cout << oss.str() << '\n';
+	}
+	// her defasında oss'nin buffer'ina yazmaya devam ediyor
+	// sadece str'yi çağırınca o an ne varsa onun yazı durumunu elde ediyoruz
+}
+
+--------------------------------------------------------------
+
+buffer'in boşaltılmamasına iki çözüm var !!
+
+1) 
+
+int main()
+{
+	using namespace std;
+	
+	Irand rand{ 0, 7000};
+	
+	for(int i = 0; i < 10; ++i){
+		ostringstream oss;
+		oss << '\' << rand() << '\n';
+		cout << oss.str() << '\n';
+	}
+}
+
+------------------------------------------------------------
+
+2) 
+
+int main()
+{
+	using namespace std;
+	
+	Irand rand{ 0, 7000};
+	ostringstream oss;
+	
+	for(int i = 0; i < 10; ++i){
+		oss << '\' << rand() << '\n';
+		cout << oss.str() << '\n';
+		oss.str("");  // str fonksiyonu null string verdik
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+mülakat sorusu :
+// 12-5-1987                   emirhan
+
+class date{
+public:
+	date(int day, int mon, int year) : md{day}, mm{mon}, my{year} {}
+	
+	friend std::ostream& operator<<(std::ostream& os, const date& dt)
+	{
+		return os << dt.md << '-' << dt.mm << '-' << dt.my;
+	}
+private:
+	int md, mm, my;
+};
+
+int main()
+{
+	using namespace std;
+	
+	date mydate{ 12, 5, 1987};
+	cout << left;
+	
+	cout << setw(40) << mydate << "emirhan";  // hatalı sonuç
+}
+
+--------------------------------------------------
+
+// yazma alanı genişliği kalıcı değil
+// set edildikten sonra ilk çıkışı yapılan öğe için geçerli,
+// ondan sonra sıfıra çekiliyor
+// dt.md'yi 40 karakterlik alana yazar !!!
+// string'e dönüştürsem tek bir nesne olacağı için olabilirdi.
+
+
+class date{
+public:
+	date(int day, int mon, int year) : md{day}, mm{mon}, my{year} {}
+	
+	friend std::ostream& operator<<(std::ostream& os, const date& dt)
+	{
+		std::ostringstream osstr;
+		
+		osstr << dt.md << '-' << dt.mm << '-' << dt.my;  // önce belleğe yazdık
+		return os << osstr.str();
+	}
+private:
+	int md, mm, my;
+};
+
+int main()
+{
+	using namespace std;
+	
+	date mydate{ 12, 5, 1987};
+	cout << left;
+	
+	cout << setw(40) << mydate << "emirhan";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+istringstream sınıfı : işin giriş tarafında
+giriş için buffer'da karakterlerin bulunması gerekir
+constructor'ı da o karakterleri alıyor
+
+
+int main()
+{
+	using namespace std;
+
+	istringstream iss("emre eray necati hasan safa samet");
+	string name;
+	
+	while(iss >> name){
+		cout << name << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru :
+
+int main()
+{
+	using namespace std;
+
+	string sline;
+	
+	cout << "bir yazi girin: ";
+	getline(cin, sline); // henüz görmedik ama
+	// boşluk karakterleri de yazıya dahildir
+	
+	cout << "(" << sline << ")\n";
+}
+
+----------------------------------------------------------
+
+// yazıyı kullanarak boşluklarla ayrılmış varlıkları kullanabilir miyim ?
+
+#include <set>
+
+int main()
+{
+	using namespace std;
+
+	string sline;
+	
+	cout << "bir yazi girin: ";
+	getline(cin, sline); 
+	
+	istringstream is{ sline };
+	
+	string word;
+	set<string> myset;
+	
+	while(is >> word){
+		myset.insert(word);
+	}
+	
+	for(const auto& s: myset)
+		cout << s << '  ';
+}
+
+--------------------------
+
+// yazı da olması gerekmez 
+
+int main()
+{
+	using namespace std;
+
+	string sline;
+	
+	cout << "tam sayilari girin: ";
+	getline(cin, sline); 
+	
+	istringstream is{ sline };
+	
+	int ival{};
+	int sum{};
+	
+	while(is >> ival){
+		sum += ival;
+	}
+	
+	cout << "toplam = " << sum << '\n';
+}
+
+-----------------------------------------
+
+// formatlama özelliklerini de kullanabiliriz
+
+
+int main()
+{
+	using namespace std;
+
+	string sline;
+	
+	cout << "tam sayilari girin: ";
+	getline(cin, sline); 
+	
+	istringstream is{ sline };
+	
+	int ival{};
+	int sum{};
+	
+	is >> hex;
+	
+	while(is >> ival){
+		sum += ival;
+	}
+	
+	cout << "toplam = " << sum << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+stream state : stream nesnesi ya sağlıklıdır, ya da sağlığı yerinde değildir hata olmuştur,
+o hata giderildikten sonra o stream nesnesi kullanılabilir
+
+// iostate
+
+int main()
+{
+	using namespace std;
+	
+	cout << typeid(std::ios::iostate).name() << "\n";  // derleyiciye bağlı
+	// hocada int türü,
+	//iostate kullandığı zaman int türünü kullanmış olur
+}
+
+---------------------------------------------------------
+
+// iostate türüden iosbase sınıfının constexpr static veri elemanları var
+// bu sabitler
+
+int main()
+{
+	using namespace std;
+	
+	cout << ios_base::goodbit << "\n";
+	cout << ios_base::failbit << "\n";
+	cout << ios_base::eofbit << "\n";
+	cout << ios_base::badbit << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+her stream nesnesinin ios state türünden elemanı stream'in state'ini tutar.
+Stream'de hiç hata yoksa ios state türünden eleman goodbit durumunda yani
+bütün bitleri sıfır olmalı.
+
+------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << cin.rdstate() << "\n";
+}
+
+------------------------------------------------------------
+
+akımın sağlık durumun öğrenmek için gerekli fonksiyonlar:
+
+good()
+eof()
+fail()
+bad()
+operator bool
+operator!
+
+diğer ihtimal:
+
+if(cin.rdstate() & ios::failbit)
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
