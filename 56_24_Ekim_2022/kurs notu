@@ -1,0 +1,1465 @@
+
+İçerik:
+
+Stream state:
+ignore()
+dosya işlemleri için kullanılanlar:
+dosyanın hangi modda açılacağını belirlemek :
+get()
+Formatlı okuma fonksiyonları :
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+her stream’in bir condition state’i var.
+o stream kullanılabilir durumda mı ondan okuma ona yazma işlemi yapabilir miyim ?
+çünkü eğer stream kullanılabilir durumda değilse hata durumunda ise
+o hata giderilene kadar bizim için okuma ya da yazma işlemi yapmayı reddedecek.
+
+en tepedeki taban sınıfta bitmask’ler var bitsel işlemler için oluşturulmuş.
+iostate isimli bir tür, bu tür derleyiciye bırakılmış. Derleyici burada herhangi
+bir türü kullanabilir. Biz bir stream nesnesi için o stream nesnesinin state’ini
+set ve get edecek fonk.’a sahibiz. set ve get işlemlerinde kullanılacak
+iostate türünden maskelerimiz, bitmask’lerimiz var.
+
+int main()
+{
+	using namespace std;
+
+	 // ios::iostate
+	ios::goodbit
+	ios::badbit	
+	ios::failbit	
+	ios::eofbit	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+herhangi bir işlem yaptığımızda, o işlem hatayla sonuçlandığında
+arka plandaki kodlar iostate türünden o state'i tutan değişkenin 
+bir ya da birden fazla bitini set ediyor. bu bitlere doğrudan bakabildiğimiz
+gibi taban sınıfın üye fonk.'larını çağırabiliyoruz. 
+
+
+// akımın durumunu kontrol ediyoruz
+
+int main()
+{
+	using namespace std;
+
+	cout << boolalpha;
+	cout << "cin.good() = " << cin.good() << "\n";
+	cout << "cin.eof() = " << cin.eof() << "\n";
+	cout << "cin.fail() = " << cin.fail() << "\n";
+	cout << "cin.bad() = " << cin.bad() << "\n";
+	cout << "cin = " << (cin ? true : false) << "\n";
+	cout << "!cin = " << !cin<< "\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// akımında bir hata olsun
+// ali’yi input olarak girerek hata oluşturalım
+// veya control z enter da kullanılabilir
+
+int main()
+{
+	using namespace std;
+
+	cout << boolalpha;
+
+	cout <<  "bir sayi girin: ";
+	int x;
+	cin >> x;
+	cout << "cin.good() = " << cin.good() << "\n";
+	cout << "cin.eof() = " << cin.eof() << "\n";
+	cout << "cin.fail() = " << cin.fail() << "\n";
+	cout << "cin.bad() = " << cin.bad() << "\n";
+	cout << "cin = " << (cin ? true : false) << "\n";
+	cout << "!cin = " << !cin<< "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void print_stream_state(const std::ios& stream)
+{
+	const auto st = stream.rdstate();
+	if(st == 0){
+		std::cout << "stream is in good state\n";
+		return;
+	}
+	
+	if(st & std::ios::eofbit){
+		std::cout << "eofbit set\n";
+	}
+	else{
+		std::cout << "eofbit unset\n";
+	}
+	
+	if(st & std::ios::failbit){
+		std::cout << "failbit set\n";
+	}
+	else{
+		std::cout << "failbit unset\n";
+	}
+	
+	if(st & std::ios::badbit){
+		std::cout << "badbit set\n";
+	}
+	else{
+		std::cout << "badbit unset\n";
+	}
+}
+
+int main()
+{
+	using namespace std;
+
+	print_stream_state(cin);  // herhangi bir sorun olmadğından stream good
+	// durumunda olacak
+}
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	int x;
+	
+	std::cout << "bir tam sayi girin: ";   // "ali" yaz !!
+	cin >> x;
+	print_stream_state(cin); 
+}
+
+// sonuç:
+eofbit unset
+failbit set
+badbit unset
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	int x;
+	
+	std::cout << "bir tam sayi girin: ";   // "ali" yaz !!
+	cin >> x;
+	print_stream_state(cin); 
+	
+	cin.clear();  // iostate türünden veri elemanını good durumuna getiriyor
+	std::cout << "after clear call\n";
+	print_stream_state(cin);
+}
+
+----------------------------------------------------------
+
+// state değişkenini clear fonk. veya set state fonk. ile 
+istediğim forma sokabilirim:
+
+int main()
+{
+	using namespace std;
+	
+	cin.clear(ios::badbit);  // badbit set edildi !!!
+	
+	print_stream_state(cin);
+}
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cin.clear(ios::failbit | ios::eofbit);  // failbit ve eofbit set edildi
+	
+	cin.setstate(); // belirli bir biti set etmek için ???
+	print_stream_state(cin);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	int x;
+	
+	cout << "bir giris yapin: ";
+	
+	while(cin >> x){   // cin temsil ettiği stream'i kullanarak oradan gelen byte'ları
+	// kullanarak x'i set ediyorsunuz, hata durumuna düşünce döngüden çıkar
+		cout << x << "\n";
+	}
+}
+
+----------------------------------------------------------
+
+
+int main()
+{
+	using namespace std;
+
+	int x;
+	
+	cout << "bir giris yapin: ";
+	
+	while(cin.operator>>(x).operator bool() {   // üsttteki ile aynı anlamda
+		cout << x << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <ostream>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <conio> // standart değil
+
+int main()
+{
+	using namespace std;
+
+	ifstream ifs{ "date.h" };
+	if(!ifs){
+		cerr << "dosya acilamadi\n";
+		return 1;
+	}
+	
+	string sline;
+	
+	while( getline(ifs, sline)){ 
+	// böyle kullanılabilir çünkü operator bool fonk. var.
+	// akımın condition state'ini elde etmek için istream sınıfının operator bool fonk.
+	// çağırmış olduk
+		cout << sline << '\n';
+		(void)_getch();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dosyadan, bellekten, standart inputtan yapılan okuma işlemlerinde 
+akımın state'ini test ediyoruz. Bazı işlemlerde akımın state'ini tekrar good
+duruma dönüştürmek için sınıfın clear fonk.'u çağırmamız gerekecek. 
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << "bir tam sayi girin : ";
+	int x;
+	
+	while(true){
+		cin >> x;
+		if(cin)
+			break;
+		
+		if(cin.eof()){ // standart giriş akımının bufferi boş bırakılmışssa
+			cout <<   "giris yapmadiniz\n";
+		}
+		else if(cin.fail()){
+			string str;
+			cin.clear();
+			cout << "hatali giris... tekrar deneyin ";
+			// ama standart input'un buffer'indan o karakterler çıkartılmamış demek
+		}
+	}
+	
+	cout << "girdiginiz sayi " << x << "\n";
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+1) eğer akım hata durumuna düşmüşse onu tespit etmeniz yetmez.
+tekrar okuma işleminin yapılması için akımı tekrar good durumuna getirmeniz
+gerekiyor.  clear fonk. ile
+
+2) eğer formatlı bir giriş işleminde giriş işlemi başarısız olmuşsa
+o karakterler akımın buffer'indan extract edilmemiş olacak. 
+O zaman o karakterleri sizin bir diziye almanız gerekecek eğer
+kullanılmayacaklarsa.
+
+*-----------------------------------------------------------------------------------------------------
+
+bir akış akımı nesnesinin buffer'indaki karakterleri temizlemek mümkün mü ?
+evet, istream sınıfının ignore isimli fonk. var
+
+
+int main()
+{
+	using namespace std;
+	
+	cout << "bir tam sayi girin : ";   // 345alican
+	cin >> x;  // ilki 345'i alır, fakat sonra beklemez çünkü buffer boş değil
+	cout << "bir sayi daha girin : ";
+	cin >> x;
+}
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << "bir tam sayi girin : ";   // 345alican
+	cin >> x; 
+	cout << "bir sayi daha girin : ";
+	cin.ignore();  // sadece bir karakteri ignore eder, default olarak 1 alır
+	cin >> x;
+}
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << "bir tam sayi girin : ";   // 345alican
+	cin >> x; 
+	cout << "bir sayi daha girin : ";
+	cin.ignore(5);  // sadece  5 karakteri ignore eder
+	cin >> x;
+}
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << "bir tam sayi girin : ";   // 345alican
+	cin >> x; 
+	cout << "bir sayi daha girin : ";
+	cin.ignore(5, '\n');  // 5 tane karakteri ignore et, ya da 5 karaktre gelmeden new line gelirse
+	// ignore et
+	cin >> x;
+}
+
+----------------------------------------------------------
+
+#include <limits>
+
+int main()
+{
+	using namespace std;
+	
+	cout << "bir tam sayi girin : ";   // 345alican
+	cin >> x; 
+	cout << "bir sayi daha girin : ";
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');  // new line karakteri gelene
+	// kadar gelen karakterleri ignore edecek (akımdan çıkartacak )
+	cin >> x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : cin standart akım nesnesinin state'i good, bad, fail gibi bitlerden mi oluşuyor ?
+
+evet, öyle düşünebilirsiniz. 
+
+iostate m_state; // bitleri ile hata bilgisini tutuyor, sıfırsa good durumunda,
+// eof, bad biti set edilmişse akım fail durumunda.
+// hata olduktan sonra tekrar okuma yapacaksak öncelikle akımın condition
+state'ini good durumuna çevirmemiz gerekiyor. Onun için de sınıfın clear isimli
+fonk. çağırıyoruz.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <limits>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{ "ali5678veli34512" };
+	
+	int x;
+	
+	iss.ignore(3);
+	iss >> x;
+	
+	std::cout << "x = " << x << "\n";
+	iss.ignore(4);
+	int y;
+	
+	iss >> y;
+	
+	std::cout << "y = " << y << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <limits>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{ "ali5678veli34512" };
+	
+	int x;
+	
+	iss >> x;  // okuma işlemi yapılamaz, akım fail durumuna düşer
+	
+	cout << (iss ? "hata yok" : "hata var");
+}
+
+----------------------------------------------------------
+
+#include <limits>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{ "ali5678veli34512" };
+	
+	int x;
+	
+	iss >> x;  // okuma işlemi yapılamaz, akım fail durumuna düşer
+	
+	cout << (iss ? "hata yok" : "hata var");
+	iss.clear();  // akımı good durumuna geçirme
+	iss.ignore(3);
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// bir çıkış işlemini bir ostringstream sınıf nesnesine verirseniz çıkışı belleğe yapmış oluyorsunuz
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <limits>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ifs;
+	
+	
+}
+
+// arda arda farklı dosyalardan okuma yaparken birinci dosya okuması
+bitince akım eof durumuna geçecek. Tekrar işlem yapmamız için sınıfın
+clear fonk. çağırıp akımı good state'ine getirmemiz gerekiyor. 
+
+*-----------------------------------------------------------------------------------------------------
+
+ister okumayı standart inputtan, bellekten, ister dosyadan yapın bütün
+bu hata kontrolleri condition state aynı. Aynı şekilde test ediyorsunuz.
+Çünkü taban sınıftan geliyorlar. Kullandığınız bitmask'ler ios_base'in elemanları.
+good, bad basic_ios'un elemanları.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	int x;
+	
+	if(!(cin >> x)) 
+		cout << "giris basarisiz\n";
+	}
+	
+}
+
+---------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	int x;
+	
+	if((cin >> x).fail()) 
+		cout << "giris basarisiz\n";
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dosya işlemleri için kullanılanlar:
+
+mutlaka fstream başlık dosyası include edilmeli
+
+std::ifstream : istream'den kalıtımla elde edilmiş, istream'in interface'ine sahip
+ama kendi ilave ettiği fonksiyonlar da var.
+std::ofstream : ostream sınıfının interface'ini almış, kendi ilave ettiği fonk. var.
+std::fstream : iostream sınıfından kalıtımla elde edilmiş, hem istream hem ostream'in
+interface'ini almış.
+
+dosyadan okuma işlemi yapmak için akım nesnesi oluşturuyorsam ifstream nesnesi
+kullanacağım. Eğer dosyayı yazma amaçlı kullanacaksam ofstream nesnesi 
+kullanacağım. 
+ifstream nesnesi ile dosyaya yazma işlemi yapamam böyle bir interface'i yok.
+ofstream nesnesi ile dosyaya okuma işlemi yapamam böyle bir interface'i yok.
+fstream'de her iki interface de var. 
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ifs;
+	int x;
+	
+	ifs >> x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ifs;
+	int x;
+	
+	ofs << x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	fstream ifs;
+	int x;
+	
+	fs.get();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+hangi sınıf türünden kullanacaksanız ?
+dosya okuma amaçlı kullanılacaksa ise ifstream nesnesi
+dosya yazma amaçlı kullanılacaksa ise ofstream nesnesi
+dosya hem okuma hem yazma amaçlı kullanılacaksa ise fstream nesnesi
+
+*-----------------------------------------------------------------------------------------------------
+
+dosya nesnesinin hangi modda açılacağı bilgisi var. fstream, ofstream,
+ifstream nesnesinin bu bilgisi var. 
+Dosya nesnesinin kendi durumuna ilişkin bunu değiştirebilirsiniz.
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs;  // default init edildi, 
+	// şimdi good durumunda olması gerekir
+	
+	cout << (ofs ? "good" : "failed") << "\n";
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dosya nesnesinin condition state'i başka, dosya nesnesinin açık olan bir dosyayı
+kontrol etmekte olup olmadığı başka.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs;  
+	
+	if(ofs.is_open()) {
+		cout <<  "acik dosya var\n";
+	}
+	else{
+		cout << "acik dosya yok\n";
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs{"volkan.txt"};  
+	
+	if(ofs.is_open()) {
+		cout <<  "acik dosya var\n";
+	}
+	else{
+		cout << "acik dosya yok\n";
+	}
+	
+	ofs.close();
+	
+	if(ofs.is_open()) {
+		cout <<  "acik dosya var\n";
+	}
+	else{
+		cout << "acik dosya yok\n";
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+her dosyanın açış modu var.
+
+a) dosya nesnesi hayata geldiğinde bir dosyayı açmış olabilir
+b) dosya nesnesi hayatta iken sınıfın open fonk. çağırarak
+
+destructor açık olan dosyayı kapatır.
+
+*-----------------------------------------------------------------------------------------------------
+
+RAII idiomuna en güzel örnek
+
+int main()
+{
+	using namespace std;
+	
+	{
+		ofstream ofs{ "volkan.txt" };
+		// file operations
+	} // destructor çağırılır ve dosya kapatılır
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	auto fp = new ofstream{ "ali.txt" };
+	
+	delete fp;  // dinamik ömürlü nesnenin destructor'ı çağırılır ve dosya kapatılır
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dosyanın hangi modda açılacağını belirlemek :
+
+1) constructor'a dosyanın ismini argüman olarak geçeceksiniz eğer bir dosyayı constr'ın açmasını
+bekliyorsanız, ikinci parametre ise açış modu bilgisi (openmode isimli bir tür var)
+
+int main()
+{
+	ios::openmode
+
+}
+
+openmode maskeleri:
+ios::in : okuma amaçlı dosyanın açılacağını gösterir
+ios::out : yazma amaçlı
+ios::app : sona ekleme
+ios::trunc : dosyanın sıfırlanacağını
+ios::ate : dosya açılır açılmaz, dosya konum göstericisi dosyanın sonunda olacak
+// et e diye okunur
+ios::binary : binary modda dosyayı açıyor
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ifstream ifs{"necati.txt"}; // dosyayı okuma modu ve hex modunda açmış olduk
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ifstream ifs{"necati.txt", ios::binary};  // binary modda açma 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+app ile ate arasında fark var mı ?
+var
+
+int main()
+{
+	ifstream ifs{" out.txt"};
+	
+	if(!ifs){
+		cerr << "dosya acilamadi\n";
+		return 1;
+	}
+	
+	cout << "dosya acildi\n";
+	
+	cout << "file pointer : " << ifs.tellg() << "\n";  // dosyanın başında olduğu için sıfır döndürür
+}
+
+-------------------------------------------------------------------
+
+int main()
+{
+	ifstream ifs{" out.txt", ios::ate };
+	
+	if(ifs.fail()){
+		cerr << "dosya acilamadi\n";
+		return 1;
+	}
+	
+	cout << "dosya acildi\n";
+	
+	cout << "file pointer : " << ifs.tellg() << "\n";  // dosyanın sonunu döndürür
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// dosyayı yazma modunda açmak
+
+int main()
+{
+	ofstream ifs{" out.txt" };
+	
+	if(ifs.fail()){
+		cerr << "dosya olusturulamadi\n";
+		return 1;
+	}
+	
+	cout << "dosya olusturuldu\n";
+	
+	cout << "file pointer : " << ifs.tellp() << "\n";  // dosyanın basini döndürür
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	ofstream ifs{" out.txt", ios::app };
+	
+	if(ifs.fail()){
+		cerr << "dosya olusturulamadi\n";
+		return 1;
+	}
+	
+	cout << "dosya olusturuldu\n";
+	
+	cout << "file pointer : " << ifs.tellp() << "\n";  // dosyanın basini döndürür
+	// çünkü append modu yazma işleminde sona çekilecek
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// eğer okuma modunda dosyayı açıyorsanız, yani ifstream nesnesini kullanıyorsanız,
+dosya varsa açılır yoksa açılmaz.
+ofstream nesnesini kullanıyorsanız dosya varsa kaydedilir, dosya yoksa yaratılır.
+Yani truncate edilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	ofstream ofs{ "person.txt" };
+	// ofstream ofs{ "person.txt", ios::out | ios::trunc };  // aynı anlamda
+}
+
+truncate edilecek demek onun boyutu sıfıra düşecek
+Dosya varsa truncate ediliyor yoksa oluşturuluyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	ofstream ofs{ "person.txt" };
+
+	ofs << "bugun gunlerden pazartesi\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	ofstream ofs{ "person.txt" , ios::app}; // ios::out | ios::app yazmak aynı anlamda
+
+	ofs << "bugun gunlerden pazartesi\n";
+}
+
+// dosya açılacak ama truncate edilmez
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	fstream fs{ "suleyman.txt", ios::in | ios::out}; 
+	// fstream fs;  ile aynı, truncate edilmedi
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	fstream fs{ "suleyman.txt", ios::in | ios::out | ios::trunc };
+	// truncate oldu, ama yine hem okuma hem yazma işlemi yapabilirim.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	fstream fs{ "suleyman.txt", ios::in | ios::out | ios::app };
+	//  hem okuma hem yazma işlemi yapabilirim.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+int main()
+{
+	ifstream ifs;
+	
+	///
+	ifs.open("ali.txt", ios::ate);
+	// 
+	ifs.close();
+	
+	ifs.open("veli.txt", ios::binary);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ate doğrudan bir açış modu değil. at end'den geliyor. 
+
+int main()
+{
+	fstream ifs{ "ali.txt" };
+	
+	ifs.seekp(0, ios::end); // dosya konum göstericisini dosyanın sonunca çekme yöntemi
+}
+
+böyle yapmak yerine, herhangi açış modunda
+
+int main()
+{
+	fstream ifs{ "ali.txt", ios::ate };
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+constructors
+ios::openmode::
+
+bunlardan bahsettik
+
+*-----------------------------------------------------------------------------------------------------
+
+std::ofstream open_text_file(const std::string& filename)
+{
+	std::ifstream ifs{ filename };
+	if(!ifs){
+		throw std::runtime_error{filename + " cannot be created!" };
+	}
+	
+	return ifs;
+}
+
+std::ofstream create_text_file(const std::string& filename)
+{
+	std::ofstream ofs{ filename };
+	if(!ofs){
+		throw std::runtime_error{filename + " cannot be created!" };
+	}
+	
+	return ofs;
+}
+
+int main()
+{
+	try{
+		auto myfile = open_text_file("suleyman.txt");
+	}
+	catch(const std::exception& ex) {
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+dosya açmak için ya constructor'ın dosyayı açmasını sağladık,
+ya da open fonk.'u çağırdık. Dosya açılmış mı kontrolünü doğrudan stream
+state'e bakarak test edebiliriz. Akım nesnesine bağlı bir dosya var mı kontrolünü
+isopen fonk. çağırarak yapabiliriz.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <threat>
+
+int main()
+{
+	std::thread t;  // bu threat çalıştırılmamış
+	
+	if(t.joinable())
+		cout << "bir threadi kosturuyor\n";
+	else
+		cout << "bir thread ile iliskilendirilmemis\n";
+}
+
+-------------------------------------------------------------------------
+
+#include <threat>
+
+int main()
+{
+	std::thread t{ foo };  // threat foo fonk.'u çalıştırıyor. 
+	
+	if(t.joinable())
+		cout << "bir threadi kosturuyor\n";
+	else
+		cout << "bir thread ile iliskilendirilmemis\n";
+		
+	t.join();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dosya tipik işlemleri:
+1)  dosyadan okuma işlemleri
+	formatted input
+	unformatted input
+2) dosya yazma işlemleri
+3) dosya konum göstericisi (file pointer)
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <fstream>
+#include <iostream>
+#include <ostream>
+#include "nutility.h"
+#include <iomanip>
+
+// ilk 1 milyon asal sayiyi primes.txt isimli dosyaya
+// bir satırda 10 asal sayı olacak şekilde yazınız
+
+int main()
+{
+	std::ofstream ofs{ "primes.txt" };
+	
+	if(!ofs){
+		std::cerr << "dosya olusturulamadi\n"
+		return 1;
+	}
+	
+	int prime_count{};
+	constexpr int no_of_primes = 10'000;
+	int x{2};
+	
+	ofs << std::left;
+	// ofs << std::left << std::hex << std::uppercase << std::showbase;
+	
+	while(prime_count < no_of_primes) {
+		if(isprime(x)){
+			if(prime_count && prime_count % 10 == 0)
+				ofs << '\n';
+			ofs << setw(12) << x << " ";
+			++prime_count;
+		}
+		++x;
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+// okuma işlemlerinde kullanmak için dosya oluşturma
+
+#include <random>
+#include "date.h"
+
+int main()
+{
+	std::ofstream ofs{ "records.txt" };
+	
+	if(!ofs){
+		std::cerr << "dosya olusturulamadi\n"
+		return 1;
+	}
+	
+	std::mt19937 rand;
+	std::uniform_int_distribution dist{1, 99'999};
+
+	ofs.setf(std::ios::left, std::ios::adjustfield);
+	
+	for(int i = 0; i < 10'000; ++i){
+		ofs << std::setw(8) << dist(rand) << std::setw(20) << rname() << std::setw(24) 
+		<< rfname() << std::setw(16) << rtown() << Date::random() << '\n';
+	}
+	
+}
+
+------------------------------------------------------------
+
+// format kütüphanesi 
+
+#include <random>
+#include "date.h"
+
+int main()
+{
+	std::ofstream ofs{ "records.txt" };
+	
+	if(!ofs){
+		std::cerr << "dosya olusturulamadi\n"
+		return 1;
+	}
+	
+	std::mt19937 rand;
+	std::uniform_int_distribution dist{1, 99'999};
+
+	ofs.setf(std::ios::left, std::ios::adjustfield);
+	
+	for(int i = 0; i < 10'000; ++i){
+		std::cout << std::format("{} {} {} {}", dist(rand), rname(), rfname(), rtown());
+		
+		
+		// ofs << std::setw(8) << dist(rand) << std::setw(20) << rname() << std::setw(24) 
+		<< rfname() << std::setw(16) << rtown() << Date::random() << '\n';
+	}
+	
+}
+
+--------------------------------------------------------------------
+
+#include <random>
+#include "date.h"
+
+int main()
+{
+	std::ofstream ofs{ "records.txt" };
+	
+	if(!ofs){
+		std::cerr << "dosya olusturulamadi\n"
+		return 1;
+	}
+	
+	std::mt19937 rand;
+	std::uniform_int_distribution dist{1, 99'999};
+
+	ofs.setf(std::ios::left, std::ios::adjustfield);
+	
+	for(int i = 0; i < 10'000; ++i){
+		ofs << std::format("{:<9} {:<12} {:<16} {:<12}\n", dist(rand), rname(), rfname(), rtown());
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ileri C++'da format kütüphanesi anlatılıyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+'\n'
+
+hex'te 13 10
+bin'de 10
+
+-------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs{"deneme"}; // text modu
+	
+	for(int i = 0; i < 10; ++i){
+		ofs.put('\n');
+	}
+}
+
+-------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs{"deneme", ios::binary};
+	
+	for(int i = 0; i < 10; ++i){
+		ofs.put('\n');
+	}
+}
+
+// hex ile binary modlarda farklı boyutta yazar
+
+-------------------------------------------------------------------
+
+// byte byte okuma fonk. ismi get
+// iki tane get overload'u var
+
+1. get char türden bir nesneyi referans semantiği ile alıyor
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ofs{"deneme"}; // text modu
+	
+	char c;
+	
+	while(ifs.get(&c)){
+		cout << (int) c << "\n";
+	}
+	// geri dönüş değeri yine akım nesnesi, döngünün her turunda operator bool
+	fonk. çağırılacak, artık okunacak byte kalmadığı zaman fail durumuna geçecek,
+	operator bool false döndürecek ve döngüden çıkacak
+	
+}
+
+---------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ofs{"deneme", ios::binary}; 
+	
+	char c;
+	
+	while(ifs.get(&c)){
+		cout << (int) c << "\n";
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+windows sistemlerinde dosyayı hex veya binary modda açmak arasında iki tane 
+önemli fark var. hex modunda new line'i 2 byte olarak yazması, okurken de 13 10 
+yanyana geldiğinde onu tek byte olarak okuması. Ama binary modda böyle birşey yok.
+control z karakteri, dosyayı text modunda açarsanız eğer dosyadan okunacak
+byte 26 tam sayı değerine sahipse dosya sonu olarak değerlendirilir. 
+
+-----------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	ofstream ofs{"deneme"}; 
+	///...
+	
+	for(int i= 0; i < 100; ++i){
+		ofs.put('A');
+	}
+	
+	ofs.put(26);
+	for(int i= 0; i < 100; ++i){
+		ofs.put('E');
+	}
+}
+
+// sonuç 201 byte, 100 tane A, 100 tane B, 1 tane 26
+
+-----------------------------------------------------
+
+// şimdi okuma yapalım
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ifs{"deneme"}; 
+	///...
+	
+	char c;
+	
+	while(ifs.get(c)){
+		cout << (int)c << " ";
+	}
+}
+
+-----------------------------------------------------
+
+// şimdi binary modda okuma yapalım
+
+int main()
+{
+	using namespace std;
+	
+	ifstream ifs{"deneme", ios::binary}; 
+	///...
+	
+	char c;
+	
+	while(ifs.get(c)){
+		cout << (int)c << " ";
+	}
+}
+
+// 26'ya özel bir davranış göstermeyecek
+
+*-----------------------------------------------------------------------------------------------------
+
+get fonk. iki overload'u var
+
+dosyadan byte byte okuma yapan formatsız okuma fonksiyonu
+
+1) parametresi char&, sizin verdiğiniz char nesneye dosyadan okuduğu byte'i yazıyor.
+geri dönüş değeri stream nesnesinin kendisi. Fail olduğunda logic yanlış değeri
+verir.
+
+int main()
+{
+	using namespace std;
+	
+	char c;
+	
+	ifstream ifs{ "nutility.cpp" };
+	if(!ifs){
+		cerr << "cannot open file";
+		return 1;
+	}
+	
+	while(ifs.get(c)){
+		cout.put(c);
+	}
+}
+
+// dosyayı destructor kapatır
+
+---------------------------------------------------
+
+2) parametre istemiyor, geri dönüş değeri okunan karakter,
+okuma başarısız olduğunda EOF döndürür.
+
+int main()
+{
+	using namespace std;
+	
+	char c;
+	
+	ifstream ifs{ "nutility.cpp" };
+	if(!ifs){
+		cerr << "cannot open file";
+		return 1;
+	}
+	
+	int c;
+	while((c = ifs.get()) != EOF ) {
+		cout.put(c);
+	}
+}
+
+biri başarısız olduğunda akım fail durumuna geçiyor, fakat
+diğerinde get fonk. geri dönüş değeri ile okunan değeri verir, ayrıca 
+başarısız olduğunda EOF döndürür.
+
+*-----------------------------------------------------------------------------------------------------
+
+Formatlı okuma fonksiyonları :
+
+istream sınıfının formatlı dosya okuma işlemlerini defalarca yaptık, burada
+da değişen birşey yok. Dosya üzerinden okunacak.
+
+-----------------------
+
+dosyadan asal sayıları okuyun :
+
+#include <conio.h>
+
+std::ofstream create_text_file(const std::string& filename);
+std::ofstream create_binary_file(const std::string& filename);
+std::ifstream open_text_file(const std::string& filename);
+std::ifstream open_text_file(const std::string& filename);
+
+std::ifstream open_text_file(const std::string& filename)
+{
+	std::ifstream ifs{ filename };
+	if(!ifs){
+		throw std:runtime_error{ filename + " dosyasi acilmadi" };
+	}
+	
+	return ifs;
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs{ open_text_file("primes.txt") };
+	
+	ifs >> hex;
+	
+	int x;
+	
+	while(ifs >> x){
+		cout << x << " ";
+		_getch();
+	}
+}
+
+// bu formatlı okuma idi
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs{ open_text_file("records.txt") };
+	
+	int id;
+	string name, surname, town;
+	
+	string town_entry;
+	
+	cout << "sehri girin: ";
+	cin >> town_entry;
+	
+	while(ifs >> id >> name >> surname >> town){
+		if(town == town_entry)
+			cout << std::format("{ } { } { } { }\n", id, name, surname, town);
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+formatlı okuma fonk. normal standart input'tan, bellekten nasıl okuyorsak dosyadan da o
+şekilde okuyoruz. 
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs{ open_text_file("records.txt") };
+	
+	string word;
+	
+	while(ifs >> word){
+		cout << word;
+		getchar();
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+diğer bir formatlı okuma yönetimi : istream iterator sınıfını kullanmak 
+
+ostream iteratör sınıfını daha önce görmüştük. 
+
+-------------------------------------------------------------
+
+ostream ve istream iterator sınıfları <iteratör> başlık dosyasında
+
+ostream iteratör sınıfı yazma amaçlı algoritmaların çıktısını bir stream'e vermeyi
+sağlıyordu. 
+
+------------------------------------------------------------------
+
+#include <iterator>
+#include <vector>
+#include "nutility.h"
+#include <algorithm>
+
+using namespace std;
+
+int main()
+{
+	vector<string> svec;
+	rfill(svec, 100000, rname);
+	
+	copy(svec.begin(), svec.end(), ostrem_iterator<string>(cout, "\n"));
+}
+
+--------------------------------------------------------------------
+
+dosyaya yazılmasını istesem:
+
+
+#include <iterator>
+#include <vector>
+#include "nutility.h"
+#include <algorithm>
+
+
+std::ofstream create_text_file(const std::string& filename)
+{
+	std::ofstream ofs{ filename };
+	if(!ofs){
+		throw std:runtime_error{ filename + " dosyasi acilmadi" };
+	}
+	
+	return ofs;
+}
+
+using namespace std;
+
+int main()
+{
+	vector<string> svec;
+	rfill(svec, 100000, rname);
+	
+	auto ofs{create_text_file("isimler.txt") };
+	
+	copy(svec.begin(), svec.end(), ostrem_iterator<string>(ofs, "\n"));
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+vector olmayıp set olsaydı :
+
+#include "date.h"
+
+using namespace std;
+
+int main()
+{
+	set<Date> myset;
+	
+	for(int i = 0; i < 10000; ++i){
+		myset.insert(Date::random());
+	}
+	
+	cout << myset.size() << "\n";
+	auto ofs{create_text_file("isimler.txt") };
+	
+	int  mon_day;
+	cout << "ayin gununu girin: ";
+	cin >> mon_day;
+	
+	
+	copy_if(myset.begin(), svec.end(),  ostream_iterator<Date>{ofs, "\n"},
+		[mon_day](const date& date){
+			return date.month_day() == mon_day;
+		});
+		
+}
+
+*-----------------------------------------------------------------------------------------------------
+
