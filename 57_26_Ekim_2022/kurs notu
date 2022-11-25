@@ -1,0 +1,1119 @@
+
+İçerik:
+
+istream iterator sınıfı:
+binary okuma yapma
+dosya konum göstericisi : (file pointer)
+gcount
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+dosya işlemleri üstünde çalışıyorduk. Üç tane temel sınıfımız vardı.
+Bunlar ifstream, ofstream, fstream
+Tıpkı istream, ostream gibi bunlar typedef isimleri
+Yani template'lerin char açılımlarının türeş isimleri
+Sınıf şablonlarından oluşturulan specialization'ların türeş isimleri
+
+istream : okuma
+ostream : yazma
+iostream : hem okuma hem yazma
+
+istringstream : bellek üzerinde okuma
+ostringstream : bellek üzerinde yazma
+stringstream : bellek üzerinde hem yazma hem okuma
+
+ifstream : dosyadan okuma
+ofstream : dosyaya yazma
+fstream : dosyadan okuma ve dosyaya yazma
+
+*-----------------------------------------------------------------------------------------------------
+
+ostream iterator sınıfını
+ostream iterator adaptor sınıfını görmüştük.
+
+*-----------------------------------------------------------------------------------------------------
+
+istream iterator sınıfı: 
+akımdaki öğeleri bir range olarak kullanabiliriz. 
+okuma range'i olarak kullanılıyor
+
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	// icerdigi karakterleri bir range olarak kullanmam mumkun mu
+	
+	auto iter = istream_iterator<int> { iss };
+	
+	auto val = *iter;  // val'in türü int olur
+	std::cout << "val = " << val << "\n"; // val'in değeri 23
+	
+	++iter;
+	val = *iter;
+	std::cout << "val = " << val << "\n"; // val'in değeri 12
+}
+
+soru : nereye kadar bunu yapabilirim ? 
+bu sınıfta end iteratörü olarak, iterator range'in sonuna gelmiş mi ?
+default const. edilmiş bir istream iterator nesnesi ile karşılaştırmak
+biraz tuhaf !!
+
+-------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	
+	auto iter = istream_iterator<int> { iss };
+	auto end_iter = istream_iterator<int>{};
+	
+	while (iter != end_iter ){
+		cout << *iter++ << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// benden bir range isteyen algoritmaya range olarak istream_iterator'le oluşturduğum 
+range'i geçemez miyim? geçerim
+
+
+// iss'deki sayıların toplamını hesaplama
+
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	
+	
+}
+	
+// anlatılmayan numeric başlık dosyası var. Numeric algoritmalar var.
+en çok kullanılan algoritma accumulate
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	
+	vector<int> ivec{43, 57, 86, 43, 87, 56, 98, 24, 65};
+	
+	int sum = accumulate(ivec.begin(), ivec.end(), 0);  // sondaki parametre üzerine toplar
+	std::cout << "sum = " << sum << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// accumulate sonuçta bir fonk. şablonu
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+int main()
+{
+	using namespace std;
+	
+	vector<double> dvec{4.3, 5.7, 8.6, 4.3, 8.7, 5.6, 9.8, 2.4, 6.5};
+	
+	double sum = accumulate(dvec.begin(), dvec.end(), 0.);  // sondaki parametre üzerine toplar
+	std::cout << "sum = " << sum << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// accumulate sonuçta bir fonk. şablonu
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+#include <vector>
+#include <string>
+
+int main()
+{
+	using namespace std;
+	
+	vector<string> svec{"ali", "gul", "emre", "murat", "eray", "volkan"};
+	
+	auto s = accumulate(svec.begin(), svec.end(), string{} );  // sondaki parametre üzerine toplar
+	std::cout << "s = " << s << "\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// benden bir range isteyen algoritmaya range olarak istream_iterator'le oluşturduğum 
+range'i geçemez miyim? geçerim
+
+
+// iss'deki sayıların toplamını hesaplama
+
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	
+	cout << accumulate(istream_iterator<int>{iss}, istream_iterator<int>{}, 0) << 'n';
+	// begin, end, 
+	// end'e isimlendirilmiş de verilebilir
+}
+
+----------------------------------------------------------------------
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	
+	cout << accumulate(istream_iterator<int>{iss}, { }, 0) << 'n';
+	// ikinci ile default init edilmiş istream iterator nesnesi anlamına gelir
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	
+	cout << accumulate(istream_iterator<int>{iss}, { }, 0) << 'n';
+	iss.clear();  // hata bayraklarını temizleme
+	iss.seekg(0); // başa alma
+	iss >> hex;
+	cout << accumulate(istream_iterator<int>{iss}, { }, 0) << 'n';
+	iss.clear(); 
+	iss.seekg(0);
+	iss >> oct;
+	cout << accumulate(istream_iterator<int>{iss}, { }, 0) << 'n';
+}
+
+// accumulate fonk. çağırdıktan sonra iss'nin condition state'i fail oldu.
+Çünkü en son okuduğunda eof durumuna geldi.
+
+*-----------------------------------------------------------------------------------------------------
+
+// bu değerler string olarak da okunabilir
+
+#include <sstream>
+#include <iterator>
+#include <iostream>
+#include <numeric>
+#include <string>
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	istringstream iss{"23 12 30 57 41  20 51 42 16 25 44" };
+	
+	auto str = accumulate(istream_iterator<string>{iss}, {}, ""s) << 'n';  // bu henüz anlatılmadı
+	// auto str = accumulate(istream_iterator<string>{iss}, {}, string{} ) << 'n';  // aynısı
+	
+	reverse(str.begin(), str.end());
+	cout << "[" << str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+daha neler yapabilirim neler :)
+
+*-----------------------------------------------------------------------------------------------------
+
+// primes.txt dosyasındaki verileri bir container'a alabilir miyim ?
+
+// herkes şu şekilde uzun kod yazıyor
+
+
+#include <fstream>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file{"primes10000.txt"};
+	vector<int> ivec;
+	ivec.reserve(10'000);
+	
+	int ival;
+	
+	while(ifs >> ival)
+		ivec.push_back(ival);
+	
+	cout << "ivec.size() = " << ivec.size() << "\n";
+}
+
+-------------------------------------------------------------
+
+// bütün container'ların range parametreli constr. var. 
+https://cplusplus.com/reference/vector/vector/vector/
+
+
+#include <fstream>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file{"primes10000.txt"};
+	
+	vector<int> ivec{ istream_iterator<int>{ifs}, {} };
+	
+	std::cout << "ivec.size() = " << ivec.size() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// bir dosyayı komple bir string'e de dönüştürebiliriz
+string de bir container olduğuna göre
+
+std::string file_to_str(const std::string& filename)
+{
+	auto ifs = open_text_file(filename);
+	return std::string{ std::istream_iterator<char>{ifs}, {} };
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto str = file_to_str{"nutility.h"};
+	
+	cout << str << "\n";
+}
+
+// boşluk karakterleri skip ediliyor
+
+------------------------------------------------------------------------
+
+std::string file_to_str(const std::string& filename)
+{
+	auto ifs = open_text_file(filename);
+	ifs >> std::noskipws;
+	return std::string{ std::istream_iterator<char>{ifs}, {} };
+}
+
+int main()
+{
+	using namespace std;
+	
+	auto str = file_to_str{"nutility.h"};
+	
+	reverse(str.begin(), str.end());
+	cout << str;
+}
+
+// formatı değiştirince boşluk karakterlerini de dahil ettik
+
+*-----------------------------------------------------------------------------------------------------
+
+istream_iterator sınıfını görmüş olduk, birçok işte kullanabiliyoruz.
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : standart inputtan gelen sayıların en büyüğünü bulun.
+
+normalde zor, tek bir statement'ta yazacağız
+
+int main()
+{
+	using namespace std;
+	
+	cout << *max_element(istream_iterator<int>{cin}, {});
+}
+
+// max_element'in geri dönüş değeri iterator
+
+----------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	list<int> x{12, 67, 23, 90, -5, 11, 9, 40};
+
+	cout << "max = " << *max_element(x.begin(), x.end()) << "\n";
+	cout << "min = " << *min_element(x.begin(), x.end()) << "\n";
+	
+	auto[min_iter, max_iter] = minmax_element(x.begin(), x.end());
+	cout << *min_iter << " " << *max_iter << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int sumdigit(int val)
+{
+	int sum{};
+	while(val){
+		sum += val % 10;
+		val /= 10;
+	}
+	return sum;
+}
+
+int main()
+{
+	using namespace std;
+	
+	list<int> x{12, 67, 23, 90, -5, 11, 9, 40};
+	
+	max_element(x.begin(), x.end(), [ ](int a, int b) {
+		return sumdigit(a) < sumdigit(b);
+		}; // binary predicate
+		
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+predicate : a functor or function that returns a boolean and does not modify data.
+used for comparison or condition check.
+
+lambda expression : an unnamed function object capable of capturing variables in scope.
+C++ 11 introduced lambda expressions to allow inline functions which can be used for
+ short snippets of code that are not going to be reused and therefore do not require a name.
+
+functor = function object (C++ class that acts like a function, overloads the operator() )
+
+max_element için comp	-	comparison function object (i.e. an object that satisfies the requirements of Compare) which returns ​true if the first argument is less than the second.
+
+*-----------------------------------------------------------------------------------------------------
+
+int sumdigit(int val)
+{
+	int sum{};
+	while(val){
+		sum += val % 10;
+		val /= 10;
+	}
+	return sum;
+}
+
+
+int main()
+{
+	using namespace std;
+	
+	list<int> x{12, 67, 81, 11111, 99, 23, 90, -5, 11, 9, 40};
+	
+	max_element(x.begin(), x.end(), [ ](int a, int b) {
+		return sumdigit(a) < sumdigit(b);
+		}; // binary predicate
+	// sayının basamakları üzerinden bir karşılaştırma
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dosyaların binary modda açılması, binary modda okunması
+formatsız okuma yazma işlemlerini görelim
+
+C'de fread fwrite fonk. var.
+Burada da read ve write fonk. var.
+
+--------------------------------------------------------
+
+// ilk n asal sayiyı formatsız olarak bir dosyaya yazalım
+
+#include <fstream>
+#include <iostream>
+
+int main()
+{
+	std::ofstream ofs{ "out.dat", ios::binary};  // data dosyası anlamında, belirli format kastedilmez
+	ifs(!ofs){
+		std::cerr << "out.dat dosyasi olusturulamadı\n";
+		exit(EXIT_FAILURE);
+	}
+	
+	for(int i = 0; i < 1000; ++i){
+		ofs.write(reinterpret_cast<const char*>(&i), sizeof(int));
+	}
+}
+
+// dosyanın büyüklüğü 4000 byte olmalı
+
+// dikkat : bu dosya little endian oluşturursam diğer taraf bir endian ise okumaz !!!
+
+----------------------------------------------------
+
+#include <fstream>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	int n;
+	cout << " ilk kac asal sayi: ";
+	cin >> n;
+	
+	string filename{"asal"s + to_string(n) + ".dat"};
+	cout << filename;
+	
+}
+
+------------------------------------------------------------------
+
+nutility.h'ye ekle
+
+std::ofstream create_binary_file(const std::string& filename)
+{
+	std:ofstream ofs{ filename, std::ios::binary};
+	if(!ofs){
+		throw std::runtime_error{filename + " dosyasi olusturulamadi"};
+	}
+	
+	return ofs;
+}
+
+--------------------------------------------------------------
+
+#include <fstream>
+#include <iostream>
+#include "nutility.h"
+
+int main()
+{
+	using namespace std;
+	
+	int n;
+	cout << " ilk kac asal sayi: ";
+	cin >> n;
+	
+	string filename{"asal"s + to_string(n) + ".dat"};
+	auto ofs = create_binary_file(filename);
+	
+	int prime_count{};
+	
+	while(prime_count < n){
+		if(isprime(x)){
+			ofs.write(reinterpret_cast<const char*>(&x), sizeof(x));
+			++prime_count;
+		}
+		++x;
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// binary okuma yapma
+
+#include <fstream>
+#include <iostream>
+#include "nutility.h"
+#include "date.h"
+
+int main()
+{
+	using namespace std;
+	
+	std::cout << "sizeof(Date) = " << sizeof(Date) << "\n";
+	
+	int n;
+	cout << " ilk kac asal sayi: ";
+	cin >> n;
+	
+	string filename{"asal"s + to_string(n) + ".dat"};
+	auto ofs = create_binary_file(filename);
+	
+	while(n--){
+		Date date{Date::random() };
+		ofs.write((const char*)&date, sizeof(date)); // C türü bunu kullanma
+	}
+}
+
+// C tarzı dönüşümü hata bulurken bulmak zor
+reinterpret_cast olunca bulmak kolay
+
+*-----------------------------------------------------------------------------------------------------
+
+// soru : dosyadaki asal sayilari tek tek ekrana yazdırmak 
+
+#include <fstream>
+#include <iostream>
+#include "nutility.h"
+#include "date.h"
+#include <conio.h>
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs{ open_binary_file("asal345.dat") };
+	int x;
+	
+	while(ifs.read(reinterpret_cast<char*>(&x), sizeof(x))) { // okuma bittiğinde stream eof durumuna gelecek
+		cout << x << " ";
+		_getch();
+	}
+	// ne zamanki okuma başarısız olacak, akım fail olacak, operator bool false döndürecek ve döngüden çıkar
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+nutility.h'ye ekle
+
+std::ifstream open_binary_file(const std::string& filename)
+{
+	std:ifstream ifs{ filename, std::ios::binary};
+	if(!ifs){
+		throw std::runtime_error{filename + " dosyasi acilamadi"};
+	}
+	
+	return ifs;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// tarihleri yazdırsak 
+
+
+#include <fstream>
+#include <iostream>
+#include "nutility.h"
+#include "date.h"
+#include <conio.h>
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs{ open_binary_file("date3333.dat") };
+	Date dt;
+	
+	while(ifs.read(reinterpret_cast<char*>(&dt), sizeof(dt))) { 
+		cout << dt << " ";
+		_getch();
+	}
+
+}
+
+// date nesnesi 12 byte
+// string nesnesini yazdırsaydınız string nesnesinin byte'larını yazdırmış olurdunuz.
+
+tarihler aslında formatsız olarak dosyada, bu şekilde yazılmasını sağlayan date
+sınıfı için oluşturduğumuz inserter'dir. 
+
+*-----------------------------------------------------------------------------------------------------
+
+
+The Stream Inserter Operator << 
+
+
+https://www.informit.com/articles/article.aspx?p=170909&seqNum=2
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// komut satirinda calistirilacak
+// 12740 byte
+//
+// fdiv ahmet.exe 500
+// ahmet.exe'yi 500 500 byte'lik parçalara bölecek
+// par001.par 500 byte
+// par002.par 500 byte
+// ..
+// part026 240 byte
+
+
+
+
+#include <fstream>
+#include <iostream>
+#include "nutility.h"
+#include "date.h"
+#include <conio.h>
+#include <sstream>
+#include <iomanip>
+#include <cstdlib>
+
+int main(int argc, char **argv) // komut satırından calistirilacak
+{
+	using namespace std;
+	
+	if(argc != 3){
+		cerr << "usage : <fdiv> <filename> <chunk>\n";
+		return 1;
+	}
+
+	auto ifs = open_binary_file(argv[1]);
+	char c;
+	int file_count{};
+	const int chunk{ std::atoi(argv[2]) };  // Convert string to integer
+	int byte_count{ };
+	ofstream ofs;
+	
+	while(ifs.get(c)){ // stream'den bir karakter okur, c'yi bu karakterle set eder, dosya eof durumuna gelince 
+	// döngüden çıkar
+		if(!ofs.is_open()){
+			ostringstream oss;
+			oss.fill('0');
+			oss << "part" << setw(3) << file_count + 1 << ".par";
+			ofs.open(oss.str(), ios::binary);
+			++file_count;
+		}
+		ofs.put(c);  // dosyaya formatsiz yazma
+		++byte_count;
+		if(byte_count % chunk == 0){
+			ofs.close();
+		}
+		
+	}
+}
+
+--------------------------------
+
+rename a.exe fdiv.exe
+fdiv wday.exe 500
+
+*-----------------------------------------------------------------------------------------------------
+
+// prog > ali.txt 
+standart output ali.txt'ye dosyasına yönlendirildi. 
+
+hata mesajları dosyaya değil kullanıcıya yönlendirilmeli, hata akımına verilmeli
+standart output yönlendirilirse hata mesajları yönlendirilmil olmuyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : neden hata mesajlarını standart çıkışa vermek yerine hata akımına veririz ?
+
+standart output yönlendirilir, hata mesajları ekrana çıkar
+bellek dolu devam etmek icin bir tusa basın standart output'ta görülmeyip dosyaya yazılır
+okunabilirlik
+
+Generally,  cout ought to be used for actual program output, whereas all information 
+and error messages should be printed to cerr, 
+ in order that if the user redirects output to a file, information messages are still printed
+ on the screen and not to the output file.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+ŞİKAYET ETME, UYUM SAĞLA
+
+*-----------------------------------------------------------------------------------------------------
+
+// komut satirinda calistirilacak
+// ahmet.exe'yi 500 500 byte'lik parçalara bölünmüş dosyaları birleştirecek
+// par001.par 500 byte
+// par002.par 500 byte
+// ..
+// part026 240 byte
+
+
+
+#include <fstream>
+#include <iostream>
+#include "nutility.h"
+#include "date.h"
+#include <conio.h>
+#include <sstream>
+#include <iomanip>
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	if(argc != 2){
+		cerr << "usage : <dosbir> <hedefdosya ismi>\n";
+		return 1;
+	}
+
+	auto ofs = create_binary_file(argv[1]);
+	int file_count{};
+	int byte_count{};
+	char c;
+	
+	while(true){
+		ostringstream oss;
+		oss << setfill('0') << "part" << setw(3) << file_count + 1 << ".par";
+		ifstream ifs{ oss.str(), ios::binary };
+		if(!ifs)
+			break;
+		while(ifs.get(c)){ // dosyadan byte byte okuma
+			ofs.put(c);
+			++byte_count;
+		}
+		ifs.close();
+		if( std::remove(oss.str().c_str()){
+			cerr << oss.str() << " dosyadi silinemedi\n";
+			return 1;
+		}
+		++file_count;
+	}
+	
+	cout << file_count << " dosya " << byte_count << " byte'lik " << argv[1] << " dosyasi olarak birlestirildi\n";
+}
+
+// bir tipik hata: eğer aynı ifstream nesnesini kullansaydım 
+bu döngüden çıktığı zaman akım hata durumuna geçecekti. Tekrar
+dosyayı açmak için open fonkç çağırdığımda dosya açılamayacaktı.
+Hata bayraklarını sıfırlamak için clear fonk. çağırılmalıydı.
+
+// while döngüsünden sonra dosyayı silebilmem için dosyanın kapalı olması 
+gerekiyor. 
+
+-------------------------------
+
+komut satırında :
+
+rename a.exe dosbir.exe
+dosbir neco.exe
+
+check etme :
+
+wday 29 10 2022
+neco 29 10 2022
+
+*-----------------------------------------------------------------------------------------------------
+
+dosya konum göstericisi : (file pointer)
+
+dosyadan okuma veya yazma işlemi yaptığınızda kaçıncı byte'i okuyum, kaçıncı byte'a yazayım
+bu soruların cevabını bizden istemiyor. Çünkü arka planda tam sayı değişken var, file pointer,
+değeri kaçsa okuma o byte'tan itibaren okuyor, yazma da o byte'tan itibaren yapılıyor.
+Okuma fonk. okudukları byte kadar, yazma fonk. yazdıkları byte kadar file pointer'ı arttırıyorlar.
+
+
+seekg : okuma amaçlı file pointer'i konumlandırma
+seekp : yazma amaçlı file pointer'i konumlandırma
+tellg : istream sınıfları için okuma amaçlı
+tellp : ostream sınıfları için yazma amaçlı
+
+-------------------------------------------
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	istringstream iss{"emirhanulker"};
+	string str;
+	
+	iss.seekg(5);  // file pointer'ı a'nin oldugu yere alır
+	iss >> str;
+	
+	cout << "[" << str << "]\n";
+	iss.seekg(0);
+	cout << "[" << str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+seekg'nin ikinci overload'i var
+
+
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	istringstream iss{"emirhanulker"};
+	
+	// seek_dir
+	// ios::beg
+	// ios::end
+	// ios::cur
+	
+	string str;
+	
+}
+
+----------------------------------------------------------------
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	istringstream iss{"emirhanulker"};
+	
+	iss.seekg(7, ios::beg); // konumlandırma dosya başından 7 sonraya yapılır.
+	
+	string str;
+	
+	iss >> str;
+	
+	cout << "[" << str << "]\n";
+	
+	iss.seekg(-8, ios::end);
+	
+}
+
+--------------------------------------------------------------
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	ostringstream oss{"emirhanulker"};
+	
+	oss.seekp(5);
+	oss.put('!');
+	
+	cout << oss.str() << "\n";
+}
+
+--------------------------------------------------------------
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	ostringstream oss{"emirhanulker"};
+	
+	oss.seekp(3, ios::beg);
+	oss.put('!');
+	
+	cout << oss.str() << "\n";
+}
+
+--------------------------------------------------------------
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	ostringstream oss{"emirhanulker"};
+	
+	oss.seekp(-2, ios::end);
+	oss.put('!');
+	
+	cout << oss.str() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <cstdlib>
+
+int main(int argc, char **argv) 
+{
+	using namespace std;
+	
+	stringstream ss;
+	
+	ss << "125alican982";
+	
+	int ival;
+	
+	ss.seekp(3);
+	ss.put('4');
+	cout << ss.str() << "\n";
+	
+	ss >> ival;
+	std::cout << "ival = " << ival << "\n";
+	
+	cout << "ss.tellg() = " << ss.tellg() << "\n";
+	cout << "ss.tellp() = " << ss.tellp() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal20000000.dat");
+	int x;
+	
+	for(int i = 0; i < 10; ++i){
+		int n;
+		cout << "kacinci asal sayi: ";
+		cin >> n;
+		ifs.seekg((n-1) * sizeof(int));  // dosya konum göstericisini konumlandırdım
+		// bu sayede istediğim yeri okudum
+		ifs.read((char*)&x, sizeof(x));
+		cout << x << "\n";
+	}
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// ayın belirli bir gün olanlarını göstermem gerekiyor
+
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal20000000.dat");
+	
+	int mday;
+	
+	cout << "ayin kaci: ";
+	cin >> mday;
+	
+	Date dt;
+	
+	while(ifs.read(reinterpret_cast<char *> (&dt), sizeof(dt))){
+		if(dt.month_day() == mday)
+			cout << dt << '\n';
+	}
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// gcount : formatsız okuma yapıldığı zaman en son okunan byte sayısını döndürür
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal345.dat");
+	
+	int x;
+	
+	ifs.read((char*)&x, sizeof(int));
+
+	std::cout << "ifs.gcount() = " << ifs.gcount() << "\n";    // 4 byte
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal345.dat");
+	
+	constexpr int size = 100;
+	
+	int a[size];
+	
+	ifs.read((char*)a, size * sizeof(int)));
+
+	std::cout << "ifs.gcount() = " << ifs.gcount() << "\n";   // 400 byte
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal345.dat");
+	
+	constexpr int size = 500;
+	
+	int a[size];
+	
+	ifs.read((char*)a, size * sizeof(int)));
+
+	std::cout << "okunan tam sayi adedi = " << ifs.gcount() / sizeof(int) << "\n";   
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// soru : kodda hata nerede ? neden beklendiği gibi çalışmaz ?
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal345.dat");
+	
+	constexpr int size = 100;
+	
+	vector<int> ivec(size);
+	
+	while(ifs.read((char*)ivec.data(), size * sizeof(int))) {
+		print(ivec);
+		cout << "ifs.gcount() = " << ifs.gcount() << "\n";
+	}
+}
+
+// ilk 100'ü okudu yazdı, ikinci 100'ü okudu yazdı, üçüncü 100'ü okudu yazdı
+son okumayı 45 tane okudu, 100 tane okuyamadığı için akım fail durumuna geldi
+
+----------------------------------------------------------------
+
+doğrusu : 
+
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_binary_file("asal345.dat");
+	
+	constexpr int size = 100;
+	
+	vector<int> ivec(size);
+	
+	while(ifs.read((char*)ivec.data(), size * sizeof(int))) {
+		print(ivec);
+	}
+	
+	if(auto n = ifs.gcount() / sizeof(int)) {
+		copy(ivec.begin(), ivec.begin() + n);
+	}
+	
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
