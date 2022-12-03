@@ -1,0 +1,1115 @@
+
+İçerik:
+delimiter
+giriş çıkış işlemlerinde exception handling :
+stream flush etme
+Random kütüphanesi:
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+dosyalardan sonra random kütüphanesini göreceğiz
+
+*-----------------------------------------------------------------------------------------------------
+
+// bir dosyadaki karakterleri sayın
+
+#include <iostream>
+#include "nutility.h"
+#include <string>
+#include <conio.h>
+#include <map>
+#include <cctype>
+
+int main()
+{
+	auto ifs = open_text_file("forster.txt");
+	
+	char c;
+	map<char, int> cmap;
+	
+	while(ifs.get(c)){
+		if(isalpha(c))
+			++cmap[toupper(c)];
+	}
+	
+
+	vector<pair<char, int>> cvec{cmap.begin(), cmap.end() };
+	 sort(cvec.begin(), cvec.end(), 
+		[ ](const auto& p1, const auto &p2) {
+			return p1.second > p2.second;
+		}
+	);
+	
+	
+	for(const auto[ch, count] : cvec) {
+		cout << ch << " " << count << "\n";
+	}
+}
+
+// okuma fonk.  formatsız veya formatlı okuma fonk. olur.
+// get, read formatsız okuma fonk.
+// bunları ayırmak için unutunca gcount'ı çağırırım
+// formatsız okuma gcount fonk. son yapılan okumadaki okunan karakter sayısı
+// formatlı ise gcount 0 döndürür
+
+It returns the number of characters extracted by the last unformatted input operation.
+
+------------------------------------
+
+// eğer lambda ifadesi karmaşık geliyorsa ve lambda'nin gövdesinde çok kod varsa
+vector<pair<char, int>> cvec{cmap.begin(), cmap.end() };
+
+const auto& fpred = [ ](const auto& p1, const auto &p2) {
+			return p1.second > p2.second;
+};
+	
+sort(cvec.begin(), cvec.end(), fpred);
+		
+);
+
+for(const auto[ch, count] : cvec) {
+	cout << ch << " " << count << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// dosyadan satır satır okuma
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("forster.txt");
+	string sline;
+	
+	while(getline(ifs, sline)){
+		cout << sline << "\n";
+		_getch();
+	}
+}
+
+-----------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("nutility.cpp");
+	string sline;
+	
+	while(getline(ifs, sline)){
+		cout << sline << "\n";
+		_getch();
+	}
+}
+
+--------------------------------------------------
+
+// delimiter
+
+ It is the delimitation character which tells the function to stop reading further input after reaching this character.
+
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("nutility.cpp");
+	string sline;
+	
+	while(getline(ifs, sline, ';')){
+		cout << sline << "\n";
+		_getch();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+basit string manipülasyonu gereken yerlerde için rejex kütüphanesini kullanmayın
+çünkü extra maliyet getirir. Rejex kütüphanesini göreceğiz
+
+*-----------------------------------------------------------------------------------------------------
+
+istream& getline (istream& is, string& str, char delim);
+istream& getline (istream& is, string& str);
+
+Extracts characters from is and stores them into str until the delimitation character delim is found (or the newline character, '\n', for (2)).
+
+The extraction also stops if the end of file is reached in is or if some other error occurs during the input operation.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("nutility.cpp");
+	string sline;
+	
+	vector<string> linevec;
+	
+	while(getline(ifs, sline)){
+		linevec.push_back(sline);
+	}
+	cout << "linevec.size() = " << linevec.size() << "\n";
+}
+
+----------------------------------------------------------------------
+
+push_back'in iki tane overload'u vardı.
+
+a) const lvalue ref.
+eğer lvalue değer gelirse onu kopyalar
+
+b) const rvalue ref.
+eğer rvalue değer gelirse onu taşır
+
+----------------------------------------------------------------------------
+
+// taşıma semantiğinden faydalanabilir miyim? evet
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("nutility.cpp");
+	string sline;
+	
+	vector<string> linevec;
+	
+	while(getline(ifs, sline)){
+		linevec.push_back(move(sline));  // efficiency sağlar
+	}
+	
+	cout << "linevec.size() = " << linevec.size() << "\n";
+}
+
+// kaç satır olduğu konusunda ön bilgiye sahip olsaydım sınıfın
+reserve fonk.'u çağırmak verimi arttırır. Reallocation'ı engellerdi.
+
+*-----------------------------------------------------------------------------------------------------
+
+static kod analizi programı kullanıyormuş Necati, ama çok kaliteli programlar değil
+
+https://www.incredibuild.com/blog/top-9-c-static-code-analysis-tools
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <vector>
+#include <algorithm>
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("forster.txt");
+	string sline;
+	
+	vector<string> linevec;
+	
+	while(getline(ifs, sline)){
+		linevec.push_back(move(sline));  // efficiency sağlar
+	}
+	
+	char c;
+	cout << "hangi karakterle baslayanlar: ";
+	cin >> c;
+	
+	auto iter = partition(linevec.begin(), linevec.end(), [c](std::string& s) {return s.front() = c; });
+	
+	for(const auto& sline : linevec){
+		std::cout << sline << '\n';
+		_getch();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	auto ifs = open_text_file("forster.txt");
+
+	cout << "hangi karakter sayilsin: ";
+	char c;
+	cin >> c;
+	
+	cout << count(istream_iterator<char>{ifs}, {}, c) << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// Returns count of occurrences of value in range [begin, end]
+
+int count(Iterator first, Iterator last, T &val)
+
+first, last : Input iterators to the initial and final positions of the sequence of elements.
+
+
+
+val : Value to match
+
+
+*-----------------------------------------------------------------------------------------------------
+
+giriş çıkış işlemlerinde exception handling :
+
+stream fail olduğunda default durumda exception throw etmiyor. Ama 
+exception throw edecek state'e çekebilirsiniz
+
+neden ?
+1) tarihsel süreç
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	cout << cin.exceptions() << "\n";  // geri dönüş değer sıfır olmalı, çünkü
+	// herhangi bir biti set edilmemiş olacak ki exception throw etmiyor
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// 4 tane bit vardı, goodbit, failbit, eofbit, badbit
+// Bunlardan herhangi biri set edildiğinde exception throw edilsin isterseniz
+// bu fonk. hangi bitlerin set edilmesi durumunda exception throw etmesi gerektiği
+
+int main()
+{
+	using namespace std;
+	
+	cin.exceptions(ios::failbit);  // burası olmasa "ali" için exception throw etmez
+	
+	int x;
+	
+	cout << "bir sayi giriniz: ";        // "ali" gir !!!
+	
+	try{
+		cin >> x;
+	} 
+	catch(const ios_base::failure& ex){         // std::exception& ex
+		std::cout << "exception caught: " << ex.what() << "\n";
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+https://github.com/necatiergin/cpp-kursu-kodlar/blob/main/2880_IOSTREAM_EXCEPTIONS/ex_01.cpp
+
+
+#include <iostream>
+#include <sstream>
+
+using namespace std;
+
+double readsum(std::istream& is)
+{
+	auto old_exception = is.exceptions();
+	is.exceptions(ios::failbit | ios::badbit); 
+	// bundan sonra badbit ya da failbit
+	 // set edildiğinde akım nesnemiz exceptions throw eder.
+	double dval, sum{};
+
+	try {
+		while (is >> dval)  // sistem hatasında badbit set edilir,
+		// formatlama hatasında failbit set edilir.
+		// ama herşey normal gitti, stream eof durumuna geçilince
+		// eofbit set edilir. Eofbit set edilince döngüden çıkar çünkü
+		// aynı zamanda failbit set edilmiş oluyor. 
+			sum += dval;
+	}
+	catch (...) {
+		if (!is.eof()) { 
+			is.exceptions(old_exception);
+			throw;
+		}
+	}
+
+	is.exceptions(old_exception);
+
+	return sum;
+}
+
+
+int main()
+{
+	istringstream iss{ "2.6 3.4 5.6 6.8 1.1 8.9" };   
+       // format hatası oluştur { "2.6 3.4 5.6 ali 6.8 1.1 8.9" };   // failbit 
+
+	double sum;
+	try {
+		sum = readsum(iss);
+	}
+	catch (const std::ios::failure& ex) {
+		cerr << "giris cikis hatasi " << ex.what() << "\n";
+		return 1;
+	}
+	catch (const std::exception& ex) {
+		cerr << "standart kutuphane hatasi: " << ex.what() << "\n";
+		return 2;
+	}
+	catch (...) {
+		cerr << "bilinmeyen hata\n";
+		return 3;
+	}
+
+	cout << "sum = " << sum << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+https://en.cppreference.com/w/cpp/io/ios_base/iostate
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	auto ifs = open_text_file("nutility.cpp");
+	
+	// ifs.rdbuf();
+	cout.operator<<();  // bana bir streambuf pointer'ı verirsen gösterdiği buffer nesnesinin
+	// tututuğu içeriği yazıyı bu stream'e veririm
+}
+
+-----------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	auto ifs = open_text_file("nutility.cpp");
+	
+	cout << ifs.rdbuf() << "\n";   // dosyayı yazdırır !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// dosyanın kopyası çıkarılması
+
+using namespace std;
+
+int main()
+{
+	auto ifs = open_text_file("nutility.cpp");
+	
+	ofstream ofs{ "ali.txt" };
+	ofs << ifs.rdbuf();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ostream os{cout.rdbuf() };
+	
+	cout << "alican" << endl;  // endl ile bilerek flash etmek
+	os << "nagehan" << endl;
+}
+
+// ikisi de çıkışını aynı yere veriyor
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ostream os{cout.rdbuf() };
+
+	os << hex << uppercase << showbase;
+	
+	cout << 72353 << '\n';
+	os << 72353 << '\n';
+}
+
+// bunlar iki ayrı ostream nesneleri 
+
+*-----------------------------------------------------------------------------------------------------
+
+/ / akım nesneleri buffer'i belirli eventler gerçekleştiğinde flash ediliyor.
+// cout veya dosya nesneleri için geçerli
+
+using namespace std;
+
+int main()
+{
+	cout <<
+}
+
+// dosyaya yazdırıyorum fakat fiilen dosyaya yazılmamış oluyor.
+// nedeni flash edilmemiş olması
+
+*-----------------------------------------------------------------------------------------------------
+
+hangi durumlarda bir stream, bir output stream flash ediliyor ?
+
+1) buffer dolduğunda
+2) normal terminate
+3) unitbuf modu :  stream nesnesini her yazmadan sonra otomatik flash etme moduna alabilirsin
+format state'in bir parçası
+4) flush : flush veya endl
+
+--------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	auto ofs = create_text_file( "ali.txt");
+	
+	ofs.setf(ios::unitbuf);  // her çıkış işlemi için flash işlemi yapılacak
+	// default değeri unset
+}
+
+----------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	auto ofs = create_text_file( "ali.txt");
+	
+	cout << (cout.flags() & ios::unitbuf ? "true" : "false");
+}
+
+----------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	auto ofs = create_text_file( "ali.txt");
+	
+	cout.setf(ios::unitbuf);  // veya  cout << unitbuf;
+	
+	cout << (cout.flags() & ios::unitbuf ? "true" : "false");
+}
+
+// maaliyeti olduğu için zaten buffer'lama yapılır. 
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	ofstream ofs( "deneme.txt");
+	
+	ofs << "mustafa hakan eralp" << flush;
+}
+
+// endl manipülatörü önce new line verir sonra akımı flash eder
+
+*-----------------------------------------------------------------------------------------------------
+
+endl kodu : template'dir ama template olmasa şu şekilde olurdu
+
+std::osteam& Endl(std::ostream& os)
+{
+	os.put('\n');
+	os.flush();
+	return os;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ends manipülatörü : null karakter verir
+
+
+using namespace std;
+
+int main()
+{
+	ofstream ofs( "deneme.txt");
+
+	ofs << "mustafa hakan eralp" << ends << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cout << "bugun hava cok guzel";
+	// çıkış akımı da bir stream olduğuna göre onun da bir buffer'i var !!!!
+	// anında flash edilmek zorunda değil, anında ekranda görme garantin yok 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+https://www.geeksforgeeks.org/buffer-flush-means-c/
+
+A buffer flush is the transfer of computer data from a temporary storage area to the computer’s permanent memory. For instance, if we make any changes in a file, the changes we see on one computer screen are stored temporarily in a buffer. 
+
+*-----------------------------------------------------------------------------------------------------
+
+By default, std::cout is buffered, and the actual output is only printed once the buffer is full or some other flushing situation occurs (e.g. a newline in the stream). Sometimes you want to make sure that the printing happens immediately, and you need to flush manually.
+
+*-----------------------------------------------------------------------------------------------------
+
+endl'nin çağrılması ile buffer'i flash etmiş oluruz
+
+*-----------------------------------------------------------------------------------------------------
+
+// tie işlemi : çıkış akımını giriş akımına bağlamak
+
+
+using namespace std;
+
+int main()
+{
+	int x;
+	
+	cout << "bir sayi giriniz: ";
+	cin >> x;  // cout'a tie edilmiş
+}
+
+-----------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cin.tie(); // hangi ostream nesnesine tie edilmişse onun adresini döndürür
+	// tie edilmemişse nullpointer olur. 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cout << "&cout = " << &cout << '\n';
+	// cout bir nesne, onun da adresi var
+	// ostream türünden nesnenin adresini yazdırmış olurum
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;
+
+int main()
+{
+	cout << "&cout = " << &cout << '\n';
+	cout << "cin.tie() = " << cin.tie() << '\n';
+}
+
+// aynı adresi döndürürler, çünkü cin cout'a tie edilmişse aynı adresi döndürür
+
+*-----------------------------------------------------------------------------------------------------
+
+// bir giriş veya çıkış akımının bir başka çıkış akımına tie edilmesi 
+için parametreli tie fonk. çağrılır
+
+using namespace std;
+
+int main()
+{
+	ofstream ofs{"ali.txt"};
+	ifstream ifs{"mustafa.txt"};
+	
+	auto osptr = ifs.tie(&ofs);  // giriş akımını çıkış akımına bağlamış oldum
+	// geri dönüş değeri de tie işleminden önceki adres !!!!
+	
+	cout << (osptr == nullptr);
+}
+
+// ifs'den okuma yaptığımda ofs'nin flash edilmesi
+
+*-----------------------------------------------------------------------------------------------------
+
+// cin'i cout'a tie edilmiş olmaktan çıkartabilir miyim ?
+evet
+
+using namespace std;
+
+int main()
+{
+	cin.tie(nullptr);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// ostream de tie edilebiliyor mu ?
+evet
+
+int main()
+{
+	cout.tie();
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+girişi çıkışa bağlayabiliyorsunuz ama
+çıkışı girişe bağlamak diye birşey yok
+yani bağlayacağınız yerin çıkış akımıı olması gerekiyor
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ iostreams and locales
+angelika langer
+
+*-----------------------------------------------------------------------------------------------------
+
+Random kütüphanesi:
+
+void srand(unsigned int);  // rastgele sayı üreticisinin tohum değerini set eden fonk.
+int rand(void);  // rastgele sayi üreticisi
+
+rastgeleliğin önemli olmadığı yerlerde kullanılabilir. Önemli olan bir yerde
+rand fonk. kullanmamalıyız. 
+
+0 RAND_MAX
+
+trivial olmadığı (önemli olmadığı) yerlerde kullanılabilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+distribution sınıfları ile rastgele sayı üreten sınıflar birbirinden ayrı.
+
+true number generation : 
+
+#include <random>
+
+https://en.cppreference.com/w/cpp/numeric/random
+
+endüstride en çok kullanılan algoritma : mersenne_twister_engine
+	
+3 tane tipik rastgele sayı üretim algoritması var
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	cout << typeid(mt19937).name() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+adaptör : uyumlandırıcı
+
+discard_block_engine
+independent_bits_engine
+shuffle_order_engine
+
+bunlar rastgele sayı üretmiyor. Bunlar bit kaynağı değil. Rastgele sayı üreticilerinden
+aldıkları bitleri adapte ediyorlar. 
+
+yaptığınız işe göre mesela algoritmik trading'de sayıların çok hızlı üretilmesi gerekiyor.
+belirli bir kalitenin üzerinde olsun ama hızlı rastgele sayı üretilsin
+
+özel bir kriteriniz yoksa kafadan mersenne_twister_engine kullanın. Bu işinizi görmüyorsa
+o zaman detaylı araştırmaya girebilirsiniz. 
+
+*-----------------------------------------------------------------------------------------------------
+
+default_random_engine : % 99 mt19937'nin eş ismi, hoca test etmiş
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	default_random_engine
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	cout << sizeof(mt19937) << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+her rastgele sayı üreticisinin seed'i var.
+eğer default const.'ını çağrı yaparsanız, önceden belirlenmiş default bir seed'i 
+kullanıyor. Ama const.'ını argüman geçerek istediğiniz bir seed value seçebilirsiniz
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng;  // default seed demek !!!
+	
+	cout << mt19937::default_seed << "\n";
+	cout << mt19937_64::default_seed << "\n";
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+gcc'de veya hangi derleyici olursa olsun random fonk. aynı çalışır. Algoritmaları
+aynı.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng1{73264u};
+	mt19937 eng2{87264u};
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng;
+	
+	eng.seed{};  // default seed
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng;
+	
+	cout << mt19937::min{} << "\n";
+	cout << mt19937::max{} << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng;
+	
+	auto ofs = create_text_file{"random.txt"};
+	
+	for(int i = 0; i < 10'000; ++i){
+		ofs << eng() << '\n';
+	}
+}
+
+// bu programı tekrar çalıştırsam oluşacak değerler aynı mı olur ?
+evet, bu tohum değeriyle oluşturulacak değerler baştan belli
+
+//  0 - 4.294 milyar arası sayı üretilir. 
+// bunlar sizin işinize yaramayacak, ancak bunları belirli aralığa dağıttığınız
+zaman işinize yarayacak 
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng{ 87432u };
+	
+	auto ofs = create_text_file{"random.txt"};
+	
+	for(int i = 1; i < 10'000; ++i){
+		ofs << eng() << '\n';
+	}
+	
+	cout << eng() << '\n';  // 10'000 inciyi ekrana yazdırdım
+	// değeri 4123659995 olmak zorunda !!!
+}
+
+// 4 byte için 4.294 milyar farklı sayı zinciri var
+
+*-----------------------------------------------------------------------------------------------------
+
+default tohum değerini kullanabiliyorum, constructor'a istediğim tohum değerini
+geçebiliyorum.
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+#include <fstream>
+#include "nutility.h"
+#include <bitset>
+#include <conio.h>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937_64 eng;
+
+	while(true){
+		cout << bitset<32>(eng());
+	_getch();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// her rastgele sayı üreticisinin bir state'i var. Bu state saklanabilir, serialize edilebilir.
+Deserialize edebilirsiniz. 
+
+
+#include <random>
+#include <iostream>
+#include <fstream>
+#include "nutility.h"
+#include <bitset>
+#include <conio.h>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937_64 eng;
+
+	eng.discard(9999);  // 9999 tane sayıyı elimine ettik
+	cout << eng() << '\n';  // 10'000 inci sayıyı üretecek
+}
+
+// bir adaptörde kendisi discard ediyor belirli sayıları belirli bir strateji ile 
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <random>
+#include <iostream>
+#include <fstream>
+#include "nutility.h"
+#include <bitset>
+#include <conio.h>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng{ 4873534u };
+	
+	for(int i = 0; i < 100'000; ++i){
+		eng();
+	}
+	
+	stringstream ss;
+	
+	ss << eng;
+
+	for(int i = 0; i < 10; ++i){
+		eng();
+	}
+
+	for(int i = 0; i < 100'000; ++i){
+		eng();
+	}
+	
+	ss >> eng;
+	cout << "\n eski duruma geri dondu\n";
+	
+	for(int i = 0; i < 100'000; ++i){
+		eng();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// iki tane rastgele sayı üreticisinin aynı state'de olup olmadığını ==, != ile sınayabiliyorsunuz
+
+#include <random>
+#include <iostream>
+#include <fstream>
+#include "nutility.h"
+#include <bitset>
+#include <conio.h>
+#include <sstream>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 x{ 324 };
+	mt19937 y{ 456 };
+	
+	cout << boolalpha;
+	
+	cout << (x == y) << "\n";  // farklı tohum değerleri olduğunda false
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 x{ 456 };
+	mt19937 y{ 456 };
+	
+	cout << boolalpha;
+	
+	cout << (x == y) << "\n";  
+	
+	for(int i = 0; i < 13765; ++i){
+		x();
+	}
+	
+	cout << (x == y) << "\n";  
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 x{ 456 };
+	mt19937 y{ 456 };
+	
+	cout << boolalpha;
+	
+	cout << (x == y) << "\n";  
+	
+	for(int i = 0; i < 13765; ++i){
+		x();
+	}
+	
+	cout << (x == y) << "\n";  
+	
+	for(int i = 0; i < 13765; ++i){
+		y();
+	}
+	
+	cout << (x == y) << "\n";  
+}
+
+// aynı miktar sayı üretince state'ler aynı olur.
+
+*-----------------------------------------------------------------------------------------------------
+
+// aynı tohum değerinde hangi derleyici olursa aynı değerleri üretmek zorunda
+
+*-----------------------------------------------------------------------------------------------------
+
+// program her çalıştırılınca farklı sayı zinciri oluşturulsun, örneğin oyun porgramları
+
+#include <chrono>
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng(chrono::high_resolution_clock::now().time_since_epoch().count());
+	// zaman gectikce artan tam sayı
+	// her program calistiginda farklı bir seed ile besleme
+	
+	for(int i = 0; i < 10; ++i){
+		cout << eng() << '\n';
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	random_device eng;
+	
+	for(int i = 0; i < 10; ++i){
+		cout << eng() << '\n';
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	mt19937 eng{ random_device{}() };
+	
+	for(int i = 0; i < 10; ++i){
+		cout << eng() << '\n';
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout << random_device{}.entropy() << '\n';
+}
+
+// entropy sıfır verirse gerçek rastgele sayi üretim desteği verilmiyor demek
+// entropy ne kadar yüksekse gerçek rastgelelik o kadar yüksek
+
+*-----------------------------------------------------------------------------------------------------
+
+rastgele sayı üretimiyle ilgili çok yanlış bir anlayış var.
+aynı tohum değeri ile aynı değerin üretilmesi dezavantajmış gibi görülüyor. 
+Yanlış bir şey.
+Mesela siz test datası üreteceksiniz. Kodda bir değişiklik yapacaksınız
+tekrar test datasıyla çalıştırdığınızda (aynı test datası olmalı) ki kod değişikliğinin
+etkisi görülsün.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	cout << random_device{}.max << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
