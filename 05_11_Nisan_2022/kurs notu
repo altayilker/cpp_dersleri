@@ -1,0 +1,718 @@
+
+
+
+11 Nisan 2022
+
+İçerik:
+
+constexpr variable 
+- implicitly const
+- implicitly inline
+- bir tür niteleyicisi değildir
+
+constexpr function
+- implicitly const
+- bütün paarametreler constexpr olmalı
+
+Acronymler:
+- AAA
+- ODR  => istisnası inline fonksiyon ve inline değişkenler
+
+inline fonksiyon
+
+inline değişken
+
+static, global nesneler  => constexpr'dir
+
+low level const, high level const
+
+static binding  (early binding)  // a)  compile time'da belli oluyorsa 
+late binding (dynamic binding) //  b) run time'da anlaşılıyorsa
+
+Function Overloading
+
+Function Overloading resolution
+
+scopes
+
+Function Overloading resolution methods
+	1) variadic conversion
+	2) user-defined 
+	3) standart  
+			3.1) exact match
+				3.1.1) array decay
+				3.1.2) const conversion
+				3.1.3) function pointer
+			3.2)  promotion
+			3.3) conversion
+	4) Özel durumlar
+		4.1) 0 ve nullptr durumu
+		4.2) const overloading
+		4.3) void* üstünlüğü
+	5) Birden fazla argüman durumu
+	
+	
+	r value gereklilik nedenleri
+	
+
+
+
+*------------------------------------------------------------------------------------------------------
+
+value kategorisi a ) Lvalue
+						b) Rvalue
+						
+L value reference  =>> değişkenin data tipidir, value kategory  değildir
+R value reference  =>> değişkenin data tipi, value kategory  değildir
+
+*------------------------------------------------------------------------------------------------------
+
+
+int x = 5;
+x;  // ifadesi ==>   x'in  türü (veri tipi, türü)  => int
+					    x'in oluşturduğu ifadenin değer kategorisi (value category)  => lvalue expr.
+
+int &x =  *ptr;   ==> x'in  türü (veri tipi, türü)  => int& veya lvalue reference
+						x'in oluşturduğu ifadenin değer kategorisi (value category)  => lvalue expr.
+				
+int&& x = 5;  ==> x'in  türü (veri tipi, türü)  => int&&  veya rvalue reference
+					  x'in oluşturduğu ifadenin değer kategorisi (value category)  => lvalue expr.
+
+
+- bir isim(örneğin r) bir referansa ait olsa da ister sağ taraf referansı olsun, ister sol taraf referansı olsun o ismin oluşturduğu ifade lvalue expression'dır. 
+
+
+soru: Alttaki soruda r  değişkeninin türü nedir ? "int ref",     peki r'nin data type'ı  lvalue reference mı ??
+ingilizcesi "what is the type of r variable ? , What type of expression does r generate ?
+y değişkeninin türü nedir ? "int**"
+r'nin oluşturduğu ifadenin türü nedir ?  "ifadelerin türü referans türü olamaz, int'tir."
+
+int x = 10;
+int& r =  x;
+int** y
+
+
+
+*------------------------------------------------------------------------------------------------------
+
+
+1) constexpr variable    (değişkenin sabit olma garantisi var demektir, bunu const sağlamaz)
+- implicitly const
+- bir tür niteleyicisi değil
+- implicitly inline
+
+
+constexpr (okunuşu: konstexpır) : constant expression  (türkçesi : sabit ifadesi)
+derleme zamanında değeri tespit edilebiliyor !!!
+
+const int x = 10;  // const ile tanımlanan nesneye ilk değer vermek zorunlu, x'in oluşturduğu ifade constexpr    
+const int y = foo()  // y'nin oluşturduğu ifade constexpr değil  // sadece ilk değer ataması için kullanılmış
+
+üstteki durumda 
+int a1[x][]  // hata vermez
+int a2[y][]   // burada derleyici sentaks hatası verir 
+
+const anahtar sözcüğü ile tanımladığım bir değişkenin oluşturduğu ifade duruma göre sabit ifadesi olabilir veya olmayabilir, ona neyle ilk değer verdiğimize bağlı
+
+constexpr int x =    // constexpr bu ifadenin oluşturduğu değişkenin sabit olması garantisi var demektir !!
+
+const bir tür niteleyicisi, ama constexpr bir tür niteleyicisi değil, x'in oluşturduğu ifadenin sabit ifadesi gereken yerlerde kullanılabileceği garantisini veriyor. 
+
+int foo();
+constexpr int x = foo();  // sentax hatası
+
+constexpr int x = 10;
+constexpr int y = 20;
+x + y; // constexpr !!
+
+soru : constexpr ile tanımlanan değişken aynı zamanda const mu ?
+evet, implicitly const
+constexpr int x ==  constexpr int const x;  // constexpr türü niteleyen bir sözcük değil, ama implicitly değişkeni de const yapar.
+
+*------------------------------------------------------------------------------------------------------
+
+2) constexpr function (asıl devrim burası !!!, fonksiyonların da constexpr ile tanımlanabilmesi)
+
+- constexpr fonksiyonlar implicitly const'dır. 
+- şartı bütün parametrelerine constexpr sabit ifadesi ile çağrı yapılmalı, ancak o zaman geri dönüş değeri sabit ifadesi olur
+
+
+
+constexpr int sum_square(int a, int b)
+{
+	return a*a + b*b;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+C++11 major
+C++ 14 minor
+C++ 17 major
+C++ 20 major
+herdeğişimde kısıtlamalar gevşetildi
+
+C++'da literal type (sabit olabilen tür) diye bir kavram var.  constexpr fonksiyon olmasının koşullarından biri geridönüş türü,
+parametrelerinin türü, içindeki yerel değişkenlerin türü literal type olmalı ????
+
+
+
+normal fonksiyonlara yapılan çağrı değerleri constexpr olamaz,  yani dönüş değerleri runtime'da belirlenir.
+constexpr fonksiyonda compile time'da belirlenir !!!
+
+Şart  :   yapılan çağrı constexpr fonksiyona yapılmışsa ve bu fonksiyonun tüm parametrelerine constexpr - sabit ifadesi ile çağrı yapılmışsa o zaman fonksiyon çağrısının oluşturduğu ifade de bir sabit ifadesidir. Yani geri dönüş değeri compile time'da elde ediliyor.  
+
+constexpr int sum_square(int a, int b)
+{
+	return a*a + b*b;
+}
+
+int main(){
+
+constexpr int x = 5;
+const int y = x*5;
+x+y-3 // ifadesi constexpr'dir. Öğelerin hepsi constexpr olduğu için
+
+constexpr auto x = sum_square(10,20)  // 500 yazmak ile aynı !!
+constexpr int x = sum_square(10,20)
+sum_square(x+y-3,10)  // constexpr'dir. Çünkü fonksiyon inputları da consexpr'dir. Dizi boyutu bile yapılabilir.
+int a[sum_square(x+y-3,10)]; // doğru
+}
+
+int main(){
+	int x = 5;
+	int y = 3;
+	sum_square(x,y); //constexpr function değildir. consexpr olması için inputların constexpr olması gerekiyor !!!
+	int a = sum_square(x,y);   // derleyici hata vermez, fakat constexpr function değildir
+}
+
+C++ dilinde efficiency'i en fazla arttıran etkenlerden biri constexpr'dir !!!!
+
+*------------------------------------------------------------------------------------------------------
+
+Acronymler:(kısaltma)
+	AAA : Almost Always Auto
+	ODR : One definition rule (yazılımsal varlıkların bir definition'ları olabilir, istisnaları var), iki yerde tanımlama yasak
+	inline fonksiyonları veya inline değişkenler ile  ODR ihlal edilmez. Definition kaç kaynak dosyada bulunursa link aşamasında bir tane görülecek. ODR ihlal edilmez. 
+	constexpr fonksiyonlar, implicitly const'dır. 
+
+
+ODR : One definition rule (yazılımsal varlıkların bir definition'ları olabilir, istisnaları var), iki yerde tanımlama yasak
+bir dosyanın tanımı asla başlık dosyasına (h. file) koyulmamalı !!!
+
+bu durumun istisnası inline fonksiyonlardır.
+
+
+*------------------------------------------------------------------------------------------------------
+
+
+inline fonksiyonlar:
+
+inline void func(){  // inline fonsiyonlar ODR'ı ihlal etmez, başlık dosyasına konulabilir
+
+}
+
+h. dosyasında tanımlanan
+int x = 10;
+
+iki cpp dosyasına eklense ODR ihlal edilmiş olur.
+
+*------------------------------------------------------------------------------------------------------
+
+inline değişkenler:
+
+inline int x = 10; // h.file'da olması ODR ihlal etmez, kaç dosyada bulunursa bulunsun, link aşamasında bir tane var sayılır.
+
+constexpr int func(int x, iny);  // constexpr fonksiyonlar implicity const'tur. Yani inline sözcüğünü eklemeseniz de constexpr fonksiyon implicity inline'dır. 
+
+constexpr fonksiyonlar başlık dosyasına koyulabilir. 
+
+constexpr int x = 10;
+
+int main(){
+	declytype(x) y;  // sentaks hatası, const int, ilk değer almak zorunda
+}
+
+hatalı, çünkü declytype ile elde edilen tür const int'tir. const y ise ilk değer almak zorunda olduğundan derleyici sentax hatası verir. 
+const bir tür niteleyicisi, ama constexpr bir tür niteleyicisi değil, x'in oluşturduğu ifadenin sabit ifadesi gereken yerlerde kullanılabileceği garantisini veriyor. 
+
+
+int main(){
+	int x{ };  // sabit bir değer olmadığından sentax hatası
+	constxpr int* p = &x; 
+}
+
+
+int x{};
+
+int main()
+{
+	constexpr int* p = &x;  //  implicity const olan pointer'dır
+	
+	*p = 567;
+}
+
+*p = 567 ataması legal , çünkü içeriğine atanıyor, sabit olan pointer'dır. 
+p'nin kendisi implicity const, ama p'nin türü int*'dır, const int* değildir !!!
+
+constexpr int* p   ==  constexpr int* const p    // implicit const
+constexpr const int* p  // explicity const
+constexpr const int*  const  p  //hem implicitly hem explicitly const
+
+
+const int* const ptr 
+high level  const birincisi, ikincisi low level const
+ low level const farklı bir tür oluşturuyor !!!
+top level const farklı bir tür oluşturmaz !!!
+
+*------------------------------------------------------------------------------------------------------
+
+
+FUNCTION OVERLOADING (Fonksiyon yüklenmesi) :  // Fonksiyon aşırı yükleme hatalı çeviri
+
+aynı isimli birden fazla fonksiyonun bir arada bulunması
+
+çalışma mı derleme zamanı mı ile ilgili ?  derleme zamanıyla alakalı
+
+C'de  abs, fabs, labs  // function overloading yok
+
+derleyici tarafında fonksiyona yapılan çağrının hangi fonksiyona yapıldığı 
+static binding  (early binding)  // a)  compile time'da belli oluyorsa 
+late binding (dynamic binding) //  b) run time'da anlaşılıyorsa
+
+function overloading static binding'dir. (programın çalışma zamanına ilave maliyeti yok !!!)
+
+*------------------------------------------------------------------------------------------------------
+
+function overload resolution : aynı isimli fonksiyonlar birarada bulunduğunda fonksiyona yapılan çağrıda hangi fonksiyonun bağlanacağı kararını veriyor. 
+
+int main()
+{
+	std::cout << 10 << "\n";
+	std::cout << 1.0 << "\n";  // function overloading
+}
+
+daha önce burada farklı türden değerleri yazdırırken function overloading kullandık.
+
+Is it function overloading ? 
+1)  aynı scope (kapsam) 'da olmalı
+2)  function signature (imzaları) farklı olacak
+	int func(int, int, int)
+	geri dönüş türü dahil edilmez !!!
+	
+
+
+aynı isimli fonksiyonu globalde diğerini main'de lokalde bildirsem bunlar birbirinin overload'ı olmaz (aynı scope'da değiller !)
+
+int foo();
+
+int main()
+{
+	int foo(int);
+}
+
+*------------------------------------------------------------------------------------------------------
+
+scope'lar:
+namespace scope
+class scope
+block scope
+function scope
+function prototype scope
+
+*------------------------------------------------------------------------------------------------------
+
+function redeclaration: sentax hatasıdır
+int foo(int);
+int foo(int);  // sentax hatası, function redeclaration
+double foo(int); // geçersiz
+double foo(int , int); // function overloading
+int foo(const int); //  function redeclaration'dır,  function overloading yok !!!,  parametrenin kendisinin const olması imzada bir farklılık yaratmaz  !!!
+
+
+
+int foo(int *p);
+int foo(const int *p);  // overloading var !!! low level const farklı bir tür oluşturuyor !!!
+int foo(int * const p); // redeclaration var, sentax hatası, top level const farklı bir tür oluşturmaz
+
+void func(int);
+void func(int32_t);  // overloading var mı ?? it depends, derleyiciye bağlı
+
+int32_t : it’s an alias for whatever integer type your particular system has that is exactly 32 bits.
+
+
+void func(int);
+void func(int, int = 10); // function overloading
+
+void func(int);
+void func(int& ); // function overloading var, int ayrı bir tür, int&  ayrı bir tür
+
+void func(char);
+void func(signed char); // overload
+void func(unsigned char); // overload ,   signed char distinct bir type,  unsigned char distinct bir type
+
+*------------------------------------------------------------------------------------------------------
+
+function overload resolution : overloading var ve fonksiyon çağrısı yapıyorum, fonksiyon çağrısı hangi fonksiyona bağlanacak 
+
+fonksiyona yapılan çağrı geçersiz olabilir !!!! // illegal
+
+1) fonksiyon çağrısı overload olmasına rağmen hiçbir fonksiyon için uygun değil  // sentak hatası
+   iki fonksiyon bir arada bulunca dilin kuralları (Ambiguity- çift anlamlılık hatası) seçime karar veremiyor.  // ambiguity
+
+
+enum Color{Red, Black}
+void func(int );
+void func(int , int);
+void func(int , double);
+void func(char*);
+void func(int, color);
+
+int main(){
+
+// func(? ? )  // 1. aşamada derleyici fonksiyon argumanlarına hiç bakmadan bu noktada visible olan fonksiyonların listesini çıkartır.
+		           // aday fonksiyonlar belirlenir, şu an 4 aday fonksiyon görülür. (candidate function)
+		           // 2. aşamada derleyici fonksiyona gönderilen elemanlardan hangi fonksiyon çağrılarının legal olduğuna bakıyor ve çağırılması                  // uygun olmayanlar aday fonksiyonlardan çıkartılır.  (viable functions (uygun fonksiyonlar))
+		          // burada argüman sayısı ile bildirilen fonksiyonun parametre sayısı eşit olacak , her bir argümandan ilgili parametreye       
+		          // geçerli bir tür dönüşümü olacak
+			   // 3. aşamada birkaç seçenek kalırsa derleyici seçemezse"ambiguity (belirsizlik)" olur. 
+				
+				
+func(12, 56);  // 2-3 olabilir  
+					// int türünden enum türüne otomatik tür dönüşümü yok 
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+
+C++'ta    void* => int*    otomatik tür dönüşümü yok
+
+*------------------------------------------------------------------------------------------------------
+
+function overloading resolution methods: 
+https://www.dcs.bbk.ac.uk/~roger/cpp/
+
+1) variadic conversion (variadic olmayan kazanır)
+2) user-defined conversion
+3) standart conversion // 1-2'nin dışındakiler
+		a) exact match (argüman türü ile parametrenin türü aynı olması )
+		b) promotion (terfi- yükseltme)
+		c) (normal) conversion  ==>> ambiguity
+
+
+exact match > promotion > conversion
+
+user defined-conversion variadic conversion'dan daha iyi ama onun dışındaki bütün dönüşümlere kaybeder.
+
+
+*------------------------------------------------------------------------------------------------------
+
+void func(long double);
+void func(char );
+
+int main{
+	void func(12.3);  // ambiguity
+}
+
+variadic function ===>    void func(int, ...);
+...'den önceki parametrelere argüman göndermek zorunlu !!!!
+variadic uyum olabilecek en düşük seviye !!! (iki viable fonksiyondan variadic olmayan kazanır !!!)
+
+func(12);
+
+
+*------------------------------------------------------------------------------------------------------
+
+user-defined conversion:   normalde yok, o dönüşümde kullanılabilecek fonksiyon bildirirsek 
+
+struct Data{
+	Data(int);  => bu initialization'dan dolayı user-defined conversion olur
+}
+
+void func(Data)
+
+int main(){
+	func(12);
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+
+Öğrenciler şu hatayı çok yapıyor !!
+12  => türü int
+12u, 12U => unsigned int
+12l, 12L => long
+12ll, 12LL => long long
+12llu, 12LLU => long long unsigned 
+12.  => double
+12.34 => double
+12.34F => float
+ (float)12.4  => yanlışşşşş
+12.4L => long double
+
+10 > 4  => karşılaştırma ifadesi bool türden değer üretir
+'A'  => karakter literali, char'dır.
+12e3  => scientific notation olduğunda türü double'dır.
+0x1ac4 => int tür (hex sayı sisteminde yazılması türünü değiştirmez, boyutuna bakılır)
+0b11011 => int tür (ikili sayı sistemi)
+
+char c = 12;
+auto x = c;  // x'in türü char
+auto x = +c; // integral promotion gereği x'in türü int'e yükseltilir
+
+*------------------------------------------------------------------------------------------------------
+
+variadic ve user-defined conversion yoksa standart conversion durumunda  ne olacak ???
+a) exact match (argüman türü ile parametrenin türü aynı olması )
+b) promotion (terfi- yükseltme)
+c) (normal) conversion  ==>> ambiguity
+exact match > promotion > conversion
+
+a) exact match:
+a1)  array decay :  array to pointer conversion
+
+void func(int*);
+
+int main(){
+	int a[10];
+	func(a); // dizinin ismi dizinin ilk elemanın adresine dönüştürüyor. Buna array decay denir!! exact match'dir.
+}
+*------------------------------------------------------------------------------------------------------
+
+a2) const conversion:
+
+void func(const int*);
+
+int main(){
+	int x = 10;
+	func(&x);  // &x'ün türü int*,  func ise const int*, exact match
+}
+
+&x : adres ise türü  => int*
+&y : referans ise türü => int&
+
+*------------------------------------------------------------------------------------------------------
+a3) function pointer (function to pointer conversion)
+
+void func(int (*)(int ));
+int foo(int);
+
+int main(){
+	func(foo);  // exact match kabul edilir
+}
+
+#include <iostream>  
+using namespace std;  
+int add(int a , int b)  
+{  
+    return a+b;  
+}  
+int main()  
+{  
+
+ int (*funcptr)(int,int);  // function pointer declaration  
+funcptr=add; // funcptr is pointing to the add function  
+ int sum=funcptr(5,5);  
+ std::cout << "value of sum is :" <<sum<< std::endl;  
+  return 0;  
+}  
+
+
+*------------------------------------------------------------------------------------------------------
+
+b) promotion 
+
+int altı argümanların int'e yükseltilmesi dönüşümü integral promotion'dır 
+
+unsigned short, signed short  => int 
+3 char türünden => int 
+bool => int     
+
+float  => double   // promotion
+
+*------------------------------------------------------------------------------------------------------
+
+bütün bunlar sağlanmazsa ambiguity'dir 
+
+void func(double);
+void func(unsigned);
+
+int main(){
+	func(10);  // int = double  or int = unsigned int , normal conversion'da ambiguity
+	func(10u);  //  unsigned int kazanırdı. exact match
+	func(10.);  // double kazanırdı, exact match
+	func(10.f);  //double çağırılır promotion , unsigned olan conversion, 
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(long double); 
+void func(char);
+
+int main(){
+	func(10.);  // ikisi de conversion, ambiguity
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(long ); 
+void func(int);
+
+int main(){
+	func(10 > 5);  // bool => int ,  promotion
+}
+
+*------------------------------------------------------------------------------------------------------
+
+bazı özel durumlar var, bunları özel kural olarak bilmeniz gerekiyor !!!
+
+1) kullanmayın !!
+
+void func(int* p);
+
+int main(){
+
+	func(0);   // kullanma, başa bela açar, çünkü int overload gelse bu fonksiyon kaybeder, veya double gelse ambiguity olur.
+	func(nullptr)
+}
+
+C++ nullptr yerine 0 kullanmayın !!!
+
+void func(int * );  
+void func(double);  //
+int main(){
+	foo(0); // ambiguity, çünkü 0'dan nullptr dönüşüm conversion, 0'dan double'a dönüşüm conversion
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(int * );  
+void func(const int*);   => overloading'tir. const overloading
+
+int main(){
+	cons int cx = 5;
+	int ival = 10;
+	func(&cx );  //  const int * türünden olan olan çağrılır.  const int* türünden int* türüne örtülü dönüşüm yok.
+	func(&ival);  // int * olan çağrılır.
+}
+
+const overloading kuralı:
+ T* ile const T* overloading'i varsa, T ile çağrılınca T* olan,  const T ile çağırılınca const T* olan fonksiyon çağırılmış olur !!!
+ T& ile const T& overloading'i varsa, T ile çağrılınca T& olan,  const T ile çağırılınca const T& olan fonksiyon çağırılmış olur !!!
+
+*------------------------------------------------------------------------------------------------------
+
+void foo(int&); 
+void foo(const int&); => overloading'tir. const overloading
+
+*------------------------------------------------------------------------------------------------------
+
+
+void func(int );  
+void func(int& );  
+int main(){
+	foo(0); // üstteki çağrılır
+	int x = 0;
+	func(x);  // ambiguity
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(int );  
+void func(const int& );  
+int main(){
+	func(5);  // ambiguity
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(void *);  
+int main(){
+	int ival {};
+	func(&ival);  // geçerli,  void * türüne dönüşür
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(bool);  
+int main(){
+	int ival = 10;
+	func(&ival); //  geçerli, nesne adresleri bool türüne örtülü dönüşümde true'ya dönüşür, nullptr  false'a dönüşür
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+
+void func(bool);  
+void func(void *);  
+int main(){
+	int ival = 10;
+	func(&ival); //  sadece bu void func(void *) olsa, geçerli idi. ikisi olunca void *'in üstünlüğü var.  (özel durum)
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+void func(int, int x = 8);  
+void func(int);  
+int main(){
+	func(10); //  ambiguity
+}
+
+*------------------------------------------------------------------------------------------------------
+
+en karışık yerlerden biri
+fonksiyonların birden fazla değişkeni olursa 
+
+kural : bir fonksiyonun seçilebilmesi için en az bir argümanda diğerleri üstünlük sağlayacak, üstünlük sağladığı argümanların dışındaki diğer argümanlarda da diğerlerinden kötü olmayacak
+
+void func(int, double, int);  
+void func(double, long, int);  
+ void func(char, float, double);  
+
+int main(){
+	func(10, 20, 5u);  // 1. exact match üstünlük sağladı,  2.'de üçü eşit conversion, 3. 'de eşit conversion
+	func(10, 20, 5.f); // ambiguity, 3. üstünlük sağladı.
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+r value reference 'ı sentax'a eklenme gerekçesi:
+1) Taşıma Semantiği (verimle ilgili) 
+2 ) Perfect forwarding (generic programlama ile ilgili)
+
+void func(int&);  // lvalue reference parametreli fonksiyon
+void func(int&&);  // rvalue reference parametreli fonksiyon
+
+int main (){
+	int x {2};  
+	func(x);  // üstteki çağrılır, lvalue to lvalue reference
+	func(10); // alttaki çağırılır, rvalue to rvalue reference
+}
+
+*------------------------------------------------------------------------------------------------------
+
+kural : fonksiyonu lvalue ifade ile çağırırsanız üstteki, rvalue ile çağırırsanız alttaki çağırılır. 
+
+void func(const T&);  
+void func(T&&);  
+
+void func(const int&);  //
+void func(int&&);  // 
+
+int main (){
+	int x {2};  
+	func(x);  //  üstteki çağırılır
+	func(10); //  ikisi de viable, ambiguity yok, rvalue ref'in lvalue reference'a üstünlüğü var !!!
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
