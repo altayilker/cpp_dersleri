@@ -1,0 +1,654 @@
+
+İçerik:   
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+
+C ve C++ dili arasındaki farklılıklar
+
+C++ içerisinde C programının bir kısmını barındırır.
+
+C++, C'ye göre çok büyük bir dildir. C embedded için geliştirildiğinden daha minimal geliştirilmiştir.
+
+C++ hem nesne programlama hem de C gibi programlamayı da içerir.
+
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
+const anahtar sözcüğü
+
+C++ dilinde const değişkenlere ilk değer vermek zorunludur. 
+
+const T*  ===> T*    // örtülü dönüşümü yok 
+
+
+// constant pointer to int
+ int * const ptr
+// pointer to constant int
+const int * 
+
+https://www.geeksforgeeks.org/const-qualifier-in-c/
+
+1) Pointer to variable
+
+int *ptr;
+
+2) Pointer to constant. 
+
+const int *ptr   veya    int const *ptr;
+
+
+3) Constant pointer to variable.
+
+int *const  ptr;
+
+4) constant pointer to constant
+
+const int *const ptr;
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+void *   : bir tür, void pointer türüdür. Void pointer türüne diğer adres türlerinden otomatik dönüşüm var.
+Void pointer türünden diğer türlere otomatik dönüşüm yok ve sentax hatasıdır.
+
+int main ()
+{
+	int x = 10;
+	double dx = 1.2;
+	void *vptr =  &x;  // ok
+	vptr = &dx;  // ok
+	int *iptr = vptr;  //  C++'da sentax hatası
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+linkage ne demek ? (bağlantı)
+internal , external linkage
+
+bir fonksiyonun diğer dosyalarda kullanımı external
+kendi modülünde kullanılacaksa internal linkage
+
+
+C++'da static ile tanımlanırsa iç bağlantıya ait
+
+
+*-----------------------------------------------------------------------------------------------------
+
+user defined types:
+
+structures
+class
+unions
+enumerations
+
+
+*-----------------------------------------------------------------------------------------------------
+
+structures : yapının elemanı olmayabilir, empty class denir
+
+struct Data{
+	int x;
+}
+
+union Nec{
+	int x;
+	int y;
+}
+
+enum Color {Red, Black, White};
+
+int main()
+{
+	Data myData;  // struct Data myData  da kullanılabilir.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+enum Color {Red, Black, White};
+
+int main()
+{
+	enum Color myColor = Red;
+	int ival = myColor;  // dikkat, geçerli, fakat kullanma
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ iki ayrı enum türü var. enum teknik olarak sınıf değil 
+
+conventional enum(unscoped enum)
+scoped enum (enum class)
+
+
+*-----------------------------------------------------------------------------------------------------
+
+conventional enum(unscoped enum) eksiklikleri
+
+1) // incomplete type
+enum Color;
+
+2) // kontrol dışı tür dönüşümü
+int ival;
+Color myColor =  Black;
+ival = myColor;  // legal, gençlik hatası
+
+3) enum türünün kapsamı neyse enumaration constant'ın kapsamı aynı.
+enumaration constant'ın ayrı scope'u yok
+
+farklı h filelardan gelen farklı enum türlerinin enumaratör olarak seçilmiş isimleri aynı ise 
+sentax hatası oluşturur.
+
+enum ScreenColor {Red, Black, White};
+enum TrafficLight {Red, Yellow, Green};
+
+iki red ismi çakışır. Sentax hatası
+
+*-----------------------------------------------------------------------------------------------------
+
+scoped enum (enum class)
+
+enum class ScreenColor {Red, Black, White};
+enum class TrafficLight {Red, Yellow, Green};
+
+*-----------------------------------------------------------------------------------------------------
+
+::      => scope resolution operator (colon colon)
+
+enum class ScreenColor {Red, Black, White};
+ScreenColor:: Red ;
+
+*-----------------------------------------------------------------------------------------------------
+
+enum class ScreenColor {Red, Black, White};
+
+int main()
+{
+	ScreenColor mycolor = ScreenColor:: Red; 
+	int ival = mycolor;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+gelecek planı:
+C++ ile ilgili genel bilgiler 
+ilk değer verme (initialization)
+fonksiyonların varsayılan argüman alması (default argument)
+type deduction (tür çıkarımı)
+referans semantics
+function overloading
+
+
+*-----------------------------------------------------------------------------------------------------
+
+C++  derleyicinin tek görevi assembly kod yazmak değil ayrıca kod yazar. Bu paradigma generic programlama (Template'ler)
+
+type deduction (tür çıkarımı): C'de yok . C++'da her yerde var.
+
+auto x = 10;
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ 'da anahtar kelimelerin kullanıldıkları yere göre farklı anlamlar var.
+static
+using 
+auto
+mutable
+
+
+*-----------------------------------------------------------------------------------------------------
+
+initialization:
+
+int main()
+{
+	int x;  // default initialization
+	const int y;  // const değişkenlere ilk değer vermek zorunlu,sentax hatası
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// zero initialization
+int x;  // static ve global değişkenlerde 0 ile başlatılır.
+bool y; // false ile başlatılır
+int *gp;  // nullptr ile hayata başlar
+
+
+int main()
+{
+	int a;  // default initialization
+	int x = 10;  // copy initialization
+	int y(20);  // direct initalization
+	int z {30};  // uniform initialization (brace init.)
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+uniform initialization (brace init.): C++ ile geldi.
+
+diğer init.'lerin eksikliklerini giderir. 
+1.  uniform (öğrenim kolaylığı için heryerde kullanılabilir)
+2. narrowing conversion sentax hatası 
+3. most vexing parse'in engellenmesi
+
+int z {30};
+
+*-----------------------------------------------------------------------------------------------------
+
+narrowing conversion
+
+int main()
+{
+	double dval = 3.4;
+	int ival = dval;  // legal fakat implicit type conversion, ondalık kısım kaybedilir. 
+	int ival (dval);  // legal fakat implicit type conversion, ondalık kısım kaybedilir.Fakat derleyici uyarı verir.
+	int ival {dval};  // sentaks hatası, uniform init.'de koruma var
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+scott meyers  (iyi yazar)
+
+Effective Modern C++:
+
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ öyle dil yapıları var ki 
+
+hem bir fonksiyon bildirimi 
+hem de bir nesne tanımlaması
+
+iki anlama gelmesine most vexing parse
+
+struct A
+{
+};
+
+struct B
+{
+	B(A);
+};
+
+int main()
+{
+	B bx(A());  // ismi bx olan değişken tanımladıklarını sanıyorlar, oysa most vexing parse sonucu fonksiyon bildirmiş oluyorsunuz
+	B bx{A()}; // burada değişken tanımlanmış olur.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// derleyici
+
+// sadece warning 
+// diagnostic message
+
+
+// no diagnostic required
+
+
+hatalı programlara verilen terim
+// ill-formed
+
+
+sentax hatası genel bir terim 
+gerisi derleyiciye bağlı (error mu warning mi verdi)
+
+*-----------------------------------------------------------------------------------------------------
+
+dizilere ilk değer verme:
+
+int main()
+{
+	int a[] = {1,2,3,4,5};
+	int b[] {1,2,3,4,5};
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+value initialization:
+
+int main()
+{
+	int x{};  // value initialization  // sıfır ile başlama garantisi var
+	bool flag{};   // value init. // false değer ile başlar
+	int *ptr{};  // value init. // nullptr ile hayata başlar
+	int y;   // garbage value
+	int z();  // parantezin içi boş olursa fonksiyon bildirimi 
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int* foo();
+
+int main()
+{
+	int* p{ foo()} ;  // int* p =  foo()  ile aynı
+	if( p != nullptr){   // if(p) ile aynı
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int x = 10;
+
+int main()
+{    
+	int x = x;  // tanımsız davranış, = 'in sağında soldaki x'in scope'una girilir, sağdaki x tanımlanan int x, burada otomatik ömürlü x değişkenine kendi çöp değeri ile ilk
+	değer verdiğimizden tanımsız davranış
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int x = 10;
+
+int main()
+{    
+	int x = 40;
+	std::cout << "x: " << x << "\n";
+}
+
+isim arama önce blok içinde yapılır, bulunursa isim arama (namelookup) biter. Bulunamazsa önce kapsayan bloklarda sonra da
+namespace scope'ta (global isim alanı)aranır.
+
+*-----------------------------------------------------------------------------------------------------
+
+scope resolution operator (::x)
+
+derleyiciye operand olan ismin (x) namespace scope'da aranması talimatını veriyor. 
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace scope
+class scope
+block scope
+function prototype scope
+function scope
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace (isim alanı ) : C'de global isim alanı tek bir alan. Sizin kullandığınız bütün isimler buraya boşaltılır. Bu da farklı farklı hizmet aldığınız kütüphanelerin başlık dosyalarından gelen isimlerin çakışması riskini çok arttırıyor. 
+C++ dilinde namespace alanları ile bu riskten kurtuluyor. Bunun eksiği ise farklı isim alanlarında olan ahmet.txt dosyası olsa, benden karşı taraf bana
+benden ahmet.txt dosyası istese hangi isim alanında olanı göndereyim dersiniz ?
+
+::  => unary scope resolution operator
+
+int main()
+{
+	::x;  // bu bloğu içine alan ilk namespace alanı içinde arar. Bu da global namespace alanıdır. 
+}
+
+::  => binary scope resolution operator
+int main()
+{
+	neco::x; // sol operatoru namespace ise sağ operandını o namespace içinde arar
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	int x = 10;
+}
+
+int main()
+{
+	x = 20;  // önce blokta aradı bulamadı,  kapsayan blokta aradı
+	bulamadı, sonra global isim alanında aradı bulamadı. 
+	Sentax hatası
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	int x = 10;
+}
+
+int main()
+{
+	nec::x = 20;  // ismi nec olan namespace'de ara
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <cstring>      =>  c'deki string.h'nın C++'daki karşılığı
+#include < string>      =>   C++
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::size_t 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <iostream>
+#include <cctype>
+
+int main()
+{
+	char str[]  = "mustafa";
+	std::puts(str);  // standart C'den gelen fonksiyonları :: ile niteleyin
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+cout terimi global değişkendir, fonksiyon değil
+std namespace'i içindeki bir değişkendir.
+
+*-----------------------------------------------------------------------------------------------------
+
+Operator overloading:
+
+Matrix m1, m2;   // sınıf
+
+m1 + m2;  // operator overloading, derleyici durumdan görev çıkarsın ve fonksiyona yapılan çağrıya dönüştürsün
+
+
+
+std::cout   <<   "ival = "   <<   ival   <<   "\n";
+
+std::cout   => bir sınıf değişkeni
+<<  => operatör overloading, bir fonksiyon çağrılır
+"ival = "      =>  çağırılan fonksiyona gönderilen argüman
+
+
+operator << (cout, "alican"); //   aynısı => std::cout << "alican";
+
+std  => "stud" diye de okunur
+
+*-----------------------------------------------------------------------------------------------------
+
+chaining:
+
+int main()
+{
+	int x = 10;
+	double d{ 32.84 };
+	cout << "x = " << x  <<  " d = " << d << "\n"; 
+}
+
+cout << "x = "   => geri dönüş değeri referans, cout nesnesinin kendisini döndürür.
+
+cout << "x = " << x  <<  " d = " << d << "\n"; 
+//  eşdeğer =>   cout  << x  <<  " d = " << d << "\n"; 
+
+function overloading de var. string ve double tür değerini yazdıran fonksiyonlar 
+
+
+*-----------------------------------------------------------------------------------------------------
+
+cout << "fatih\n";   => yazıyı yazdırır, << global fonksiyondur
+cout.operator << ("fatih");  => bu yazının adresini yazdırır. <<  sınıfın üyesidir.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+int main
+{
+	int x = 10;
+	// soru: call by value mi call by reference mi ?
+	func(x);  // call by value;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main
+{
+	std::cout << "bir tam sayi girin:   ";
+	int x{ };
+	std::cin.operator >> (x);  // referans semantiği
+	// x'e bir değer yerleştirir.
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+function prototype scope:
+
+void func(int, int); // iki şekilde bildirim de uygun
+void func(int x, int y);  //function prototype scope
+// bu isimler sadece bu parantez içerisinde bilinirler.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+void foo(int )  // C++'da geçerli
+{
+
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// parameter
+void func(int x )
+{
+
+}
+
+int main()
+{
+	func(12);  // argument
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void func(int x, int y);
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+void func(int,  int = 10);   // ikinci parametresi varsayılan argüman
+
+int main()
+{
+	func(5,6);  // varsayılan argüman kullanılmadı
+	func(3);  // func(3,10);  varsayılan argüman 10
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int g = 10;
+void func(int , int = g+5);
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int foo(int = 5, int = 9);
+void func(int, int = foo());
+
+
+*-----------------------------------------------------------------------------------------------------
+
+void func(int = 10, int = 20, int = 30);
+
+int main()
+{
+	func(7,8,9);
+	func(7,8);  // func(7,8,30);
+	func(7);  // func(7,20,30);
+	func(); // func(10,20,30);
+}
+
+void func(int x, int y, int z)
+{
+	std::cout << "x = " << x << "y = " << y << "z =  " << z << "\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
+If you are using prefix form then increment or decrement will be done before rest of the expression, and if you are using postfix form, then increment or decrement will be done after the complete expression is evaluated.
+
+#include <iostream>
+using namespace std;
+main() {
+   int a = 21;
+   int c ;
+   // Value of a will not be increased before assignment.
+   c = a++;   
+   cout << "Line 1 - Value of a++ is :" << c << endl ;
+   // After expression value of a is increased
+   cout << "Line 2 - Value of a is :" << a << endl ;
+   // Value of a will be increased before assignment.
+   c = ++a;  
+   cout << "Line 3 - Value of ++a is  :" << c << endl ;
+   return 0;
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int x = 10;
+
+void func(int = x++);
+
+int main()
+{
+	func();  // func(x++)  // 10  // herseferinde tekrar değerlendirilir
+	func(); // func(x++)  // 11 
+	func(); // func(x++)  // 12
+}
+
+void func(int a)
+{
+	std::cout << a << '\n';
+}
+
+*-----------------------------------------------------------------------------------------------------
