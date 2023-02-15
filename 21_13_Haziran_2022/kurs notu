@@ -1,0 +1,905 @@
+
+
+İçerik:   
+
+string
+
+
+*-----------------------------------------------------------------------------------------------------
+
+string                 const std::string&
+string                 const std::string&&
+cstring              const char*
+data                   const char*, std::size_type n
+range                 [konum1 konum2)  // ilk konum dahil,                                     ikinci konum hariç
+fill                        string::size_type, char
+char                    char
+substring          const string& str , string::size_type idx
+substring          const string& str , string::size_type idx, string::size_type n
+initializer_list    std::initializer_list
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <string>
+#include <iostream>
+
+int main()
+{
+	std::string s1;
+	std::string s2{};
+	
+	auto len = s1.length();  
+	// std::size_t len = s1.length();
+	// std::string::size_type len = s1.length();
+	
+	std::cout << "s1.length() = " << s1.length() << "\n";
+	std::cout << "s1.size() = " << s1.size() << "\n";
+}
+
+bir yazının length'i olur
+bir dizinin size'i olur. Ama ikisi de oluyor. 
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string s1;
+	std::string s2{"ali"};
+	
+	std::cout << std::boolalpha << s1.empty() << "\n";
+	std::cout << std::boolalpha << s2.empty() << "\n";
+	
+	s2.clear();  // container'i boşaltır // member function'dır global değil
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+small string optimization : dinamik bellek yönetimi maliyetinden kaçınmak için string sınıf nesnesinin içinde bir dizi (buffer) tutuluyor. 
+
+int main()
+{
+	std::cout << "sizeof(std::string) = " << sizeof(std::string) << "\n";
+	
+	// biri allocate edilecek adresi, diğeri boyutun yeri, kapasitenin sonu tutulacak
+}
+
+sonuç: 24 byte (oysa bir pointer 4 byte)
+12 byte fazla kullanıyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+void* operator new(std::size_t sz)
+{
+	std::cout << "operator new called for the size of : " << sz << "\n";
+	
+	if(sz == 0)
+	     ++sz;
+	
+	if(void* ptr = std::malloc(sz))
+		return ptr;
+		
+	throw std::bad_alloc();
+}
+
+void* operator delete(void* ptr) noexcept
+{
+	std::cout << "operator delete called for the address of : " << ptr << "\n";
+	std::free(ptr);
+}
+
+int main()
+{
+	using namespace std;
+	
+	string str("suleyman");  // burada dinamik bellek yönetimi hiç olmadı, süleyman string nesnesinin buffer'ında tutuldu
+	
+	string str("suleyman sirri kundak");
+	
+	auto p = new string("necati ergin eskisehir");
+	// kaç tane bellek alanı tahsis edilir ?
+	//  cevap : 2 
+	// iki kez operator new fonksiyonu çağırılır
+	// ilk allocate edilen 24 byte'lik string için
+	// ikinci string nesnesinin tutacağı yazı için
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	string str("13 haziran 2022 pazartesi");
+	
+	std::cout << "str.size() = " <<  str.size() << "\n";
+	std::cout << "str.capacity() = " <<  str.capacity() << "\n";
+}
+
+// size = 25, capacity = 31  // compiler'a göre değişir !!!
+// 6 karakter daha ekleyebilirim, yeni bir allocation yapılmayacak
+// ama size capacity'ye eşitse ekleme yapılırsa reallocation yapılır, reallocation takes time,
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	string str("13 haziran 2022 pazartesi");
+	auto cap = str.capacity();
+	int cnt{};
+	
+	while(true){
+		str.push_back('x');
+		if(str.capacity() > cap){
+			std::cout << ++cnt << " size = " << str.size() << "cap = " << str.capacity() << "\n";
+			cap = str.capacity();
+			(void)getchar();
+		}
+	}
+}
+
+// 1 size = 32  cap = 47
+// 2 size = 48  cap = 70
+// 3 size = 71  cap = 105
+// 4 size = 106 cap = 157
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	string str("13 haziran 2022 pazartesi");
+	str.reserve(200000);  // tam 200000 olmak zorunda değil
+	
+	auto cap = str.capacity();
+	int cnt{};
+	
+	while(true){
+		str.push_back('x');
+		if(str.capacity() > cap){
+			std::cout << ++cnt << " size = " << str.size() << "cap = " << str.capacity() << "\n";
+			cap = str.capacity();
+			(void)getchar();
+		}
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string str(2'000'000, 'A');
+	
+	std::cout << "str.size() = " << str.size() << "\n";
+	std::cout << "str.capacity() = " << str.capacity() << "\n";
+	
+	str.erase(1);  
+	
+	std::cout << "str.size() = " << str.size() << "\n";
+	std::cout << "str.capacity() = " << str.capacity() << "\n";
+	
+	str.clear(); // tamamen siler !!!
+	std::cout << "str.size() = " << str.size() << "\n";
+	std::cout << "str.capacity() = " << str.capacity() << "\n";
+}
+
+// cevap 
+
+str.size() = 2000000
+str.capacity() = 2000000
+str.size() = 1
+str.capacity() = 2000000
+str.size() = 0
+str.capacity() = 2000000
+
+*-----------------------------------------------------------------------------------------------------
+
+bütün constructor'ları görelim
+
+int main()
+{
+	using namespace std;
+	
+	string s1{"mustafa"};
+	std::cout << "s1.size() = " << s1.size() << "\n";
+	cout << "[" << s1 << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	char s[ ] = "volkan gundogdu";
+	
+	string s1{s};
+	std::cout << "s1.size() = " << s1.size() << "\n";
+	cout << "[" << s1 << "]\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	string s1 {"volkan gundogdu"};
+	
+	auto s2 = std::move(s1);  // kopyalama yapmak yerine s1'in kaynağını çalacak,
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+std::string foo();
+
+int main()
+{
+	auto s = foo();  // ya bir copy elision ya da duruma göre move const. çağırılacak  ?????
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+std::string foo();
+
+int main()
+{
+	string str;
+	
+	str = foo();  // move assignment çağrılacak; çünkü bu ifade r value ;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	char str[]  = "Bugun pazartesi haftanın ilk gunu";
+	
+	string s(str, 5);
+	std:cout << "s = " << s << "\n";
+	
+	string s(str + 6, 9);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string str;
+	
+	std::cout << "isminizi girin: ";
+	std::cin >> str;
+	
+	std::cout << "ismin " << str << " demek";
+}
+
+// white space karakterler, ayraç olarak kullanılıyor
+
+*-----------------------------------------------------------------------------------------------------
+
+eğer bir giriş akımından boşluk karakterleri dahil karakterlerin tamamını string nesnesinin almak isterseniz sık kullanılan getline() fonksiyonu kullaılabilir
+
+int main()
+{
+	std::string str;
+	std::cout << "isminizi girin: ";
+	
+	getline(std::cin, str);  // getline global fonk., ADL devreye girdi, ADL devreye girmese std:getline şeklinde çağrı yapılmalı
+	
+	std::cout << "str  =  [" <<  str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string str('A');  // sentax hatası, parametresi char  olan contructor yok
+	
+	
+	// string sınıfını tek karakterle başlatma yolları
+	std::string s1("A");
+	std::string s2(1, 'B');  // fill const. , 1 tane B, 
+	std::string s3{ 'C' };  // fill const. , 1 tane B, 
+	
+	std::cout << "s1  =  " <<  s1  << "\n";
+	std::cout << "s2  =  " <<  s2  << "\n";
+	std::cout << "s3  =  " <<  s3  << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string s1(50, 'A');
+	std::cout << "[" << s1 << "]\n";
+
+	std::string s2{ 50, 'A'};  // 50 karakter kodu olarak alır, 2 yazar, initializer_list cont. seçti, init. const. list varsa diğer const.'lara üstün gelir.
+	std::cout << "[" << s2 << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int n = 45;
+	std::cout << std::string(50, '*');
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string s1{"volkan gundogdu"};
+	std::string s2{s1, 7};  // "gundogdu"
+	std::string s3{s1, 7, 3};  // "gun"
+	std::string s3{s1, 7, 800};  // "gundogdu"
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	cout << string::npos  << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	
+	auto idx = str.find('a');  // auto = string::size_type 
+	std::cout << "idx = " << idx << "\n";
+	
+	auto idx = str.find('t');  // bulunamazsa npos
+	
+
+
+if(idx == string::npos){
+		
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	
+	size_t idx;
+	
+	if(idx = str.find('t');   idx != string::npos) {
+		// if with initializer, idx'in scope'unu genişletmemiş oluyoruz
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	
+	if(auto idx = str.find('t');   idx != string::npos) {
+		// if with initializer, idx'in scope'unu genişletmemiş oluyoruz
+	}
+	else{
+	
+	} // idx scope'u biter
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+The scope of the conditioned variable gets limited to the current if-else block. This also allows us to reuse the same named identifier in another conditional block.
+
+if (auto var = foo(); condition) {
+    ...
+}
+else{
+    ...
+}
+  
+// Another if-else block
+if (auto var = bar(); condition) {
+    ....
+}
+else {
+    ....
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+string::npos  işlevleri
+
+ 1) arama fonksiyonları, üye fonksiyonlar index döndürüyor, aranan bulunamadığında string::npos sabitini döndürüyorlar.(en yüksek değer)
+
+2) 
+
+str[2] = '!'
+
+
+*-----------------------------------------------------------------------------------------------------
+
+yazının karakterlerine nasıl erişilir ?
+birden fazla yolu var, [ ] operatör fonksiyonu
+
+int main()
+{
+	string str{"eray goksu"};
+
+	str[2] = '!';
+	std::cout << "str = " << str << "\n";
+	
+	str[20] = '!';  // undefined behavior
+	
+	static_cast<int> str[str.size()];  // 0 olma garantisi var
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+
+	try{
+		auto c = str[230];  // undefined bahavior
+		// exception throw etmez
+	}
+	catch (const std ::exception& ex) {
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+
+	try{
+		auto c = str.at(230);  // exception gönderir
+	}
+	catch (const std ::exception& ex) {
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	
+	str.front() = '!';  // ilk üyeye erişim
+	str.back) = '!';  // son üyeye erişim
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+
+	for(auto iter = str.begin(); iter != str.end(); ++iter){
+		cout << *iter << " ";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Range based for loop :
+
+int main()
+{
+	string str{"eray goksu"};
+
+	for( char c : str){   // for(auto c : str)
+		c = '*';
+	}
+	
+	for( const char c : str){   
+		//  c sadece okuma amaçlı kullanılabilir
+	
+	}
+
+	std::cout << "str = " << str << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+
+	for( auto &c : str){   
+	// yazının karakterine bir referans
+		c = '*';
+	}
+	
+	std::cout << "str = " << str << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	string s = "metin erman";
+	
+	std::cout << "str = " << str<< "\n";
+	
+	str = s; 
+	str = "murat";
+	str = '2';  // char parametreli const. yok ama char parametreli atama fonksiyonu var.
+	
+	std::cout << "str = " << str << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Nicolai M. Josuttis C++ standart library 
+string sınıfı bölümü
+
+tablolar işleri kolaylaştırıyor
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	string s = "metin erman";
+	
+	std::cout << "str = " << str<< "\n";
+	char c1 = 'A';
+	char c2 = 'L';
+	char c3 = 'P';
+	str = {c1, c2, c3};
+	
+	std::cout << "str = " << str<< "\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	string s = "metin erman";
+
+	str = string(20, 'c');
+	str.assign(20, a);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"eray goksu"};
+	vector<char> vec{'a', 'b', 'c'};
+	
+	str.assign(vec.begin(), vec.end());
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{ " eray goksu" };
+	
+	string s;
+	
+	s.assign(str, 5, 3);
+	std::cout << "s = " << s << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{ " eray goksu" };
+	
+	str.assign(10, 'A');
+	std::cout << "s = " << s << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{ " eray goksu " };
+	string s{"erede"};
+	std::cout << "[" << str << "]" << "\n";
+	
+	str += 'n';
+	std::cout << "[" << str << "]" << "\n";
+	str += s;
+	
+	str += " biliyor musun";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+"\n"  : string literali , türü : const char[2]
+
+"n"  =>  const char*
+
+'\n'  türü: char literal, 
+
+"\n" : bir pointer değişkene atanabilir
+'\n' : bir tam sayı değişkene atanabilir.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{};
+	
+	for(char c = 'a'; c <= 'z';  ++c){
+		str.push_back(c);
+		cout << str << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+enteresan olan char'i aritmetik işleme sokunca karşılık gelen int değer karşılığını verir.
+Fakat string'leri aritmetik işleme sokunca string verir.
+
+*-----------------------------------------------------------------------------------------------------
+
+ekleme yapmak için diğer bir fonksiyon append
+
+int main()
+{
+	string str{"ali"};
+	string s{"mustafa"};
+	str.append(5, 'X');  // 5 tane X karakteri
+	str.append("necati");
+	str.append(s,3);
+	str.append(s,3, 4);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+resize : size'ı arttırır, reserve ise kapasiteyi arttırır.
+küçültme yapmaz
+
+int main()
+{
+	string str{"ali"};
+	std::cout << "str.length() = " << str.length() << "\n";
+	
+	str.resize(20);
+	std::cout << "str.length() = " << str.length() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Tabloya tekrar bakarsak
+
+atama için :   =, assign()
+sondan ekleme için :  +=, append(), push_back()
+
+*-----------------------------------------------------------------------------------------------------
+
+string sınıfı bir container olduğu için iteratör interface'i de var. Şimdilik iteratör anlatılmayacak.
+
+*-----------------------------------------------------------------------------------------------------
+
+insert:
+
+int main()
+{
+	string str{"murat"};
+	std::cout << "[" << str << "]\n";
+	str.insert(1, "ali");
+	std::cout << "[" << str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"murat"};
+	std::cout << "[" << str << "]\n";
+	string str{"aysegul"};
+	str.insert(str.size(), "ali");
+	std::cout << "[" << str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str{"murat"};
+	std::cout << "[" << str << "]\n";
+	
+	str.insert(str.size(), "!");
+	str.insert(str.size(), {'w'});
+	
+	str.insert(str.begin(), "!");
+	str.insert(str.begin(), {'w', 'x', 'j'});
+	str.insert(str.begin(), 20, 'Z');
+	
+	std::cout  << str << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+silme işlemlerinde de index interface'i var, bir de iteratör interface'i var. Iteratör daha kolay olduğundan ondan başlayalım
+
+int main()
+{
+	string str{"omer ozbek"};
+	std::cout  << str << "\n";
+	
+	str.erase(str.begin() + 2);  // geri dönüş değeri silinen öğelerden sonraki ilk konumdur.
+	std::cout  << str << "\n";
+	
+	str.erase(str.end() -1);  // son öğeyi silmek
+	std::cout  << str << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string sline;
+	
+	std::cout << "bir yazi girin: ";
+	getline(std::cin, sline); 
+	
+	while(!sline.empty()){
+		std::cout << "[" << sline << "]\n";
+		sline.erase(sline.begin());
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string s{"SULEYMAN"};
+	
+	s.erase(s.begin()+1, s.end()-1);
+	
+	std::cout <<  "[" << s <<  "]\n";
+	
+	s.erase(3);  // 3. karakter ve sonrasını siler
+	std::cout <<  "[" << s <<  "]\n";
+	
+	s.erase();  // hepsini siler
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+pop_back fonksiyonu:
+
+int main()
+{
+	std::string s{"SULEYMAN SIRRI KUNDAK"};
+	
+	while(!s.empty()){
+		s.pop_back();
+		std::cout << s << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+yazıdan karakter silmenin yolları
+1. resize
+
+int main()
+{
+	std::string s{"SULEYMAN"};
+	s.resize(2);  // sondan siler !!!
+	std::cout << s << "\n";
+}
+
+2. erase
+3. pop_back
+4.  clear
+
+*-----------------------------------------------------------------------------------------------------
+
+MULAKAT SORUSU: string'ten karakter silmenin yolları ve size empty hale gelecek
+
+int main()
+{
+	std::string  s{ "SULEYMAN"};
+	
+	s.clear();
+	s.erase();
+	s.erase(0, std::string::npos);
+	s.erase(0, s.size());
+	s.erase(s.begin(), s.end());
+	s.resize(0);
+	s = " ";
+	s = string{};
+	s.assign(" ");
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ARAMA FONKSİYONLARI:
+
+pattern'e bağlı arama doğrudan string sınıfı ile yapılamaz, regex (regular expression) sınıfı varmış.
+
+https://www.softwaretestinghelp.com/regex-in-cpp/
+
+validation : ex: formata uyuyor mu girilen e-mail
+search : 
+replacement:  ex: uzanti adresi değiştir
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string s{ "SULEYMAN" };
+	
+	s.find() // geri dönüş değeri index'tir.
+	s.rfind()
+	s.find_first_of()
+	s.find_last_of()
+	s.find_first_not_of()
+	s.find_last_not_of()   // son string'ten başlayıp arama
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::string s{ "ANKARA ANKARA GUZEL ANKARA" };
+	
+	s.find('A', 15);  // 15 indexinden başlayarak arama
+	s.find_first_of("tmks");
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+substring:
+
+int main()
+{
+	std::string s{ "musa sertkaya" };
+
+	auto str = s.substr(5,4);  // 5'ten başla 4 karakter al
+	std::cout << str << "\n";
+	
+	auto str = s.substr(5); 
+	std::cout << str << "\n";  // 5'ten başla sonuna kadar
+	
+	auto str = s.substr(0); 
+	std::cout << str << "\n";  // 0'dan başla sonuna kadar
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Lexicographical compare: altı tane karşılaştırma operatörleri ile string, cstring karşılaştırılabilir
+
+int main()
+{
+	std::string s1("alican");
+	std::string s2("antalya");
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+compare üye fonksiyonu:
+
+int strcmp(const char* p1, const char* p2); // c'de string compare
+
+int result = str.compare(); //
+
+
+*-----------------------------------------------------------------------------------------------------
+
