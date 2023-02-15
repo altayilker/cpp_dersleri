@@ -1,0 +1,888 @@
+
+İçerik:   
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+Varsayılan argüman kullanımı
+function redecleration
+maximal munch kuralı
+Referanslar ve referans semantiği
+primary value categories (in C++)
+REFERANSLAR
+pointer ile referans farkı:
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+Varsayılan argüman (default argument)
+
+C++ dilinde bir fonksiyon, parametre değişkeni sayısından daha az sayıda argümanla çağrılabilir
+Bir fonksiyonun bir ya da birden fazla parametre değişkeni varsayılan argüman (default argument) alabilir. Bunun anlamı şudur: Fonksiyon çağrısı ile fonksiyonun parametre değişkenine bir değer gönderilmemiş ise derleyici argüman olarak daha önce belirlenen bir ifadeyi kullanır.
+
+
+varsayılan argüman tekrar edilemez.
+bildirimde varsa tanımda olmamalı !!
+
+void foo(int, int, int =10);
+
+void foo(int, int, int =10)  
+{
+// sentax hatası, bildirimde varsa tanımda olmamalı !!  // void foo(int, int, int ) olmalı 
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(int x  = 10, int y  = 20, int =30)  // dogru, sadece tanımda yer alıyor !!
+{
+	std::cout << x << " " << y << " " << z <<  " \n";
+}
+
+int main()
+{
+	func();  // func(10, 20, 30)
+	func(2);  // func(2, 20, 30)
+	func(2,4);   // func(2, 4, 30)
+	func(2,4,6);  // func(2,4,6)
+}
+
+*------------------------------------------------------------------------------------------------------
+
+eğer bir fonksiyonu yeniden bildirirseniz (function redecleration) varsayılan argüman ekleyebilirsiniz.
+
+*------------------------------------------------------------------------------------------------------
+
+function redecleration
+
+// baskasının h file'ını değiştirmek yerine function redecleration yapılabilir  !!!
+
+
+neco.h
+void foo(int , int, int ){
+
+} 
+
+neco.cpp
+#include "neco.h"
+void foo(int, int , int =30);  // function redecleration
+
+int main()
+{
+	foo(10,23);  // ok
+	foo(10, 23, 56);  // ok
+}
+
+*------------------------------------------------------------------------------------------------------
+
+neco.h
+void foo(int , int, int = 10 )
+{
+
+}
+
+neco.cpp
+#include "neco.h"
+void foo(int , int = 20, int );  // function redeclaration
+
+int main()
+{
+	foo(5); // foo(5, 20, 10) anlamına gelir
+}
+
+*------------------------------------------------------------------------------------------------------
+
+bu fonksiyonun birinci parametresi için varsayılan argüman kullanmak istiyorum
+neco.h
+void foo(int x , int y , int z )
+{
+
+}
+
+void call_foo(int y, int z, int x = 10)  // function wrapper
+{
+	foo(x,y,z);  // function wrapper  foo'yu sarmalar
+}
+
+neco.cpp
+#include "neco.h"
+int main()
+{
+	foo(5); 
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+maximal munch kuralı:
+
+Most STL users are already aware that they need to put in a extra space when taking a template as a template argument to any class. For example, when you want to make a vector from a complex number, which is also a template class, you have to put an extra space between the two > operators.
+
+std::vector<std::complex<int> > vecComp;
+If you forgot to put in the extra space, the compiler will treat it as a logical shift operator, >>
+
+int main()
+{
+	int x = 10;
+	int y = 40;
+	
+	int z = x+++y;  // (x++) + y;  maximal munch  
+}
+
+*------------------------------------------------------------------------------------------------------
+int main()
+{
+	int n = 10;
+	
+	while(n--> 0){  // (n--) > 0 maximal munch kuralı
+	
+	}
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(const char *= "hasan kaynar");
+// maximal munch kuralı
+
+For example, when you want to make a vector from a complex number, which is also a template class, you have to put an extra space between the two > operators.
+
+```
+std::vector<std::complex<int> > vecComp;
+```
+If you forgot to put in the extra space, the compiler will treat it as a logical shift operator, >>
+
+
+*------------------------------------------------------------------------------------------------------
+
+void func(int *p = nullptr); // adresini gösterdiğiniz nesneye bir değer yerleştirecek ama buna hiç birşey geçmezsem nullptr varsayarak bir değer yerleştirmeyecek.
+
+
+*------------------------------------------------------------------------------------------------------
+
+Referanslar ve referans semantiği:
+suni bir yapı, referans kullanımı ile pointer arasında üretilen kod anlamında fark yok
+
+ilk dile eklenme nedeni : operator overloading için eklenmiş
+
+raw pointer (naked pointer) : normal pointer
+smart pointer
+
+*------------------------------------------------------------------------------------------------------
+
+& bir şey atanmadan kullanılınca adres yoksa reference anlamına gelir
+örneğin:  int x = 10,  int y, &x  => adres  => türü int*
+&x = y;  => referans, x demek y demek    ==> türü int&
+
+*------------------------------------------------------------------------------------------------------
+
+C++11 öncesindeki referanslarımıza
+a ) L value reference diyoruz.
+
+C++ 11 sonrası ile eklenen
+b) R value reference
+c) forwarding reference (universal reference)
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x{10};
+	int* ptr = &x; // x pointee
+	
+	*ptr; // x demek, deference
+	
+	//  r demek ile x demek aynı olsun !!!
+	int& r = x;  // referanslar default init. edilemez bu yuzden ilk değer vermek gerekli, r x'e bir referans,
+	r binded to x,
+	
+	std::cout << "r: " << r << "\n";
+	++r;
+	
+	r = y;  
+	
+	int* p = &r , // int* p = &x  aynısı, r demek x demek
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	double dval = 2.3;
+	double& dr = dval;  // default init. edilemez, bunun anlamı: referanslar ilk değer vermek zorundasınız.
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x{ 10 };
+	int& r1 = x;
+	int& r2(x);
+	int& r3{x};
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int y;  // default init
+	int x = 10; // copy init
+	int z(10);  // direct init
+	int t{};  // value init.  - içi boş
+	int k{5}; // uniform(brace) init
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int& r;  //  sentax hatası, referanslara ilk değer vermek zorunlu
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+     int x = 10;
+	int& r1{ x };
+	
+	++r1;  // r1 x olduğundan, x arttı
+}
+
+*------------------------------------------------------------------------------------------------------
+
+expression (ifade) : 
+sabitlerin isimlerle ve operatörlerle yaptıkları bileşime denir.
+
+10
+x + 10
+x + 10 > 20
+
+*------------------------------------------------------------------------------------------------------
+
+statement (expression sonuna noktalı virgül konursa statement olur):
+
+10;
+x + 10 > 20;
+
+*------------------------------------------------------------------------------------------------------
+
+expression's 
+a) data type
+b) value category (veri türü)
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+     int x = 10;  // x ifadesinin türü nedir ? int
+	x + 1.2;  // ifadenin türü nedir ? double
+	x + 1.2f;   // ifadenin türü nedir ? float
+	&x;   // ifadenin türü nedir ? int*   ?????
+	// zaten ref. olabilmesi için ilk değer verilmeli
+}
+
+&x : adres ise türü  => int*
+&y : referans ise türü => int&
+decltype ile tür bilgisi elde edilebilir
+
+*------------------------------------------------------------------------------------------------------
+
+	(float) 3; // çirkin yazım
+	3.f;  // böyle yazın
+
+
+*------------------------------------------------------------------------------------------------------
+
+ value category (veri türü) (C dilinde)
+
+L value expression
+R value expression
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	
+	x  // bu ifade rvalue mu lvalue mu ?  lvalue
+	x + 4  // rvalue
+	x++  // rvalue
+	+x // rvalue
+	int *p  = &x;
+	int a[10];
+	
+	&x; // rvalue
+	*p // lvalue
+	a[0] // lvalue
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+bir ifadenin rvalue mu lvalue mu anlamak için adres operatörünün operatörü yapın. sentax hatası varsa rvalue yoksa lvalue'dur.
+
+- If you can take the address of an expression, the expression is an lvalue.
+- If the type of an expression is an lvalue reference (e.g., T& or const T&, etc.), that expression is an lvalue. 
+- Otherwise, the expression is an rvalue.  Conceptually (and typically also in fact), rvalues correspond to temporary objects, such as those returned from functions or created through implicit type conversions. Most literal values (e.g., 10 and 5.3) are also rvalues.
+
+
+&10  // rvalue
+& (*p)  // lvalue
+
+ne türden bir değişken olursa olsun bir değişkenin ismi formu şeklindeki ifadeler lvalue'dur. 
+lvalue nesneye karşı gelen (bellekte bir yere karşılık gelir)
+rvalue ise hesaplamaya karşı bir değer ifade ediyor ama bellekte bir yere karşı gelmiyor.
+
+*------------------------------------------------------------------------------------------------------
+
+taşıma sematiği (move semantics)
+(gelecek derslerde göreceğiz)
+
+
+*------------------------------------------------------------------------------------------------------
+
+primary value categories (in C++)
+
+PR value (expression)
+L value (expression)
+X value
+
+bir de bunların birleştirilmesinden elde edilen value category var
+(L value) U (X value) : glvalue
+(PR value) U (X value) :  R value
+
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	10 // prvalue
+	int& r = 10;  // hata
+	
+	int x = 10;
+	// önekler için C ile C++ farklı
+	++x;  // C'de rvalue, C++ lvalue expression
+	
+	(x,y)  // C++'da lvalue'dur.
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int& r = ++x; // legal, çünkü ++x lvalue'dur.
+
+int x = 10;
+int a[20]{}; 
+a  // değişkenler ister dizi olsun ister değişken olsun her zaman lvalue'dur. Array to pointer oluyor array decay filan duşunme !!
+
+&x : adres ile oluşturulan ifadeler pr value olur
+
+a[5]  // lvalue
+
+int foo();
+foo();  // geri dönüş değeri referans değilse prvalue
+
+xvalue ile ileride tanışacağız
+
+int &&foo();
+foo() // xvalue
+
+*------------------------------------------------------------------------------------------------------
+
+sol taraf referansı sol taraf değerine bağlanabilir  !!!
+
+int x = 10;
+int& r = x+ 3;  // sentax hatası , sağı prvalue, lvalue olmalı
+
+*------------------------------------------------------------------------------------------------------
+
+pointer'a reference:
+
+int x = 10;
+int* ptr = &x;
+
+int*& r = ptr;  // *& operatör değil declarator, hangi türden değişkene referans olacaksa önce o yazılır int*, ptr kendisi de bir değişkendir.  r int* türünden nesneye referans, r demek ptr demek
+
+++* r;  // x = 11;
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x{ 24 };
+	
+	int& r1 = x;   // r1 demek x demek
+	int& r2 = r1;  // r2 demek x demek
+	
+	++r1;
+	++r2;  // x = 26;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int a = 10;
+	int b = 20;
+	int& x = a;
+	int& y = b;
+	
+	x = y;  // a'ya b'yi atamış olurum
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int a[5] = {1, 2, 3, 4, 5};
+	
+	// öyle bir pointer değişken tanımlayın ki ismi p olsun  ve *p ifadesi a dizisinin kendisi olsun.
+	int (*p) [5] = &a;  // doğru !!! diziye pointer, bu baya enteresan bilmediğim birşey
+	
+	int* ptr = a;  // yanlış, bu dizinin ilk elemanını tutar
+	
+      *p  => dereferencing ile a dizisine erişirim
+	*ptr  => dereferencing ile a dizisinin ilk elemanına erişirim
+	
+	for(int i = 0; i < 5; ++i)
+		printf("%d   %d\n",  a[i], (*p)[i]);
+		
+	// öyle bir isim olsun ki r, r demek a demek olsun
+	int (&r)[5] = a;  // r demek a demek
+}
+
+https://www.geeksforgeeks.org/pointer-array-array-pointer/
+
+
+*------------------------------------------------------------------------------------------------------
+
+diziye referans oluşturmanın çok daha kolay yolu var
+
+int main()
+{
+	int a[5] = {1, 2, 3, 4, 5};
+	
+	auto& r = a;  // int(&r) [5] = a;  
+	// dizinin hepsini tutar, burdaki parantez declarator , öncelik parantezi değil, 
+	
+	auto r = a;  // int* r = a;  // bu da ilk elemanı tutar
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+REFERANSLAR
+
+// call by value
+void func(int)  
+{
+	a = 999;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func(x);
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+// call by reference
+void func(int *a) 
+{
+	*a = 999;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func(&x);
+}
+
+*------------------------------------------------------------------------------------------------------
+
+// call by reference ( daha pratik yol)
+void func(int &r) 
+{
+	r = 999;
+}
+
+int main()
+{
+	int x = 10;
+	
+	func(&x);
+}
+
+*------------------------------------------------------------------------------------------------------
+
+iki değişkeni swap eden fonksiyon (pointer ile)
+
+void iswap(int *p1, int* p2)
+{
+	int temp = *p1;
+	*p1 = *p2;
+	*p2 = temp;
+}
+
+int main()
+{
+	int x = 10, y = 35;
+	iswap(&x, &y);
+}
+
+*------------------------------------------------------------------------------------------------------
+
+iki değişkeni swap eden fonksiyon (referans ile)
+makina kodu açısından bir farkı yok !!
+
+void iswap(int& r1, int& r2)
+{
+	int temp =  r1;
+	r1 = r2;
+	r2 = temp;
+}
+
+int main()
+{
+	int x = 10, y = 35;
+	iswap(x, y);
+}
+
+*------------------------------------------------------------------------------------------------------
+
+func(x) fonksiyonu C++'da call by value mu?  call by reference mi ? 
+
+func(x)'ın nasıl bildirildiğine bağlı !!!
+
+
+*------------------------------------------------------------------------------------------------------
+
+void func(T *);
+void foo(T &) aynıdır
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	
+	double* ptr = &x;  // sentax hatası
+}
+
+*------------------------------------------------------------------------------------------------------
+
+const correctness: kod kalitesini belirleyen en önemli faktör
+
+void func(int* p);  // mutator, gönderilen değişkeni değiştirmeye yönelik
+void foo(const int* p); // gönderilen nesne değişmeyecek, salt okumaya yönelik erişim
+
+int main()
+{
+	int x = 10;
+	int* p =  &x;
+	
+	const int* cp = &x; // salt okumak için erişim
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void print_array (int* p, size_t size);  // const int* p yazılmalıydı !!!
+
+int main()
+{
+	const int a[5] = {2, 3, 5, 7, 11};
+	
+	print_array(a,5);  // sentaks hatası
+	// const T*'dan T*'a otomatik dönüşüm yok !!!
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	const int x = 10;
+	int* ptr = (int*)&x;
+	
+	*ptr = 35;  // tanımsız davranış, const. nesne değiştirilemez
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	int* const p = &x;  // p'yi değiştirmeme
+	int const* ptr = &x; // const int* ptr = &x, gösterdiği nesne değiştirilemez
+	
+	int& const r = x;  // hiçbir anlamı yok, kullanma, zaten referanslar başka nesneye bağlanamaz !!!
+
+	const int& cr = x;  // doğru, 
+	cr = 10; // hata
+}
+
+*------------------------------------------------------------------------------------------------------
+
+Fonksiyonunun niyetini anlamak !!
+
+void func(T *ptr);  // mutator, nesnenizi değiştirecek
+bu fonksiyonun referans semantiğinde anlamı ne ?
+cevap:
+void func(T &r);
+
+void foo(const T *p)  == void foo(const T &r) // nesneyi değiştirmeyecek !!
+
+
+*------------------------------------------------------------------------------------------------------
+
+Adres döndüren fonksiyonlar (functions returning pointers)
+
+int g = 10;
+
+int* foo()
+{
+	// code
+	return &g;  
+}
+
+int main()
+{
+	int* p = foo();
+	
+	std::cout << *p << "\n",
+	*p = 444;
+	
+	*foo() = 56;  // g değerini 56 yapar
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int* foo()
+{
+	// code
+	return &g;  
+}
+
+foo() fonksiyonunun referans semantiği karşılığı nedir ?
+
+int& func()
+{
+	// code
+	return g;   // referans döndüğü için func() demek g demek  !!
+}
+
+int main()
+{
+	func() = 999; // lvalue expr., atama g değişkenine yapıldı
+	
+	int& r = func();  //r demek g demek
+	
+	r = 999; // g'yi de 999 yaptım
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int & foo();
+int func();
+
+int main()
+{
+	func();   // rvalue
+	foo();   // lvalue expr.
+}
+
+*------------------------------------------------------------------------------------------------------
+
+Otomatik ömürlü nesne adresi geri döndürülmez !!!
+
+// error: returning address of local variable
+int &foo()
+{
+	int x;
+	std::cout << "bir sayi giriniz:    ";
+	std::cin >> x;
+	
+	return x;  // undefined behaviour, 
+	// otomatik ömürlü nesneye referans dönmek tanımsız davranış
+}
+
+// error: returning address of local variable
+int* foo()
+{
+	int x;
+	std::cout << "bir sayi giriniz:    ";
+	std::cin >> x;
+	
+	return &x;  // & bir şey atanmadan kullanılınca adres yoksa reference anlamına gelir ,  undefined behaviour, 
+	// otomatik ömürlü nesneye referans dönmek tanımsız davranış
+}
+
+assembly kod için yukarıdaki iki fonksiyon aynı !!
+
+*------------------------------------------------------------------------------------------------------
+
+Adres döndüren fonksiyon:
+3 ihtimal var
+
+1) static ömürlü bir nesne adresi döndürebilir
+	a) global değişken
+	b) static yerel değişken
+	c) string literali
+2) Dinamik ömürlü bir nesne döndürebilir
+3) çağırandan aldığı adresi döndürebilir
+Otomatik ömürlü nesne adresi geri döndürülmez !!!
+
+*------------------------------------------------------------------------------------------------------
+
+3)  int& func(int& r)
+{
+	++r;
+	return r;  // aldığı nesneyi döndürür
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	double dval = 4.5;
+	
+	std::cout << x << " " << dval << "\n";
+	// burada hem int hem double değişkeni yazdırabilme nedeni fonk. geri dönüş değeri
+	 referans olması
+	
+	std::cout << x  ==> cout döndürür
+	std::cout << " " << dval << "\n";
+	std::cout << " "  ==> cout döndürür
+	std::cout << dval << "\n";
+	std::cout << dval  ==> cout döndürür
+	std::cout << "\n"; ==> cout döndürür
+}
+
+*------------------------------------------------------------------------------------------------------
+
+pointer'lar ile referanslar arasında assembly kod düzeyinde bir farklılık yok fakat semantic açıdan olan farklılıklar :
+
+1) referanslara ilk değer vermek zorunlu.
+pointer değişkene ilk değer vermek zorunda değilsiniz, ama verseniz iyi olur.
+
+int main()
+{
+	int x = 10;
+	int y = 20;
+	int z =30;
+	
+	int* p = &x;  // int* const p = &x; yaparsak başkası atanamaz
+	
+	std::cout << "*p = " << *p << "\n";
+	
+	p = &y;
+	std::cout << "*p = " << *p << "\n";
+	
+	p = &z;
+	std::cout << "*p = " << *p << "\n";
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+pointer array:
+
+int g1 = 10;
+int g2 = 20;
+int g3 = 30;
+
+int main()
+{
+	int* pa[]  = { &g1, &g2, &g3}; // pointer array
+	
+}
+
+referans dizisi diye birşey yok !!!
+
+*------------------------------------------------------------------------------------------------------
+
+pointer to pointer var ama ref. to ref. yok !!
+
+int main()
+{
+	int x = 10;
+	int y = 20;
+	int* p = &x;
+	int** ptr = &p;  // p'nin  kendisi de bir nesne
+	//ptr:  pointer to pointer  !!
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	int& r = x;  // r demek x demek
+	int& rr = r;  // rr demek x demek
+	
+	int && rr  => reference to reference değil, rvalue reference, referansa referans yok !!!
+}
+
+*------------------------------------------------------------------------------------------------------
+
+3) fonksiyonun bir parametresi pointer, ama çağırana diyor ki sen bana ya bir nesne adresi gönderirsen şunu yaparım nullptr gönderirsen böyle yaparım.
+
+time_t time(time_t *p)
+
+fflush(NULL) : bellekteki yazılmamış verinin yazılmasını sağlıyor
+
+nullptr var ama null referans yok !!
+
+
+*------------------------------------------------------------------------------------------------------
+
+pointer ile referans farkı:
+1) pointer'lara ilk değer vermek mecburi değil, ama referanslara mecburi
+2) pointer'lar const olmak zorunda değil 
+3) pointer'lar dizilerde tutulabilir ama referanslar tutulamaz
+4) pointer to pointer olur ama reference to ref. olmaz
+5) nullptr var ama nullref yok
+
+
+*------------------------------------------------------------------------------------------------------
+
+reference bir nesnenin yerine geçen isimdir
+
+int main()
+{
+	int x = 10;
+	int & r = x;  // r demek x demek
+	
+	&r;  // &x demek
+
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int* foo();
+int& func();
+
+int main()
+{
+	foo(); // geri dönüş değeri adres olan fonk. çağrı ifadeleri prvalue expression
+	func(); // geri dönüş değeri sol taraf referensı olan fonksiyonlara yapılan çağrı iifadeleri lvalue expression
+}
+
+
