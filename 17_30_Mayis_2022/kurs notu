@@ -1,0 +1,937 @@
+
+İçerik:   
+
+[ ]
+*
+->
+fonksiyon çağrı operatörü ()
+tür dönüştürme operatörü
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+operator overloading
+
+*-----------------------------------------------------------------------------------------------------
+
+önceki gün özet:
+
+[ ]  operatörünün overload edilmesi
+
+aslen bir pointer operatörü.
+array like sınıflar için (dinamik dizi sınıfı) geçerli.
+
+[ ] operatörü ile oluşturulan ifade lvalue value'dur
+[ ] operatörünü overload eden fonksiyonlar lvalue ref. döndürür.
+
+
+const. overload'e başvurulur. 
+
+*-----------------------------------------------------------------------------------------------------
+
+vector sınıfı dinamik dizidir. 
+
+int main()
+{
+	vector<int> ivec{1, 3, 5, 7};
+	const vector<int> cvec{1, 3, 5, 7};
+	
+	ivec[2] = 12;
+	cvec[2] = 3;  // illegal
+	
+	auto i1 = ivec[2];
+	auto i2 = cvec[2];  // cvec okuma amaçlı kullanılabilir.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class intarray{
+public:
+	explicit intarray(size_t size) : msize(size), mp(new int[msize])
+	{
+		std::memset(mp, 0, msize* sizeof(int));  // bellek bloğunu sıfırlama
+	}
+	
+	~intarray()
+	{
+		delete[] mp;
+	}
+	
+	intarray(const intarray&) = delete;  // copy constr.
+	intarray& operator = (const intarray&) = delete;  // copy assigment
+
+	int& operator[](std::size_t idx)
+	{
+		return mp[idx];
+	}
+	const int& operator[](std::size_t idx)const
+	{
+		return mp[idx];
+	}
+	// const int array nesneleri için çağırılır
+	// geri dönüş değeri const int& olduğundan değiştirilebilir olmayacak
+	
+	std::size_t size()const
+	{
+		return msize;
+	}
+	
+	friend std::ostream& operator<<(std::ostream &os, const intarray& ar)
+	{
+		os << '[';
+		for(auto i = 0u; i < ar.size() -1; ++i){
+			os << ar.mp[i]<< " , "; 
+		}
+		
+		return os << ar[ar.size() -1 ] << ']';
+	}
+	
+private:
+	std::size_t msize;
+	int* mp;
+};
+
+
+int main()
+{
+	intarray a(10);
+	
+	std::cout << a <<   "\n";
+	
+	for(size_t  i = 0; i < a.size(); ++i)
+	{
+		a[i] = i *2;
+	}
+	
+	std::cout <<  a  <<   "\n";
+	
+	a.operator[](5) = 34;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+string sınıfı da [] operatörünü overload ediyor.
+
+int main()
+{
+	string name("burak uzunmehmetoglu ");
+	
+	for(size_t i{}; i < name.size(); ++i ){
+		std::cout << name[i] << ' ';
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dereferencing operator(*) overload
+(içerik operatörü)
+
+int main()
+{
+	int a[ ] { 1, 3, 5, 7, 9};
+	
+	*a = 98;  // array decay
+	a[0] = 98;
+	
+	int x{ 46 };
+	int* ptr = &x;
+	
+	*ptr = 999;   // ptr demek x demek
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+ptr-> func();
+(*ptr).func();
+
+*-----------------------------------------------------------------------------------------------------
+
+pointer like sınıflar : o sınıf türünden nesneler pointer gibi kullanılacak.
+pointer içerik operatörünün operandı olduğu gibi pointer like sınıf türünden nesneler de içerik operatörün operandı olabilir.
+
+a) smart pointer sınıfları
+b) iteratör sınıfları (stl'de kullanılır)
+
+*-----------------------------------------------------------------------------------------------------
+
+// [ ]  global olarak overload edilemez.
+
+*ptr 
+&ptr.operator*()
+
+*-----------------------------------------------------------------------------------------------------
+
+pointer-variable = new data-type;
+pointer-variable = new data-type(value);
+pointer-variable = new data-type[size];  // Allocate a block of memory
+
+
+delete pointer-variable;
+delete[] pointer-variable;
+
+
+*-----------------------------------------------------------------------------------------------------
+
+ // dinamik ömürlü string nesneleri hayatını kontrol etmek amacı
+// nasıl ? SmartStringPtr türünden nesnenin hayatı bittiğinden destructor'ı 
+// bu nesneyi delete edecek
+
+class SmartStringPtr{ 
+public:
+	// dinamik ömürlü nesne adresi istiyor
+	explicit SmartStringPrt(std::string *p) : mp{p} {}
+	
+	std::string& operator*()
+	{
+		return *mp;
+	}
+	
+	~SmartStringPtr()
+	{
+		delete mp;
+	}
+private:
+	std::string* mp;
+};
+
+int main()
+{
+	{
+		SmartStringPtr ptr{new std::string{"necati ergin"}};
+		std::cout << *ptr << "\n";
+		std::cout << (*ptr).size() << "\n";
+		for(size_t i{}; i < (*ptr).size(); ++i){
+			std::cout << (*ptr)[i] << ' ';
+		}
+	}  // bu noktada dinamik string nesnesi delete edilecek
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+ok operatörü overloading  
+
+ok operatörü binary operatördür
+
+ptr-> x
+
+Dikkat !
+normalde ok operatörü binary bir operatör olmasına karşın unary operatör olarak overload edilir.
+yani sınıfın ok operator fonksiyonunu parametresi olmaz
+
+ptr->x  ifadesi ptr'nin sınıf olması durumunda
+ptr.operator->() ->x
+
+*-----------------------------------------------------------------------------------------------------
+
+class SmartStringPtr{ 
+public:
+	// dinamik ömürlü nesne adresi istiyor
+	explicit SmartStringPrt(std::string *p) : mp{p} {}
+	
+	std::string& operator->()
+	{
+		return mp;
+	}
+	
+	std::string& operator*()
+	{
+		return *mp;
+	}
+	
+	~SmartStringPtr()
+	{
+		delete mp;
+	}
+private:
+	std::string* mp;
+};
+
+
+int main()
+{
+		SmartStringPtr ptr{new std::string{"necati ergin"}};
+		std::cout << "uzunluk = " << ptr->length() << "\n";
+	
+		std::cout << "uzunluk = " << ptr.operator->()->length() << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Template : kodu kendim yazmıyorum, derleyiciye kodu yazdırıyorum. İlerleyen derslerde anlatılacak
+
+// class template  (smartartık sınıf değil)
+
+template <typename T>
+class SmartPtr{ 
+public:
+	// dinamik ömürlü nesne adresi istiyor
+	explicit SmartPrt(T *p) : mp{p} {}
+	
+	T& operator->()
+	{
+		return mp;
+	}
+	
+	T& operator*()
+	{
+		return *mp;
+	}
+	
+	~SmartPtr()
+	{
+		delete mp;
+	}
+private:
+	T* mp;
+};
+
+int main()
+{
+	// burada T'nin açılımını (template argument) belirtmek zorundayım !!!
+	SmartPtr<std::string> x;  // 
+	SmartPtr<int> y;
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+template : derleyiciye kod yazdıran kod
+
+a) class template (sınıf şablonu)
+b) function template (fonksiyon şablonu)
+c) variable template (değişken şablonu)
+d) alias template (türeş isim şablonu)
+
+*-----------------------------------------------------------------------------------------------------
+
+void swap(int* p1, int* p2)
+{
+	int temp = *p1;
+	*p1 = *p2;
+	*p2 = temp;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void Swap(T& r1, T& r2)
+{
+	T temp = std::move(r1);
+	r1 = std::move(r2);
+	r2 = std::move(temp);
+}
+
+int main()
+{
+	int x = 10;
+	int y = 34;
+	
+	Swap(x, y);
+	
+	std::string s1{ "mustafa"};
+	std::string s1{ "eray"};
+	Swap(s1, s2);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+unique_ptr sınıfı (istek üzerine değinildi)
+
+#include <memory>
+
+class Myclass{
+	Myclass()
+	{
+		std::cout << "Myclass constructor\n";
+	}
+	
+	~Myclass()
+	{
+		std::cout << "Myclass destructor\n";
+	}
+	
+	void func()
+	{
+		std::cout << "myclass::func()\n";
+	}
+};
+
+int main()
+{
+	std::cout << "main basliyor\n";
+	{
+		std::unique_ptr<Myclass> uptr (new Myclass);
+		uptr->func();
+		(*uptr).func();
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+iteratör sınıfı örneği
+
+int main()
+{
+	vector<int> ivec{ 1, 2, 5, 6, 8};
+	vector<int>::iterator iter = ivec.begin();
+	
+	cout << *iter << "\n";
+	++iter;
+	cout << *iter << "n";
+	cout << iter[2] << "n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+fonksiyon çağrı operatörü:   
+(stl'de en çok overload edilen operatör)
+
+asıl fayda sağlayacağı durum generik programlamada
+
+func()
+
+func bir fonksiyon ismi olabilir(function designator)
+func bir fonksiyon pointer olabilir.
+func bir (function-like) macro olabilir.
+
+func bir sınıf türünden nesnedir ve bu sınıf için fonksiyon çağrı operatörü overload edilmiştir. 
+
+func()
+func.operator()()  // func nesnesinin ait olduğu sınıfın fonksiyon çağrı operatör fonksiyonuna çağrı yapıyorum
+
+*-----------------------------------------------------------------------------------------------------
+
+global olarak overload edilemeyen operatörler:
+[ ]
+->
+( )
+type cast
+atama
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void operator()()
+	{
+		std::cout << "Myclass::operator()()\n";
+	}
+};
+
+int main()
+{
+	Myclass mx;
+	
+	mx();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void operator()(int x = 0)  // default argüman alabilir
+	{
+		std::cout << "Myclass::operator()(x) x =  " <<  x <<  \n";
+	}
+};
+
+int main()
+{
+	Myclass mx;
+	
+	mx(19);
+	mx();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+fonksiyon çağrı operatörü overload edilebilir
+
+class Myclass{
+public:
+	void operator()(int x)const        // const olabilir
+	{
+		std::cout << "Myclass::operator()(int x) x =  " <<  x <<  \n";
+	}
+	
+	void operator()(double x)const  
+	{
+		std::cout << "Myclass::operator()(double x) x = \n";
+	}
+};
+
+int main()
+{
+	Myclass mx;
+	
+	mx(19);
+	mx(1.9);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Fonksiyon çağrı operatörünün overload eden sınıflar için kullanılan iki tane terim var. 
+
+functor class
+function object : object fonksiyonmuş gibi kullanılır.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void operator()(int x)const        // const olabilir
+	{
+		std::cout << "Myclass::operator()(int x) x =  " <<  x <<  \n";
+	}
+};
+
+int main()
+{
+	Myclass mx;
+	
+	mx(19);
+	mx.operator()(19);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Random {
+public:
+	Random(int low, int high): m_low(low), m_high(high){}
+	int operator()()
+	{
+		return std::rand() % (m_high - m_low + 1) + m_low;
+	}
+private:
+	int m_low, m_high;
+};
+
+int main()
+{
+	Random rand1{37, 56};
+	
+	for(int i = 0; i < 100; ++i){
+		std::cout << rand1() << " ";
+	}
+	
+	std::cout << "\n";
+	Random rand2{ 1987, 1999};
+	
+	for(int i = 0; i < 100; ++i){
+		std::cout << rand2() << " ";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Hangi sınıflar fonksiyon çağrı operatörünün overload eder ?
+
+rastgele sayı üretimi
+
+int main()
+{
+	mt19937 eng;
+	uniform_int_distribuiton dist{ 7000, 7600};
+	
+	for(int i = 0; i < 100; ++i)
+	{
+		cout << dist(eng) << " ";
+	}
+} 
+
+*-----------------------------------------------------------------------------------------------------
+
+Dikkat !
+türden bağımsız programlama araçları  (generic programlama)olmadan 
+fonksiyon çağrı operatörünün overload edilmesi fazla bir fayda sağlamayabilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+implicit conversion
+a) standart conversion
+b) user defined conversion (daha önce conversion constr. görmüştük)
+
+*-----------------------------------------------------------------------------------------------------
+
+tür dönüştürme operatör fonksiyonları
+
+bir sınıf nesnesi (örtülü/ explicit) tür değiştirme operatör fonksiyonları ile başka bir türe dönüştürülür.
+
+class Nec{
+public:
+	
+};
+
+int main()
+{
+	Nec mynec;
+	int x;
+	x = mynec;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+(int)dval  : tür dönüştürme operatörü ile oluşturulmuş ifade rvalue'dur.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec{
+public:
+	operator double()const;  
+	// bu fonksiyonun geri dönüş değeri double
+	
+	operator int*();
+	 // bu fonksiyonun geri dönüş değeri int*
+	
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+user define conversion
+a) conversion const.
+b) tür dönüştürme operatör fonksiyonu ile yapılabilir.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ 11 önce fonksiyon çağrı operatör fonksiyonu ile implicit -explicit conversion yapılabiliyordu. 
+
+C++ 11 sonrası tür değiştirme operatör fonksiyonlarının explicit anahtar sözcüğü kullanılabilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec{
+public:
+	operator int()const;
+};
+
+int main()
+{
+	Nec mynec;
+	double dval = mynec;  // user define conversion
+	// int'ten double'a yapılan dönüşüm standart conversion
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec{
+public:
+	operator int()const;
+};
+
+int main()
+{
+	Nec mynec;
+	int ival;
+	
+	ival = mynec;
+	// ival = mynec.operator int();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec{
+public:
+	explicit operator int()const;
+	// otomatik dönüşüm olamaz, ama fililen yapılarak (static cast, vs.)
+};
+
+int main()
+{
+	Nec mynec;
+	int ival;
+	
+	ival = mynec;  // sentax hatası
+	ival = static_cast<int> (mynec);
+	ival = mynec.operator int();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+counter sınıfından nesneler counter olarak kullanılacak ve bazı avantajlar elde edilmeye çalışılacak.
+
+class Counter{
+public:
+	explicit Counter(int val = 0): m_c{val} {}   
+	// explicit ile otomatik dönüşüm engellendi
+	
+	Counter& operator++()
+	{
+		++m_c;
+		return *this;
+	}
+	
+	Counter operator++(int)
+	{
+		auto temp(*this);
+		++* this;
+		return temp;
+	}
+	
+	Counter& operator--()
+	{
+		--m_c;
+		return *this;
+	}
+	
+	Counter operator--(int)
+	{
+		auto temp(*this);
+		--* this;
+		return temp;
+	}
+	
+	Counter& operator+=(int val)
+	{
+		m_c += val;
+		return *this;
+	}
+	
+	Counter& operator-=(int val)
+	{
+		m_c -= val;
+		return *this;
+	}
+	
+	friend std::ostream& operator<<(std::ostream& os, cnst Counter& cnt)
+	{
+		return os << '[' << cnt.m_c << ']';
+	}
+	
+	explicit operator int()const
+	{
+		return m_c;
+	}
+	
+private:
+	int m_c;
+};
+
+int main()
+{
+	Counter c;
+	
+	std::cout << "c = " << c << "\n";
+	c++;
+	c += 10;
+	std::cout << "c = " << c << "\n";
+	
+	int ival = static_cast<int>(c);
+	
+	std::cout << "ival = " << ival << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+string to cstring dönüştürme
+c_str
+
+int main()
+{
+	string name{"sultan caliskan"};
+	
+	const char* p = name.c_str();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+std::atomic<int> x;
+
+int main()
+{
+	int ival = x;  // implicit dönüşüm
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include "mint.h"
+
+int main()
+{
+	Mint mx(87234);
+	int x(76234);
+	
+	if(mx) {  // sentax hatası, sınıf türünden nesneyi logic ifade beklenen yerde kullanabilmem için sınıfın bool türüne dönüşüm yapan fonk. olmalı  // int'e  dönüşüm de olabilir ama bool tercih edilmeli
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+operator bool işlevi lojik ifade beklenen yerlerde bu işlev explicit olsa da geçerli olarak kullanılabilir. Yoksa otomatik dönüşüm yapmaz.
+
+class Nec{
+
+public:
+	operator bool()const
+	{
+		std::cout <<  "Nec::operator bool()\n";
+		return true;
+	}
+};
+
+int main()
+{
+	double x;
+	Nec mynec;
+	
+	x= mynec;  // geçerli, 
+	std::cout << "x = " << x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec{
+
+public:
+	explicit operator bool()const
+	{
+		std::cout <<  "Nec::operator bool()\n";
+		return true;
+	}
+};
+
+int main()
+{
+	double x;
+	Nec mynec;
+	
+	x= mynec;  // hatalı
+	std::cout << "x = " << x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec{
+
+public:
+	operator bool()const  // explicit olsa da geçerli !!!
+	{
+		std::cout <<  "Nec::operator bool()\n";
+		return true;
+	}
+};
+
+int main()
+{
+	Nec mynec;
+	
+	if(mynec){
+	std::cout << "x = " << x << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+	if(ptr) // ptr nullpointer değilse demek !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::unique_ptr<std::string> uptr(new std::string("alican"));
+	
+	if(uptr)   // uptr.operator bool()
+	{
+		
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::cout << "bir tam sayi degeri girin: ";
+	int x;
+	
+	cin >> x;
+	if(cin){  // operator bool fonks. çağırılır.
+		std::cout << "giris basarisiz\n";
+	}
+	else{
+		std::cout << "giris basarisiz\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x;
+	
+	while(cin >> x){  
+	// cin.operator>>(x).operator bool()
+		std::cout << x << " * " << x << " = " << x*x << '\n';
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	cin && cout;
+	cin.operator bool()  && cout.operator bool();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	optional<int> x(45);
+	
+	if(x.operator bool()){
+		std::cout << "dolu\n";
+	}
+	else{
+		std::cout << "bos\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+sadece sınıf türleri için değil enum türleri için de operator fonksiyonları yazabiliyoruz.
+
+enum class Weekday{
+	Sunday,
+	Monday,
+	Tuesday,
+	Wednesday,
+	Thursday,
+	Friday,
+	Saturday,
+};
+
+std::ostream& operator<<(std::ostream &os, const Weekday& wd){
+	static const char* const pday[] = {
+		"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+	};
+	
+	return os <<  pdays[static_cast<int>(wd)];
+}
+
+Weekday& operator++(Weekday& wd){
+	return wd = (wd == Weekday::Saturday ? Weekday::Sunday: static_cast<Weekday>(static_cast<int>(wd) + 1));
+}
+
+Weekday operator++(Weekday& wd, int)
+{
+	Weekday ret{ wd};
+	++wd;
+	return ret;
+}
+
+int main()
+{
+	Weekday wd{ Weekday::Sunday };
+	
+	for(; ;){
+		++wd;
+		std::cout << wd << "\n";
+		(void)getchar();
+	}
+}
+
+
+*-----------------------------------------------------------------------------------------------------
