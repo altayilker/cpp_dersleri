@@ -1,0 +1,874 @@
+
+İçerik:   
+
+string
+inheritance - kalıtım
+
+
+Özet :
+
+public kalıtımında türemiş sınıf taban sınıfın public interface'ini kendi interface'ine katar. 
+
+protected bölüm client kodlara kapalı ama türetilmiş sınıflara açıktır.
+
+namelookup: önce ilgili sınıf sonra taban sınıfta aranır
+
+eğer taban sınıftaki bir ismi türemiş sınıftaki varlığa verirseniz, bu isim taban sınıftaki ismi gizler.
+
+türemiş sınıf ve taban sınıf içinde bildirilen fonksiyonlar function overloading değildir.
+
+taban sınıfın private bölümü türemiş sınıfa kapalı !!!
+
+önce blok içinde, bulunamazsa kapsayan blok, bulunmazsa türemiş sınıf içinde, bulunamazsa taban sınıf kapsamında bulunamazsa namespace'de aranacak
+
+*her türemiş sınıf nesnesi base sınıfı türünden kabul edilir. Taban sınıf türünden bir pointer türemiş sınıf türünden bir nesneyi gösterebilir. Örtülü dönüşüm var. Tersi geçerli değil !!! 
+Her mercedes bir arabadır ama her araba bir mercedes değildir. 
+
+türemiş sınıfa myder'in içindeki base kısmını atmış oluyorsunuz
+// object slicing (nesne dilimlenmesi)
+// böyle bir atama kullanmıyoruz
+
+
+*-----------------------------------------------------------------------------------------------------
+
+[]  geçersiz index aldığında tanımsız davranış oluşur
+at()  geçersiz index aldığında exception throw eder
+front 
+back
+
+reserve
+resize
+insert
+= 
+assign
+
++=
+append
+push_back
+
+erase
+find
+
+compare
+
+*-----------------------------------------------------------------------------------------------------
+
+replace:
+
+int main()
+{
+	using namespace std;
+
+	string str{ "mustafa aksoy"};
+	
+	str.replace(3, 3, "XYZTU"); 
+	 // 3 endeksinden başlayarak 3 karakteri
+	
+	cout << "[" << str << "]\n";
+	
+	str.replace(3, 3, 10, 'W'); 
+	cout << "[" << str << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str{ "ali"};
+	string name{ "can"};
+	
+	std::cout << str + name + '_' + "necati" << "\n";
+
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+int main()
+{
+	using namespace std;
+	const std::string str{".txt"};
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+const değer ile const üye fonksiyon
+const olmayan değer ile const olmayan üye fonksiyon çağırılır.
+
+
+int main()
+{
+	std::string str{"necati};
+	const std::string cs{ "necati"};
+	
+	s.front() = '!';
+	cs.front() = '!';  // hata, const üye fonksiyonun geri dönüş değeri salt okuma amaçlı kullanılabilir.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bu şekilde kod yazmayın !!!
+
+int main()
+{
+	using namespace std;
+	
+	string s1;
+	string s2;
+
+	// böyle yaparsanız kopyalama gerçekleşir
+	auto temp = s1;
+	s1 = s2;
+	s2 = temp;
+	
+	
+	// swap fonk. sadece pointer'ları takas eder
+	// dinamik bellek alanındaki yazılar bir yerden
+	// bir yere kopyalanmıyor
+	s1.swap(s2);
+	//veya
+	swap(s1, s2);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	// string'ten cstring'e otomatik dönüşüm yok
+	// string sınıfından const char* türüne implicit 
+	// type conversion yok !!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void foo(const char* p);
+
+int main()
+{
+	using namespace std;
+
+	string str{ "necati ergin"};
+	
+	auto ptr = str.c_str();
+	puts(ptr);  // null terminated byte stream
+	
+	str +=  "bugun C++ anlatiyor\n";
+	
+	puts(ptr);  // ???
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str{ "necati ergin"};
+	
+	auto p1 = str.data();  
+	auto p2 = &str[0];  // üstteki ile aynı, ama str boş ise problem
+	auto p3 = &*str.begin(); 
+	auto p4 = &str; // p4 burada const char* olmaz, string*olur.
+	// string nesnesinin kendisini gösterir
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str{ "necati ergin"};
+
+	"eray"s   // bir string literalini bir string nesnesi olarak kullanmak
+	// ilerde göreceğiz
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+c_str => yazının adresini döndürür
+
+yazıyı büyütürsek reallocation gerekir. Eski bellek alanı free edilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str{ "necati ergin"};
+
+	// str.contains();  // a karakteri var mı yok mu ?
+	
+	// if(str.find('a') != std::string::npos)  // eski yazım
+	
+	if(str.contains('A')
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	int ival = 8751;
+	
+	cout << string{"necati_"} + to_string(ival);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str = "9871alican";
+	
+	auto ival = stoi(str);
+	// auto ival = stoi(str, nullptr, 10);  // eşdeğer, 10 sayı sistemi
+	
+	std::cout << "ival = " << ival << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str = "9871alican";
+	
+	std::size_t idx;
+	auto ival = stoi(str, &idx);  // ikinci parametreye nullptr göndermediğiniz için kullanılmayan ilk karakterin indexiyle
+	adresini gönderdiğiniz değişkeni set eder, üçüncü parametre default = 10,
+	
+	std::cout << "ival = " << ival << "\n";
+	std::cout << "idx = " << idx << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str = "9871alican";
+	
+	std::size_t idx;
+	auto ival = stoi(str, &idx, 16);  //  16 hex olsun dedim
+	
+	std::cout << "ival = " << ival << "\n";
+	std::cout << "idx = " << idx << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str = "alican9871ali12ca";
+	
+	std::size_t idx;
+	auto ival = stoi(str, &idx, 10);  // exception verir
+	// auto ival = stoi(str, nullptr, 16);  // 10 döndürür çünkü
+	// a hex'de 10 değerine karşılık gelir
+	
+	std::cout << "ival = " << ival << "\n";
+	std::cout << "idx = " << idx << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+shrink to fit:(önceki ders)
+kapasite otomatik küçülmez, destructor çağırılmadığı sürece dinamik bellek alanı varlığını devam ettirecek. Gereksiz kapasiteyi geri vermek için shrink to fit fonksiyonunu çağırıyorsunuz.
+
+int main()
+{
+	using namespace std;
+	
+	string str(1'000'000, 'A');
+	std::cout << "str.size() = " << str.size() << "\n";
+	std::cout << "str.capacity() = " << str.capacity() << "\n";
+	
+	str.erase(1);
+	std::cout << "str.size() = " << str.size() << "\n";
+	std::cout << "str.capacity() = " << str.capacity() << "\n";
+	
+	str.shrink_to_fit();  // capacity'yi size'a uygun büzecek !!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+string sınıfı bir container. String sınıfının üye fonksiyonları var ve parametresi string türünden olan global fonksiyonlar da var.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	string str{"sadik algul"};
+	
+	std::cout << "[ " << str <<  "]\n";
+	
+	reverse(str.begin(), str.end());  
+	sort(str.begin(), str.end());  
+	sort(str.begin(), str.end(), greater<char>{});  
+	
+	std::cout << "[ " << str <<  "]\n";
+}
+
+trim fonksiyonu neden yok ? çünkü stl kütüphanesinin kullnarak 
+yapabiliyorsun
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+
+	string str{"ankara'dan amcam ve halam antalya'ya vardılar" };
+	std::cout << "[ " << str <<  "]\n";
+	auto n_erased = erase(str, 'a');
+	std::cout << "[ " << str <<  "]\n";
+	std::cout << "n_erased = " << n_erased <<  "]\n";
+}
+	
+*-----------------------------------------------------------------------------------------------------
+
+Mülakatlarda string sınıfı ile ilgili çok soru çıkar
+
+*-----------------------------------------------------------------------------------------------------
+
+KALITIM (INHERITANCE) - is a relationship
+
+C++ kalıtım  != OOP kalıtım
+C++ kalıtım  kapsar OOP kalıtımı
+
+is  - a relationship (bir nesne başka türden bir nesne yerine kullanılabilir, her mercedes arabadır)
+has - a relationship (composition, arabanın motoru)
+
+
+kalıtım'ın ana faydası:
+1) üst seviye kodların alt seviyedeki kodlara bağımlılığını kaldırmak
+2) code reuse
+
+*-----------------------------------------------------------------------------------------------------
+
+interface (arayüz)
+
+bir sınıfın public interface'i dediğimizde buna public üye fonk., elemanları, başlık dosyasında sunulan global fonksiyonlar kastedilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+Parent class - child class 
+ super class - subclass
+
+base class-derived class
+
+derivation
+
+public inheritance
+protected inheritance
+private inheritance
+
+*-----------------------------------------------------------------------------------------------------
+
+
+Base nesnesini gereken her yerde der nesnesini kullanabilirim.
+
+
+
+
+
+A'nın b türünden elemanı mı var yoksa A b'den kalıtım yoluyla mı elde edilmiş, bunu anlayamam.  kalıtım veya composition olabilir. 
+
+Multilevel inheritance:
+
+araba beklenen yerde mercedes kullanabilir. Mercedes beklenen yerde Mercedes s500 kullanabilirim.
+
+
+Multiple inheritance:
+
+Sadece C++ dilinde var. Diğer dillerde yok.
+
+*-----------------------------------------------------------------------------------------------------
+
+incomplete type'dan kalıtım gerçekleştiremezsiniz.
+
+*-----------------------------------------------------------------------------------------------------
+
+nesne programlamadaki kalıtım'ın buradaki karşılığı public inheritance'dır.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+
+};
+
+class Der : public Base{
+
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Der : Base {  // bu private kalıtım olur
+
+};
+
+struct Der : Base {  // bu public kalıtım olur
+
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+	int a, b;
+};
+
+class Der : public Base{
+	int c;
+};
+
+int main()
+{
+	std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";    // 8 byte
+	
+	std::cout << "sizeof(Der) = " << sizeof(Der) << "\n";  // Der'in içinde Base nesnesi olduğundan, 12 byte 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+public kalıtımında türemiş sınıf taban sınıfın public interface'ini kendi interface'ine katar. 
+
+class Base{
+public:
+	void foo();
+	void func();
+};
+
+class Der : public Base{
+	void bar();
+};
+
+int main()
+{
+	Der myder;
+	myder.foo();
+	myder.func();
+	myder.bar();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+protected bölüm client kodlara kapalı ama türetilmiş sınıflara açıktır.
+
+class Base{
+public:
+	void foo();
+	void func();
+protected:  // kalıtımda kullanılacak garantisi
+	
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+Derleyici süreçleri  (C++ mülakatlarında sorulur !!)
+1) name lookup (hangi tokenların isim olduğunu anlaması )
+2)context kontrol (fonksiyon olup olmadığı )
+3) access kontrol (private, public, protected)
+
+*-----------------------------------------------------------------------------------------------------
+
+namelookup: önce ilgili sınıf sonra taban sınıfta aranır
+
+class Base{
+public:
+	void foo();
+	void func();
+};
+
+class Der : public Base {
+
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.x; // önce Der sınıfında aranacak ama bulunamazsa sınıfın taban sınıfında aranacak. 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+eğer taban sınıftaki bir ismi türemiş sınıftaki varlığa verirseniz, bu isim taban sınıftaki ismi gizler !!!!
+
+class Base{
+public:
+	void foo();
+	void func();
+	int x;
+};
+
+class Der : public Base {
+	int x;
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.x; //  türemiş sınıfın ismi bulunur.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+türemiş sınıf ve taban sınıf içinde bildirilen fonksiyonlar function overloading değildir.
+
+class Base{
+public:
+	void foo();
+};
+
+class Der : public Base {
+	void foo(double);
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.foo(12);  // function overloading değil !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void foo();
+};
+
+class Der : public Base {
+	void foo(int, int);
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.foo(12); // sentax hatası
+	// foo ismi önce türemiş sınıfta bulunur. isim araması biter.
+	// tek argüman gönderilir ve hata alınır.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+	void foo(int);
+public:
+};
+
+class Der : public Base {
+public:
+
+};
+
+int main()
+{
+	Der myder;
+	myder.foo(12);  // sentax hatası olur, access control hatası
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void foo(int);
+};
+
+class Der : public Base {
+private:
+	void foo(double);
+public:
+};
+
+int main()
+{
+	Der myder;
+	myder.foo(12);  // sentax hatası, çünkü isim arama daha önce yapılır, Der'de foo(double) bulur ve isim arama sonlanır, sonra erişim kontrolüne takılır.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void foo(int)
+	{
+		std::cout << "Base::foo(int)\n";
+	}
+};
+
+class Der : public Base {
+public:
+	void foo(int)
+	{
+		std::cout << "Der::foo(int)\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	myder.foo(12);
+	
+	myder.Base::foo(12);  // ok, çok enterasan !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void foo(int, int)
+	{
+		std::cout << "Base::foo(int,int)\n";
+	}
+};
+
+class Der : public Base {
+public:
+	void foo(int)
+	{
+		std::cout << "Der::foo(int)\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	myder.foo(12);
+	
+	myder.Base::foo(12, 23);  // ok, çok enterasan !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+private:
+	void foo()
+	{
+		
+	}
+};
+
+class Der : public Base {
+public:
+	
+};
+
+int main()
+{
+	Base mybase;
+	mybase.foo();  // sentax hatası, türemiş sınıf taban sınıfın private bölümüne erişemez
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+taban sınıfın private bölümü türemiş sınıfa kapalı !!!
+
+
+class Base{
+private:
+	void foo()
+	{
+		
+	}
+};
+
+class Der : public Base {
+public:
+	void derfunc()
+	{
+		foo();  // sentax hatası, taban sınıfın private bölümü türemiş sınıfa kapalı !!!
+	}
+};
+
+int main()
+{
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+protected:  // türemiş sınıflara açık
+	void foo() 
+	{
+		
+	}
+};
+
+class Der : public Base {
+public:
+	void derfunc()
+	{
+		foo();  // ok
+	}
+};
+
+int main()
+{
+	
+}
+
+türemiş sınıfın üye fonksiyonu içinde taban sınıfın public ve protected elemanlarına erişebilirim ama private elemanlarına erişemem.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+protected: 
+	void foo() 
+	{
+		
+	}
+};
+
+class Der : public Base {
+public:
+	void foo()
+	{
+		foo(); // recursive çağrı, isim nitelenmeden kullanıldığında önce blok içine bakılır, fonksiyon kendi kendisini çağıracak
+		
+		Base::foo();  // nitelendiği için Base'deki foo fonksiyonu çağırılır
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public: 
+	void foo() 
+	{
+		
+	}
+};
+
+class Der : public Base {
+public:
+	void foo()
+	{
+		x; // önce blok içinde, bulunamazsa kapsayan blok, bulunmazsa türemiş sınıf içinde, bulunamazsa taban sınıf kapsamında bulunamazsa namespace'de aranacak
+		
+		Base::foo(); // sadece taban sınıfta aranacak
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public: 
+	int foo;
+};
+
+class Der : public Base {
+public:
+	void foo()
+	{
+	}
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.foo = 5; // isim aramaya göre önce isim bulunur, foo fonksiyonunu bulur ve isim arama biter. Sonra derleyici hata verir, fonksiyonu sol operant olarak kullanamaz ve atama yapamazsın
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+upcasting (yukarı doğru dönüşüm):
+türemiş sınıftan taban sınıfa doğru yapılan dönüşüm
+bir operatöre ihtiyaç duyulmaz
+
+class Base{
+
+};
+
+class Der : public Base {
+	
+};
+
+int main()
+{
+	Der myder;
+	
+	Base* baseptr = &myder;  // ok
+	Base& br = myder;  // ok
+	
+	Base mybase;
+	Der* derptr = &mybase;  // hata !!!
+}
+
+
+*her türemiş sınıf nesnesi base sınıfı türünden kabul edilir. Taban sınıf türünden bir pointer türemiş sınıf türünden bir nesneyi gösterebilir. Örtülü dönüşüm var. Tersi geçerli değil !!! 
+Her mercedes bir arabadır ama her araba bir mercedes değildir. 
+
+*-----------------------------------------------------------------------------------------------------
+
+object slicing (nesne dilimlenmesi)
+
+class Base{
+public: 
+
+};
+
+class Der : public Base {
+	
+};
+
+int main()
+{
+	Base mybase;
+	Der myder;
+	
+	mybase = myder; // sadece myder'in içindeki base kısmını atmış oluyorsunuz
+	// object slicing (nesne dilimlenmesi)
+	// böyle bir atama kullanmıyoruz
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void car_came(Car* ptr); // bu fonksiyona Car sınıfından kalıtım yolu ile elde edilmiş herhangi bir sınıf türünden nesne ile çağrı yapabilirim
+
+void car_came(Car& ptr); 
+{
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void basefunc();  // gizli parametesi Base*
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.basefunc();  // myder nesnesi içindeki base nesnesinin adresini gönderir. O kodu derleyici üretir.
+	soru: der sınıf nesnesinin adresi ile onun içindeki 
+	base nesnesinin adresi aynı olmak zorunda değil. Garanti yok.
+}
+
