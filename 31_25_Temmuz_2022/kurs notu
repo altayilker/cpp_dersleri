@@ -1,0 +1,1245 @@
+
+İçerik:   
+
+function template
+1. auto return type
+2. trailing return type
+decltype(auto)
+Class template (sınıf şablonları):
+CTAD
+tipik modelleme hataları:
+varsayılan template argümanları :
+partial ordering rules: (detaylı ileri C++'Da)
+explicit specialization (full specialization):
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+void func(T &x, T &&y)
+{
+	
+}
+
+int main()
+{
+	int y = 5;
+	func(y, y);  // sentax hatası
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+T foo();
+
+int main()
+{
+	int x = foo(); // sentax hatası, fonksiyonun geri dönüş türü ile çıkarım yapılamaz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T, typename U, typename W>
+void func(U, W);
+
+int main()
+{
+	func<int>(2, 4.5);  // ???
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+ileri C++'da göreceğiz
+
+template <typename T, typename U>
+T sum(T x, U y){ // gönderilen argümanlar aynı türden olmalı, yoksa ambiguity olur
+
+	return x + y;
+}
+
+int main()
+{
+	int ival = 3;
+	double dval = 3.4;
+	
+	auto result = sum(ival, dval); // veri kaybı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+fonksiyonun geri dönüş değerinin belirli koşulları sağlayacak şekilde seçilmesinin 4-5 yolu var. 
+
+1. yol
+
+template <typename T, typename U, typename R>
+R sum(T x, U y){ 
+
+	return x + y;
+}
+
+int main()
+{
+	int ival = 3;
+	double dval = 3.4;
+	
+	auto result = sum(ival, dval);  // ok
+	auto result = sum<int, double, double> (ival, dval); // burada türler derleyiciye bırakılmamış
+	
+	std::cout << "result = " << result << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename R, typename T, typename U>
+R sum(T x, U y){ 
+
+	return x + y;
+}
+
+int main()
+{
+	int ival = 3;
+	double dval = 3.4;
+	
+	auto result = sum<double> (ival, dval); // geri dönüş değerinin double olması talebi
+	
+	std::cout << "result = " << result << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+Modern C++ ile gelen iki araç var
+
+1. auto return type
+
+auto func(int x, int y)-> int // sağa yazılan geri dönüş değeri int
+
+----------
+
+auto func(int x, int y)->int
+{
+	return x + y;
+}
+
+int func(int x, int y)
+{
+	return x + y;
+}
+
+ikisi de aynı !!!
+
+----------
+
+2. trailing return type
+
+sadece tarzım olun diye bile kullanılabiliyor
+
+auto main()->int
+{
+	// bu kullanım tamamen artislik, hiçbir anlamı yok
+} 
+
+geri dönüş değeri function pointer olan fonksiyonda kullanımı anlamlı
+
+ismi func olan bir fonksiyon tanımlayın, foo fonksiyonunun adresini döndürsün. Geri dönüş değeri türünün function pointer olması nasıl belirtiliyor ? 
+
+int foo(int, int);
+
+// int(*)(int, int);
+typedef int(*Fptr)(int, int);
+
+Fptr func()
+{
+	return &foo;
+}
+
+----------
+
+typedef bildirimi olmadan nasıl olur ?
+
+int foo(int, int);
+
+int (*func())(int, int)
+{
+
+}
+
+----------
+
+trailing return type ile yazarsak
+
+auto foo(int, int);
+
+auto func()->int(*)(int, int)
+{
+	return &foo;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+trailing return type'ı neden uydurdular ?
+
+template <typename T, typename U>
+sum(T t, U u)
+{
+	t + U; // ifadenin türü neyse fonk.'nun geri dönüş değeri de o olsun, nasıl yaparım ? 
+}
+
+-----------
+
+template <typename T, typename U>
+decltype(t + u) sum(T t, U u)
+{
+	// sentax hatası, sebebi scope, t ve u isimlerinin undeclared olması, o isimlerin scope'u içinde değilim
+}
+
+fakat trailing return type'ın esas eklenme nedeni scope problemi
+
+template <typename T, typename U>
+auto sum(T t, U u) -> decltype(t + u)
+{
+	// ok'un sağında t ve u biliniyor, sentax hatası yok
+}
+
+-----------
+
+C++ 11'e kadar durum böyleydi. Fonksiyonun geri dönüş değerinin benim istediğim tür olmasını istiyorsam tek olanak idi. Fakat diğer bir yol daha var. C++ 14 ile eklendi.
+
+auto return type : 
+
+template <typename T, typename U>
+auto func(T x, U y)
+{
+	return x + y;
+}
+
+birden fazla return statement varsa deduction aynı şekilde yapılmalı, yani bir return'de farklı bir tür diğer bir return'de farklı  bir tür ortaya çıkarsa sentax hatası olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru :   template header'i olmadan auto'nun kullanımı C++ 20'de var 
+
+template <typename T>
+void func(T x)
+{
+
+}
+
+yerine, kısaltılarak
+
+void func(auto x)  
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+T func(T* p)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	void* vp{};
+	
+	func(vp); // T türü void olur
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+T func(T* p)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	void* vp{};
+	
+	func(&vp); // &vp'nin türü void**, p'nin void** türünden olması için T türü void* olur
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+şablondan hareketle derleyicinin kod yazmasına o şablonu instantiate etmesi denir, oluşan ürüne template'in bir specialization'ı (açılımı) denir.
+
+içiçe şablonlarda kod yazabiliyor
+
+swap fonk.'nun kendisi de bir fonksiyon şablonudur.
+
+template <typename T>
+void func(T x, T y)
+{
+	std::swap(x, y);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+auto func(T& x)
+{
+	return x;  // T int olsaydı geri dönüş değeri int olurdu. 
+}
+
+geri dönüş değerinin referans olması için önemli bir aracı:
+
+int main()
+{
+	int x = 10;
+	int& r = x;
+	const int y = 10;
+	
+	decltype(x);  //  int
+	decltype(r);   // int&
+	decltype(y) z = 10; //  const int
+}
+
+-----------
+
+struct Nec{
+	int a;
+	double b;
+};
+
+int main()
+{
+	Nec mynec{};
+	Nec* p = &mynec;
+	decltype(p->b);  // double türünü elde ettim
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+decltype'in operandı olan ifade isim formunda değilse ifadenin value kategorisine bağlı olarak tür elde edilir: 
+
+PR value ->  T
+L value  ->   T&
+X value ->  T&&
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	int a;
+	double b;
+};
+
+int main()
+{
+	int x = 10;
+	decltype(x + 5);  // ifade pr value, cevap int
+	decltype((x)) y = x; // x ifadesi Lvalue olduğundan int&
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	int a;
+	double b;
+};
+
+int main()
+{
+	int x = 120;
+	int* p = &x;
+	
+	decltype(*p) y = x;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 120;
+	int* p = &x;
+	
+	decltype(std::move(x)) y = 10; // y : int&&
+	// neden ? çünkü geri dönüş değeri R value ref. olan bir fonk.'nun değer kategorisi X value.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+yeni konu : decltype(auto)
+
+eğer bu türden bir değişken tanımlarsan tıpkı auto'da olduğu gibi değişkenin türü ilk değer veren ifadenin türünden elde edilecek. Ama decltype'in kurallarına göre elde edilecek. Auto'nun kurallarına göre değil
+
+int main()
+{
+	int x = 10;
+	int* ptr = &x;
+	
+	decltype(auto) y = x; // y : int
+	
+	decltype(auto) y = (x);  // y : int&
+	decltype(auto) y = *ptr;  // y : int&
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int&&  foo();
+
+int main()
+{
+	decltype(auto) y = foo();  // y : foo() ifadesi xvalue expr. olduğundan y : int&&
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+decltype(auto) func(T& x)
+{
+	return x;
+}
+
+template <typename T>
+auto foo(T& x)
+{
+	return x;
+}
+
+int main()
+{
+	int ival = 56;
+	
+	auto x = foo(ival);  // x : int
+	auto x = func(ival); //x : int&
+	
+	auto& x = foo(ival);  // sentax hatası, sol taraf değerine sağ taraf değeri ile ilk değer vermek
+	
+	auto& x = func(ival);  // x : int&
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+decltype(auto)'da çıkarım ilk değer veren ifadeden yapılacak
+
+*----------------------------------------------------------------------------------------------------- 
+
+gelecek konular: 
+
+fonksiyon şablonlarının overload edilmesi
+sınıf şablonları
+explicit specialization
+partial specialization
+default template argument
+
+*----------------------------------------------------------------------------------------------------- 
+
+Class template (sınıf şablonları):
+
+metakod(template) derleyicinin bir sınıf kodu yazmasını sağlayacak
+
+en çok kullanılan veri yapılarını implemente eden sınıf şablonlarıdır. 
+
+stl'de sınıf şablonları başrol oyuncusu. container sınıfları, iteratör sınıfları, akıllı pointer sınıfları, string, ostream, tuple bir sınıf şablonudur.  
+
+template <typename T>
+class Nec{
+
+};
+
+türsel farklılıklar için ayrı ayrı sınıf kodu yazmamız gerekiyordu. Şimdi derleyici farklı sınıf kodlarını derleyici yazacak. string sınıfı çok sayıda üye fonksiyonu olan bir sınıf. 
+
+1) sadece çağırılan fonksiyonların kodunun yazılması kod hacminin de artmamasını sağlar
+2) üye fonksiyonların kodunun legal olması gerekmiyor, çağırmadığınız sürece sentax hatası olmaz
+
+template <typename T>
+class Nec{
+
+public:
+	void foo()  // foo fonksiyonu çağırılmadıysa bir sentax hatası yok
+	{
+		T x{}, y{};
+		auto z = x + y;
+	}
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class Nec{
+public:
+	void foo()
+	{
+		Nec<T> x;  // zaten Nec x; anlamına gelir, bunun yerine Nec x; kullan
+	}
+};
+
+int main()
+{
+	Nec<int> x;
+	x.foo();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class Nec{
+public:
+	void foo(T x);
+	void func(T& x);
+};
+
+fonksiyonları sınıf dışında tanımlayacaksam
+
+template <typename T>
+void Nec<T>::foo(T x)
+{
+
+}
+
+template <typename T>
+void Nec<T>::func(T& x)
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+CTAD : class template argument deduction, C++17 ile geldi. Sınıf şablonlarında constructor'dan hareketle tür çıkarımı yapılmasını sağlar. 
+
+template <typename T>
+class Nec{
+public:
+	void foo(T x);
+	void func(T& x);
+};
+
+int main()
+{
+	Nec x; // şöyle yazılamaz
+	Nec<int> x; // ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class Nec{
+public:
+	Nec(T);
+	void foo(T x);
+	void func(T& x);
+};
+
+int main()
+{
+	Nec mynec(12);  // CTAD
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	 std::pair x{12, 4.5};  // CTAD
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	std::vector ivec{2, 5, 7, 9};  // derleyici bunun std::vector<int> ivec{2, 5, 7, 9} olması gerektiğini anlar, CTAD dolayısıyla
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tipik modelleme hataları:
+
+1. sınıf şablonunu sınıf zannetmek
+
+sınıf şablonunu değil derleyicinin oluşturduğu 
+specialization olan sınıfı kullan
+
+template <typename T>
+class Nec{
+
+};
+
+int main()
+{
+	Nec mynec;  // hata, Nec ismi değil şablonun ismi
+	
+	Nec<int> mynec;  // specialization
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+C++ insights : template'den nasıl kod üretildiği görülebilir
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class Nec{
+
+};
+
+Nec<int> func(Nec<int>&);  // fonksiyonların parametreleri, geri dönüş türü bir sınıf şablonundan instantiate edilecek specialization olabilir. 
+
+int main()
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+fonk. şablonu ve class şablonu beraber kullanılabilir
+
+template <typename T>
+class Nec{
+
+};
+
+template <typename T>
+void func(Nec<T>);
+
+int main()
+{
+	Nec<int> x;
+	
+	func(x); // T türünün çıkarımı int olarak yapılır
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class Nec{
+
+};
+
+template<typename T>
+bool operator < (const Nec<T>&, const Nec<T>&)
+
+int main()
+{
+	Nec<int> x;
+	
+	func(x); 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+her bir specialization ayrı bir türdür
+
+template <typename T>
+class Nec{
+
+};
+
+int main()
+{
+	Nec<double> dx;
+	Nec<int> di;
+	
+	dx = di; // sentax hatası, A sınıfı nesneye B sınıfı türünden atayamıyorsam burası da aynı
+	// derleyici bir atama operator fonk. yazar ama aynı türden iki nesnesinin atanması için yazar.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	std::vector<double> dvec(100);
+	std::vector<int> ivec(100);
+	
+	dvec = ivec; // hata
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	array<int, 5> ax;
+	array<int, 4> ay;
+	
+	ax = ay;  // hata, farklı specialization'lar
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <int i>
+class A{
+
+};
+
+int main()
+{
+	A<10> x;
+	A<20> y = x;  // hata
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+class A{
+
+};
+
+int main()
+{
+	A<int>;  // A'nın int açılımı demek, bu bir specialization
+	
+	std::vector<A<int>>;
+	std::list<std::vector<A<int>>>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <vector>
+#include <array>
+#include <list>
+
+template <typename T>
+class A{
+
+};
+
+int main()
+{
+	A<A<A<int>>> x;
+	std::cout << typeid(x).name() << "\n";   // visual Studio doğru çalıştırır !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <vector>
+#include <array>
+#include <list>
+
+int main()
+{
+	std::vector<std::list<std::string>>
+	// string'in kendisi bir sınıf şablonu, onun da specialization'ı
+	// list bir sınıf şablonu, onun da specialization'ı
+	//  vector'ü tür argümanı olarak kullanıyorum
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : fonk.'nun varsayılan argümanına bağlı olarak template argument deduction yapılabilir mi ?
+
+template <typename T>
+void func(T  = 0);  
+// T'nin int olduğu çıkarımı yapılamaz
+
+int main()
+{
+	int x = 100;
+	func(12);
+	func(1.2);
+	func(&x);
+	func(); // hata, tür çıkarımı yapılamaz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<int x>  // C++ 20'de ok, C++17'de not ok
+class Myclass{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<auto x>
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass<5> x;  // auto : int olur
+	Myclass<5u> x; // auto : unsigned int 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// bir parametrenin type parametre olması, diğer parametrenin type türünden non-type parametre olması
+
+template<typename T, T x> 
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass<double, 2.3>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+varsayılan template argümanları :
+
+template<typename T>
+void func(T x);
+
+T : template parametresi
+x : fonksiyonun parametre değişkeni (call parameter)
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T x = 10);
+
+int main
+{
+	func<int>(); // 10 değeri gönderilmiş oldu
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template parametrelerinin varsayılan alması:
+
+// Myclass şablonunda template argümanı belirtilmezse int kabul edilsin
+template<typename T = int>
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass<double> dx;
+	Myclass<> y; // int yazmak ile aynı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kural : bir fonksiyonun bir parametre değişkeni varsayılan argüman alıyorsa onun sağında kalan 
+tüm parametrelerin de varsayılan argüman alması zorunlu, şablonlarda da böyledir
+
+template<typename T = int, typename U> // hata
+class Myclass{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T = double, typename U = int> 
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass<int, long> x;
+	Myclass<int> y; // Myclass<int, int> y; demek
+	Myclass<> z; // Myclass<double, int> z;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<int x = 20, int y = 50> 
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass< > m1;  // Myclass<20,50> m1;
+	Myclass<90, 40 > m2;  // ok
+	
+	std::cout << typeid(m1).name() << "\n";
+	
+	Myclass<90 > m3;  // Myclass<90,50> m3;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T, typename U = int> 
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass<int, double> m1; // varsayılan argüman kullanılmadı
+	std::cout << typeid(m1).name() << "\n";
+	
+	Myclass<int> m2;  // varsayılan argüman kullanıldı, Myclass<int, int> m2;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+class Nec{
+
+};
+
+template<typename T, typename U = Nec<T>> 
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass<int> m1;  // Myclass<int, Nec<int>>
+	std::cout << typeid(m1).name() << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	vector<int> ;  // aslında iki template parametresine sahip,
+	// vector<int, std::allocator<int>> 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template < typename T, typename A = std::allocator<T>>
+class Vector{
+
+};
+
+int main()
+{
+	Vector<int>;  //   vector<int, std::allocator<int>> 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+daha fazla template parametresine sahip string nesneleri var
+
+using String = std::basic_string<char>; 
+// bizim kullandığımız String ismi aslında böyle bir türeş isim bildiriminden gelir
+
+#include <string>
+int main()
+{
+	string str;
+	// basic_string<char, char_traits<char>, std::allocator<char>> str;
+	
+	basic_string<char> str;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <string>
+#include <set>  // hash set
+
+template <typename Key, typename Comp = std::less<Key>, std::allocator<Key>>
+
+int main()
+{
+	set<int> myset;
+	set<int, less<int>, allocator<int>>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+hem template parametresi varsayılan argüman oluyor, hem template parametresine karşılık gelen fonksiyon parametresi de varsayılan argüman alıyor
+
+template <typename T = std::string>
+void func(T x = {})
+
+int main()
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+fonksiyon şablonlarına geri dönüyoruz, bazı karmaşık noktaları inceliyoruz
+
+fonksiyon şablonları 
+a) gerçek fonksiyonlarla
+b) başka fonk. şablonları ile overload oluşturabilir
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template type T is : " << typeid(T).name() << "\n";
+}
+
+void func(int x)
+{
+	std::cout << "non template function func(int)\n";
+}
+
+int main()
+{
+	func()  // fonk.'a gönderilen argümanın türü gerçek fonk.'nun parametresi ile aynıysa fonk. şablonundan fonk. yazmaz. Doğrudan gerçek fonksiyon çağrılır. 
+	
+	func(12);  // gerçek fonksiyona çağrı
+	
+	func('A'); // promotion olmaz, fonksiyon şablonundan bir specialization oluşturur
+	
+	func(12u);  // fonk. şablonu
+	func("ali");  // const char*, fonk. şablonu
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat: fonk. sadece int türden argüman ile çağırılsın, diğer türlerde sentax hatası olsun.
+
+cevap: fonk. şablonu delete edilir, ayrıca gerçek fonk. yazılır
+
+template <typename T>
+void func(T) = delete;
+
+void func(unsigned int);
+
+int main()
+{
+	func(23u);
+	func(23);  // sentax hatası
+	func(2.3); // sentax hatası
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru: aynı isimli fonk. hem de fonk. şablonu var. int argüman için fonk. şablonunda fonk. yazılmasını sağlayabilir miyiz ?
+
+evet, ama explicit olarak template argümanını belirlemeliyiz
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template type T is : " << typeid(T).name() << "\n";
+}
+
+void func(int)
+{
+	std::cout << "non template function func(int)\n";
+}
+
+int main()
+{
+	func<int>(12); // gerçek fonk. çağırılmadı
+	func<>(12);  // deduction yapılır, fonk. şablonundan fonk. yazar
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+aynı isimli birden fazla fonk. şablonu olabilir
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template func(T) \n";
+}
+
+template <typename T, typename U>
+void func(T, U)
+{
+	std::cout << " template function func(T, U)\n";
+}
+
+int main()
+{
+	func(12); // üstteki temp
+	func(1, 5); // alttaki temp.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template func(T) \n";
+}
+
+int main()
+{
+	int x = 10;
+	func(&x);  // T : int* olur
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+void func(T*)
+{
+	std::cout << "function template func(T*)\n";
+}
+
+int main()
+{
+	int x = 10;
+	func(&x);  // T : int
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+partial ordering rules: (detaylı ileri C++'da)
+
+fonksiyon şablonları aynı isimli başka fonksiyon şablonları ile veya gerçek fonksiyonlarla overload edilebilir. iki fonksiyon şablonu birbirini overload ettiğinde eğer her ikisinden de viable fonksiyon oluşturma imkanı varsa partial ordering rules devreye girer. Daha spesifik olan seçilir, daha spesifik olan yoksa ambiguity oluşur.
+
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template func(T) \n";
+}
+
+template <typename T>
+void func(T*)
+{
+	std::cout << "function template func(T*)\n";
+}
+
+int main()
+{
+	int x = 10;
+	func(&x);  // sentax hatası olmaz, fonksiyon parametresi daha specifik olan (daha fazla deklatörü olan) seçilmek zorunda. T mi yoksa T* mi specifik ? T*
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template func(T) \n";
+}
+
+int main()
+{
+	int a[10]{};
+	func(a);  // T : int*
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T, int size>
+void func(T(&)[size])
+{
+	std::cout << "function template func(T(&)[size])\n";
+}
+
+int main()
+{
+	int a[10]{};
+	func(a);  // T : int
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+void func(T)
+{
+	std::cout << "function template func(T) \n";
+}
+
+template <typename T, int size>
+void func(T(&)[size])
+{
+	std::cout << "function template func(T(&)[size])\n";
+}
+
+int main()
+{
+	int a[10]{ }; 
+	func(a);  // daha spesifik olan attaki seçilecek
+	// bu kurallar karışık, şimdilik girmeyecez
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+explicit specialization (full specialization):
+
+derleyici bu specialization'ı yazman gerektiğinde onun kodunu ben sana vereceğim. explicit specialization bir template değil. 
+
+template<typename T>
+T Max(T x, T y)
+{
+	return x > y ? x : y;
+}
+
+int main()
+{
+	std::cout << Max(12, 56) << "\n";
+	std::cout << Max(56, 12) << "\n";
+	std::cout << Max(2.3, 5.7) << "\n";
+	std::cout << Max(10u, 5u) << "\n";
+	std::cout << Max("yesim", "belgin") << "\n";
+	std::cout << Max("belgin", "yesim") << "\n";
+	
+	// beklediğim gibi olmadı !!! T türü const char*
+	// bu durumda adresleri karşılaştırmış olduk yanlış burada
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+T Max(T x, T y)
+{
+	return x > y ? x : y;
+}
+
+// explicit specialization
+template <>     
+const char* Max(const char* p1, const char* p2)
+{
+	std::cout << "explicit specialization \n";
+	std::strcmp(p1, p2) > 0 ? p1 : p2;
+}
+
+// diamond <> içi boş demek
+// angular braket <3> içi dolu
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+T Max(T x, T y)
+{
+	return x > y ? x : y;
+}
+
+template <>     
+const char* Max(const char* p1, const char* p2)
+{
+	std::cout << "explicit specialization \n";
+	std::strcmp(p1, p2) > 0 ? p1 : p2;
+}
+
+int main()
+{
+	std::cout << Max("yesim", "belgin") << "\n";
+	std::cout << Max("belgin", "yesim") << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+struct Myclass{
+	Myclass()
+	{
+		std::cout << "primary template T is : " << typeid(T).name() << "\n";
+	}
+};
+
+template <>     
+struct Myclass<int>
+{
+	std::cout << "explicit specialization Myclass<int> \n";
+}
+
+template <>     
+struct Myclass<double>
+{
+	std::cout << "explicit specialization Myclass<double> \n";
+}
+
+int main()
+{
+	Myclass<unsigned> m1;
+	Myclass<double> m2;
+	Myclass<int> m3;
+}
+
+
+
+int- double dışında template argümanları için primary template'den derleyici specialization'ı oluşturacak.
+
+*----------------------------------------------------------------------------------------------------- 
+
