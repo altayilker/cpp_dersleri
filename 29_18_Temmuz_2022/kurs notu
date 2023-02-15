@@ -1,0 +1,1235 @@
+
+İçerik:   
+
+exception handling
+
+private inheritance :
+protected inheritance :
+Generic programlama
+
+özet:
+
+*----------------------------------------------------------------------------------------------------- 
+
+modern C++ öncesi dile eklenen exception specification dilden kaldırıldı. Bir fonk.'nun hangi türlerden exception gönderme belirtme. Şu an sadece no except specifier kullanılabilir. 
+No except olan move const. derleyicinin daha etkin makina kodu üretmesini sağlayabiliyordu. 
+Derleyicinin sınıfın move const.'nın noexcept olup olmamasına bağlı olarak move const. veya copy const.'ını çağırması
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <vector>
+
+class Sentence{
+public:
+	Sentence() = default;
+	Sentence(const char* ps) : m_s{ ps } {}
+	Sentence(const Sentence& other) : m_s{other.m_s}
+	{
+		std::cout << "copy ctor\n";
+	}
+	Sentence(Sentence&& other) : // burası move const.
+	// Sentence(Sentence&& other)noexcept
+	m_s{ std::move(other.m_s) }
+	{
+		std:cout << "move ctor\n";
+	}
+private:
+	std::string m_s;
+};
+
+int main()
+{
+	std::vector<Sentence> svec { "Consuetudinis magna vis est", "Homines quod volunt credunt", "Hostium munea, non munera"};
+	
+	std::cout << "svec.size() = " << svec.size() << "\n";
+	std::cout << "svec.capacity() = " << svec.capacity() << "\n";
+
+	svec.resize(svec.capacity() + 1);  // size'ı arttıran bir fonksiyon
+	// svec.push_back("Factis ut credam facis");
+}
+
+
+move const.'ın noexcept olmamasından dolayı move const.'ı çağırarak taşıma yapabileceği bazı durumlarda copy const.'ı çağıracak !!
+
+kritik nokta : eğer kapasite size'e eşitken resize çağırılırsa reallocation olur. Yeni bellek bloğuna aktarılacak. Copy mi move const. ile mi aktarılır ?
+move const. noexcept olmazsa strong exception guarantee sağlanamayacağı için 
+copy const. çağırılır. 
+
+// Sentence(Sentence&& other)noexcept
+kullanılırsa move const. seçilir
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <vector>
+#include <chrono>
+
+class Nec{
+public:
+	Nec() : ms(2'000, 'A') {}
+	Nec(const Nec& other) : ms{ other.ms} {}   // copy const.
+	Nec(Nec&& other) : ms{ std::move(other.ms)} {}   // move const.
+	// Nec(Nec&& other)noexcept : ms{ std::move(other.ms)} {}  // move const. with noexcept
+private:
+	std::string ms;
+};
+
+int main()
+{
+	using namespace std::chrono;
+	using namespace std;
+	
+	std::vector<Nec> vec(100'000);  // 100 bin Nec tutan vector sınıfı
+	
+	auto start = steady_clock::now();
+	
+	vec.resize(vec.capacity() + 1);  // size'i arttırıyorum
+	auto end = steady_clock::now();
+	
+	cout << duration<double, milli> (end - start).count() << "ms\n";
+}
+
+eğer move const. noexcept değil ise derleyici copy const.'ı çağıracak
+250 ms yerine 1.65 ms fark var !!! Demek ki bazı durumlarda noexept olması
+önem taşıyor.
+
+*----------------------------------------------------------------------------------------------------- 
+
+function try block (modern C++ öncesi de vardı)
+
+void func()
+{
+	try{
+		// all code of func
+	}
+	catch(const std::exception& ex){
+	}
+}
+
+--------------------------
+
+function try block sentaxı: 
+void func()
+try{
+		// all code of func
+}
+catch(const std::exception& ex)
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+ne zaman kullanılabilir ve avantaj sağlar ?
+
+const.'dan exception gönderilirse ve emit ederse (const.'dan dışarı sızarsa)nesne  hayata gelmez. 
+
+class Member{
+public:
+	Member(int x){
+		if(x%2 == 0)
+			throw std::invalid_argument{"ctor argument should be odd! "};
+	}
+	
+	~Member()
+	{
+		std::cout << "Member destructor\n";
+	}
+};
+
+class Nec{
+public:
+	Nec() = default;
+	Nec(int x) : mx{x} {}
+	~Nec()
+	{
+		std::cout << "Nec destructor\n";
+	}
+private:
+	Member mx{ 1 };
+};
+
+int main()
+{
+	try{
+		Nec x{13};  // Nec x{14}
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+Nec x{14} iken ne member ne Nec sınıfının destructor'ı çağırılmaz !!
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Member{
+public:
+	Member(int x){
+		if(x%2 == 0)
+			throw std::invalid_argument{"ctor argument should be odd! "};
+	}
+	
+	~Member()
+	{
+		std::cout << "Member destructor\n";
+	}
+};
+
+class Nec{
+public:
+	Nec() = default;
+	Nec(int x) : mx{x} {}
+	{
+		try{  // const.'dan gönderilen exception bu try bloğu içinde yakalanır mı ?
+			// cevap : hayır
+		}
+		catch(...){
+			std::cout << "exception caught in Nec const.\n";
+			throw; // rethrow
+		}
+	}
+	~Nec()
+	{
+		std::cout << "Nec destructor\n";
+	}
+private:
+	Member mx{ 1 };
+};
+
+int main()
+{
+	try{
+		Nec x{13};  // Nec x{14}
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+function try block kullanılsa idi 
+
+class Member{
+public:
+	Member(int x){
+		if(x%2 == 0)
+			throw std::invalid_argument{"ctor argument should be odd! "};
+	}
+	
+	~Member()
+	{
+		std::cout << "Member destructor\n";
+	}
+};
+
+class Nec{
+public:
+	Nec() = default;
+	Nec(int x) try : mx{x} {}
+	{
+	
+	}
+	catch(...){
+		std::cout << "exception caught in Nec const.\n";
+		throw; // rethrow
+	}
+	
+	~Nec()
+	{
+		std::cout << "Nec destructor\n";
+	}
+private:
+	Member mx{ 1 };
+};
+
+int main()
+{
+	try{
+		Nec x{13};  // Nec x{14}
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+eğer taban sınıf altnesnesi const.'ından gönderilecek exception'ı sınıfımızın const.'ının yakalamasını istiyorsak  function try block kullanımı bir zorunluluk.
+
+*----------------------------------------------------------------------------------------------------- 
+
+	Nec(Myclass m) try : mx{x} {}
+	{
+	
+	}
+	catch(...){
+		std::cout << "exception caught in Nec const.\n";
+		throw; // rethrow
+	}
+	
+bu durumda bu fonk. çağırıldığında Myclass sınıfının const.'ı exception throw etseydi 
+function try block bunu yakalayamayacaktı.
+
+*----------------------------------------------------------------------------------------------------- 
+
+	Nec(Myclass m) try : mx{x} {}
+	{
+		int y = 3;
+	}
+	catch(...){
+		x = 10;  // x burda görünür durumda
+		y = 2;  // y burada görünür değil !!!
+		std::cout << "exception caught in Nec const.\n";
+		throw; // rethrow
+	}
+
+*----------------------------------------------------------------------------------------------------- 
+
+	Nec(Myclass m) try : mx{x} {}
+	{
+	
+	}
+	catch(...){
+		std::cout << "exception caught in Nec const.\n";
+		throw; // rethrow
+	}
+	
+	-------------
+	function try block'da üst ve alttaki kod arasında fark yok !!!
+	
+	Nec(Myclass m) try : mx{x} {}
+	{
+	
+	}
+	catch(...){
+		std::cout << "exception caught in Nec const.\n";
+		// burda program sonlandırılmamışsa veya rethrow edilmemişse 
+		// rethrow kodunu derleyici oluşturur
+	}
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception_ptr sınıfı : (concurency'de göreceğiz)
+
+https://en.cppreference.com/w/cpp/error/exception_ptr
+
+bir exception'ı yakaladığımızda bu exception'ının başka bir kod tarafından rethrow edilmesinin sağlamanın bir yolu 
+
+
+
+std::exception_ptr gptr{ nullptr};
+
+void func()
+{
+	try{
+		throw std::runtime_error{"error in func\n"};
+	}
+	catch(...) {
+		gptr = std::current_exception();
+	}
+}
+
+int main()
+{
+	func();
+	
+	try{
+		if(gptr){
+			std::rethrow_exception(gptr);
+		}
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught in main: " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+std::exception_ptr
+std:::current_exception
+std::rethrow_exception
+std::make_exception_ptr
+
+*----------------------------------------------------------------------------------------------------- 
+
+private inheritance :
+
+class Base{
+
+};
+
+class Der : Base{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class B1{
+};
+
+class B2{
+
+};
+
+class Der : public B1,  B2{  // B2'den private kalıtım
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kalıtımların bütün biçimlerinde taban sınıfın sanl fonksiyonlarını override edebiliyoruz.
+
+kalıtımların bütün biçimlerinde türemiş sınıf nesnesi içinde base class olacak.
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void basefunc_public();
+protected:
+	void basefunc_protected();
+};
+
+class Der : public Base{
+public:
+	void foo()
+	{
+		basefunc_protected();  // türemiş sınıf içerisinden protected elemana erişim var !!!
+	}
+};
+
+class Derder : public Der{
+
+	void f()
+	{
+		basefunc_protected();
+	}
+};
+
+int main()
+{
+	Der myder;
+	myder.basefunc_public();
+	myder.basefunc_protected(); // burası hatalı !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+public kalıtımı :
+
+taban sınıf             türemiş sınıf
+public           ======>   public
+protected    ======>  protected
+private   XXXXXX
+
+private kalıtımı :
+(taban sınıfın public, protected bölümü türemiş sınıfın private interface'ine ekleniyor)
+taban sınıf             türemiş sınıf
+public           ======>   public
+protected    ======>  protected
+private           XXXXXX
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void basefunc_public();
+protected:
+	void basefunc_protected();
+};
+
+class Der : private Base{
+public:
+	void f()
+	{
+		basefunc_public();  // ok
+	      basefunc_protected();  // ok
+	}
+};
+
+class DerDer : public Der{
+	
+};
+
+int main()
+{
+	Der myder;
+	myder.basefunc_public();  // burası hatalı !!!
+}
+
+türemiş sınıf kendi implementasyonunda taban sınıfın public fonksiyonlarını kullanabilir. Fakat türemiş sınıfın client'ları bunu hiç görmez.
+private kalıtımda taban sınıfın public bölümünü 
+kendi client'larımıza görünmez kılıyoruz ama bu fonksiyonları kullanabiliyoruz. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+private kalıtımı olduğunda "is a" ilişkisi söz konusu değil. türemiş sınıf nesnesi aynı zamanda taban sınıf türünden kabul edilmez. 
+Der içinde bir base var.
+
+class Base{
+
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;
+	Base* baseptr = &myder;  // ok
+	Base& baseptr = myder; // ok
+}
+
+--------------------------
+
+class Base{
+
+};
+
+class Der : private Base{
+
+};
+
+int main()
+{
+	Der myder;
+	Base* baseptr = &myder;  // hata
+	Base& baseptr = myder; // hata
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+istisna :
+
+class Base{
+
+};
+
+class Der : private Base{
+	friend void g();
+	void func()
+	{
+		Der myder;
+		Base* baseptr = &myder;  // upcasting mümkün
+	}
+};
+
+void g()
+{
+		Der myder;  // ok
+		Base* baseptr = &myder;  // ok
+}
+
+int main()
+{
+	
+}
+
+private kalıtımında "is a relation" söz konusu değil. Taban sınıftan türemiş sınıfa implicit dönüşüm söz konusu değil. Ama türemiş sınıfın üye fonksiyonları içinde ya da türemiş sınıfın friend'lik verdiği fonksiyonlar içinde upcasting örtülü olarak gerçekleşiyor. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base destructor\n";
+	}
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;
+}
+
+türemiş sınıf nesnesi içinde bir taban sınıf nesnesi var. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base destructor\n";
+	}
+};
+
+class Der : private Base{
+
+};
+
+int main()
+{
+	Der myder;
+}
+
+türemiş sınıf nesnesi içinde bir taban sınıf nesnesi var. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base destructor\n";
+	}
+	
+	virtual void f();
+};
+
+class Der : public Base{
+
+public:
+	void
+};
+
+int main()
+{
+	Der myder;
+}
+
+kalıtım biçimine bağlı olmadan taban sınıfın sanal fonksiyonunu override edebiliyoruz.
+
+*----------------------------------------------------------------------------------------------------- 
+
+private kalıtımında :
+a) türemiş sınıf nesnesi içinde taban sınıf nesnesi var
+b) türemiş sınıfın implementasyonu taban sınıfın public ve taban sınıfın protected işlevlerini kullanabiliyor.
+c) taban sınıfın private bölümüne erişemiyoruz
+
+taban sınıfın public ve protected öğeleri türemiş sınıfın private bölümüne ekleniyor. 
+türemiş sınıfın client'ları taban sınıfın public öğelerini görmeyecekler. 
+
+private inheritance (çok büyük çoğunlukla) containment yoluyla composition'a bir alternatif.
+
+is a relationship yok !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void f1();
+	void f2();
+};
+
+class Nec1{
+private:
+	A ax;
+};
+
+class Nec2 : private A {
+	
+};
+
+Nec1 nesnelerinin içinde de A nesnesi var, Nec2 nesnelerinin içinde de A nesnesi var. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+soru : neden containment yoluyla composition yerine neden private kalıtımı kullanalım ?
+
+ortak noktalar: 
+1) taban sınıfın public interface'i türemiş sınıfın public interface'ine dahil değil
+
+class A{
+public:
+	void f1();
+	void f2();
+};
+
+class Nec1{
+private:
+	A ax;
+};
+
+class Nec2 : private A {
+	
+};
+
+int main()
+{
+	Nec2 n2;
+	n2.f1(); // hata
+	
+	Nec1 n1;
+	n1.f1(); // hata
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+istersem A sınıfının public bölümünü kendi public bölümüme ekleyebilirim. Aşağıda iki farklı yol gösterilmiştir. 
+
+class A{
+public:
+	void f1();
+	void f2();
+};
+
+class Nec1{
+public:
+	void f1()  // 1. yol
+	{
+		ax.f1();
+	}
+	
+	void f2()
+	{
+		ax.f2();
+	}
+	
+private:
+	A ax;
+};
+
+class Nec2 : private A {
+public:
+	using A::f1;  // 2. yol
+	using A::f2;
+};
+
+int main()
+{
+	Nec2 n2;
+	n2.f1();
+	n2.f2();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void f1();
+	void f2();
+	virtual void vfunc();
+};
+
+class Nec1{
+public:
+	void f1()  // 1. yol
+	{
+		ax.f1();
+	}
+	
+	void f2()
+	{
+		ax.f2();
+	}
+	
+private:
+	A ax;
+};
+
+class Nec2 : private A {
+public:
+	using A::f1;  // 2. yol
+	using A::f2;
+	void vfunc()override;
+};
+
+int main()
+{
+	Nec2 n2;
+	n2.f1();
+	n2.f2();
+}
+
+
+class A'nın virtual fonksiyonunu override edilmesi containment yoluyla composition'da bu mümkün değil ama kalıtımda override edebilirim.
+
+*----------------------------------------------------------------------------------------------------- 
+
+1) private kalıtımda taban sınıfın sanal fonksiyonlarını override edebiliyoruz
+2) private kalıtımda taban sınıfın protected fonksiyonlarını çağırabiliriz.
+3) Türemiş sınıfın üye fonksiyonlarında ve türemiş sınıfın friend'lik verdiği fonksiyonlarda is-a relationship söz konusu
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+2) private kalıtımda taban sınıfın protected fonksiyonlarını çağırabiliriz.
+
+class A{
+public:
+
+protected:
+	void f();
+};
+
+class Nec1{
+public:
+	void func()  
+	{
+		ax.f();  // hata, client'lara protected bölüm kapalı
+	}
+	
+private:
+	A ax;
+};
+
+class Nec2 : private A {
+public:
+	void func()
+	{
+		f();  // ok, private kalıtımda taban sınıfın protected fonksiyonlarını çağırabiliriz.
+	}
+};
+
+int main()
+{
+	Nec2 n2;
+	n2.f1();
+	n2.f2();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+private kalıtımı mı containment yoluyla composition mı ?
+
+cevap : containment yoluyla composition
+daha az bağımlılık oluşturur. Tercih sebebi.
+İstisnalar var.
+
+*----------------------------------------------------------------------------------------------------- 
+
+gof (gang of four) patternleri : ileri C++ kursunda
+
+*----------------------------------------------------------------------------------------------------- 
+
+EBO (empty base optimization):
+
+bazı sınıflar empty class.  
+
+Empty class : bir interface'i var ama bir veri elemanı yok. 1 byte. Çünkü nesne için bir adres belirlenmek zorunda.
+
+class Empty{
+public:
+	void f1();
+	void f2();
+	void f3();
+};
+
+class Nec{
+
+private:
+	Empty m_e;
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";
+	std::cout << "sizeof(Nec) = " << sizeof(Nec) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Empty{
+public:
+	void f1();
+	void f2();
+	void f3();
+};
+
+class Nec{
+
+private:
+	int m_i;
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";
+	std::cout << "sizeof(Nec) = " << sizeof(Nec) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Empty{
+public:
+	void f1();
+	void f2();
+	void f3();
+};
+
+class Nec{
+
+private:
+	int m_i;
+	Empty m_e;  // alignment nedeni ile 8 byte olur !!!
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";
+	std::cout << "sizeof(Nec) = " << sizeof(Nec) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+Madem containment yoluyla composition ile yapabildiğim herşeyi private kalıtım ile yapabilirim. O zaman empty türünden nesneyi kullanmanın başka yolu Nec sınıfının private inheritance'la Empty sınıfından elde edilmesi
+
+class Empty{
+public:
+	void f1();
+	void f2();
+	void f3();
+};
+
+class Nec : private Empty{
+
+private:
+	int m_i;
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";
+	std::cout << "sizeof(Nec) = " << sizeof(Nec) << "\n";
+}
+
+burada alignment yoluyla gereken fazla yer emptyt base optimization ile gereken yer azalır. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+C++ 20 ile dile eklenen bir attribute alignment problemini ortadan kaldırıyor. 
+
+https://en.cppreference.com/w/cpp/language/attributes/no_unique_address
+
+class Empty{
+public:
+	void f1();
+	void f2();
+	void f3();
+};
+
+class Nec{
+
+private:
+	int m_i;
+	[[no_unique_address]]Empty m_e; 
+};
+
+int main()
+{
+	std::cout << "sizeof(Empty) = " << sizeof(Empty) << "\n";
+	std::cout << "sizeof(Nec) = " << sizeof(Nec) << "\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+protected kalıtımda herşey aynı. Tek fark taban sınıfın public ve protected bölümü türemiş sınıfın protected bölümüne ekleniyor. 
+
+class Base{
+public:
+	void basefunc();
+};
+
+class Der : private Base{
+
+};
+
+class sDer : public Der{
+	void foo()
+	{
+		basefunc();  // hata !! taban sınıfın public bölümü türemiş sınıfın private bölümüne ekleniyor
+	}
+};
+
+-----------------------
+
+class Base{
+public:
+	void basefunc();
+};
+
+class Der : protected Base{
+
+};
+
+class sDer : public Der{
+	void foo()
+	{
+		basefunc();  // ok
+	}
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+özel durum:
+
+class Base{
+public:
+	void func(int);
+	void func(int, int);
+	void func(double);
+};
+
+class Der : private Base{
+public:
+
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.func(12);  // sentax hatası
+	myder.func(1,2); // sentax hatası
+	myder(2.3); // sentax hatası
+}
+--------------------
+
+class Base{
+public:
+	void func(int);
+	void func(int, int);
+	void func(double);
+};
+
+class Der : private Base{
+public:
+	using Base::func;
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.func(12);  // ok
+	myder.func(1,2); // ok
+	myder(2.3); // ok
+}
+
+--------------------
+
+class Base{
+public:
+	void func(int);
+	void func(int, int);
+	void func(double);
+};
+
+class Der : private Base{
+public:
+	using Base::func;
+	void func(int);
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.func(12);  // ok, türemiş sınıf çağrılır
+	myder.func(1,2); // ok
+	myder(2.3); // ok
+}
+
+--------------------
+
+class GodClass{ 
+public:
+	// very fat interface
+	void func(int);
+	void func(int, int);
+	void func(double);
+	
+	void foo(int);
+	void foo(int, int);
+	void foo(double);
+};
+
+class Restricted : private GodClass {
+public:
+	using GodClass::func;  // kendi interface'ime taşımak için
+	using GodClass::foo;
+	
+	void foo(int) = delete;  // int parametreli foo fonksiyonuna yapılan çağrı sentax hatası
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class GodClass{ 
+public:
+	// very fat interface
+	void func(int);
+	void func(int, int);
+	void func(double);
+	
+	void foo(int);
+	void foo(int, int);
+	void foo(double);
+};
+
+class Restricted : private GodClass {
+public:
+	void func(int)
+	{
+		GodClass::func(x);
+	}
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	virtual void vfunc();
+	virtual void vfoo();
+};
+
+class Der : public Base{
+public:
+	friend void f1();  // a friend function can be given a special grant to access private and protected members.
+	
+	virtual void vfunc()override;
+	virtual void vfoo()override;
+};
+
+void gfoo(Base& baseref)
+{
+	baseref.vfunc();
+}
+
+void f1()
+{
+	Der myder;  // ok, friendlik olduğundan
+	gfoo(myder);
+}
+
+void f2()
+{
+	Der myder;  // sentax hatası
+	gfoo(myder);
+}
+
+void f3()
+{
+	Der myder;  // sentax hatası
+	gfoo(myder);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+Generic programlama
+
+template : derleyiciye kod yazdıran kod
+
+meta code (code formula) : öyle bir kod ki varlık nedeni derleyiciye kod yazdırma
+
+bir kodun birden fazla tür için kullanılabilmesi
+
+void swap(int *p1, int *p2);
+
+öyle bir fonksiyon olsun ki farklı türlerde swap edebilsin.
+
+*----------------------------------------------------------------------------------------------------- 
+
+C'de 
+
+void gswap(void* vp1, void* vp2, size_t n);
+{
+	char* p1 = (char*)vp1;
+	char* p2 = (char*)vp2;
+	while(n--){
+		char temp = *p1;
+		*p1++ = *p2;
+		*p2++ = temp;
+	}
+}
+
+int main()
+{
+	int x = 214, y = 4365;
+	gswap(&x, &y, sizeof(x));
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+Template (şablon)
+
+C++ öğrenmeyi epey zorlaştıran bir konu
+
+STL (Standart Template Library)
+
+https://en.cppreference.com/w/cpp/header
+
+
+STL artık standart kütüphane haline geldi. Her şey template'dir.
+
+Her yeni C++ standardı ile generic programlama araçları artıyor, yeni öğeler ekleniyor. Standart kütüphane büyüyor. 
+
+constexpr if
+std::optional
+std::variant
+
+C++ 20'de gelen
+concepts (devrim niteliğinde)
+
+cppreference'dan dili öğrenmek zor, orası reference kaynağı
+
+https://www.amazon.com/C-Templates-Complete-Guide-2nd/dp/0321714121
+mükemmel kitap ama zor, sadece template anlatıyor
+
+*----------------------------------------------------------------------------------------------------- 
+
+temel konuları çok iyi bilmelisin
+move semantics, değer kategorisi, perfect forwarding, namelookup, scope, operator overloading, function overloading
+
+*----------------------------------------------------------------------------------------------------- 
+
+template code ==> varlık nedeni derleyiciye kod yazdırmak
+
+*----------------------------------------------------------------------------------------------------- 
+
+template çeşitleri : 
+
+1) function template (fonksiyon şablonu)
+en çok kullanılan
+
+2) class template (sınıf şablonu)
+
+Modern C++ ile çok daha zengin bir hale geldi.
+eklenenler:
+
+3) variable template
+
+4) alias template (tür eş isim şablonu)
+
+5) variadic template
+
+6) concept
+
+*----------------------------------------------------------------------------------------------------- 
+
+template parameters
+a) type parameter (template tür parametresi)
+b) non-type parameter (template sabit parametresi)
+c) template parameter (template parametresi) : çok ilerde görecez, biraz marjinal kullanım
+
+T bir tür olmak üzere !!!
+
+template <class T>  // önceden class kullanılırdı, fakat class anlamında değil !!!
+
+template <typename T>  // modern C++ ile typename geldi. Bazı yerlerde class kullanılamıyor.
+
+template <typename T, typename U>
+
+*----------------------------------------------------------------------------------------------------- 
