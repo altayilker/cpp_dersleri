@@ -1,0 +1,1052 @@
+
+İçerik:   
+
+
+
+özet:
+
+*----------------------------------------------------------------------------------------------------- 
+
+RTTI
+
+programın çalışma zamanında bir nesnenin türünün belirlenmesi
+
+neden belirlemek istiyoruz ?
+ya kötü bir tasarım var ya da mecburiyet var
+
+*----------------------------------------------------------------------------------------------------- 
+
+dynamic cast : downcasting yapar, güvenli ise gerçekleştirir yoksa nullpointer üretir
+
+*----------------------------------------------------------------------------------------------------- 
+
+Car* create_random_car()
+{
+	static std::mt19937 eng{ std::random_device{}() };
+	static std::uniform_int_distibution dist{1, 7};
+	
+	switch (dist(eng)){
+		case 1 : return new Bmw;
+		case 2 : return new Fiat;
+		case 3 : return new Volvo;
+		case 4 : return new Toyota;
+		case 5 : return new Dacia;
+		case 6 : return new VolvoS60;
+		case 7 : return new VolvoXC90;
+	}
+	
+	return nullptr;
+}
+
+--------------------------
+
+void car_game(Car* carptr)
+{
+	std::cout << *carptr << "\n";
+	carptr->start();
+	carptr->run();
+	
+	if(auto vp = dynamic_cast<Volvo*>(carptr)){
+		vp->open_sunroof();
+	}
+	
+	carptr->stop();
+}
+
+int main()
+{
+	for(int i = 0; i < 100; ++i){
+		Car* o = create_random_car();
+		car_game(p);
+		delete p;
+		(void) getchar();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+referans semantiği ile dynamic cast yapabilir miyiz ?
+
+evet ama nullptr var.
+
+
+
+void car_game(Car& cr)
+{
+	std::cout <<  cr << "\n";
+	cr->start();
+	cr->run();
+	
+	Volvo& vref = dynamic_cast<Volvo&>(cr);
+	vref.open_sunroof();
+	
+	cr->stop();
+}
+
+int main()
+{
+	VolvoXC90 vx;
+	
+	car_game(vx);
+	std::cout << "main devam ediyor";
+	
+	Fiat f;
+	car_game(f);  // dynamic_cast exception throw edecek !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// exception'ı yakalayalım
+int main()
+{
+	VolvoXC90 vx;
+	
+	car_game(vx);
+	std::cout << "main devam ediyor";
+	
+	try{
+		Fiat f;
+		car_game(f);  // dynamic_cast exception throw edecek !!!
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+eğer dynamic cast operatörü ile tür dönüşümü pointer semantiği ile yapılıyorsa downcasting başarısız olursa nullptr üretilir, ama referans semantiği ile yapılırsa badcast türünden exception throw eder.
+
+*----------------------------------------------------------------------------------------------------- 
+
+nasıl anlıyor çalışan kod gelen arabanın Volvo olup olmadığını çalışma zamanında nasıl anlıyor ?
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+typeid operatörü
+const nesneye referans
+
+typeid operatörünün ürettiği değer ismi std::type_info olan bir sınıf türünden const referans
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+
+int main()
+{
+	int x = 10;
+	typeid(x).    // type_info türünden nesneye referans
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+
+int main()
+{
+	std::type_info x;  // sentax hatası, sınıfın default const. yok !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+
+int main()
+{
+	int x = 4;
+	
+	std::type_info ti = typeid(x);   //yanlış, copy const. delete edilmiş
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+type_info sınıfı türünden bir nesne kullanmanın tek yolu typeid operatörü kullanmak !!
+
+#include <typeinfo>
+
+int main()
+{
+	int ival{};  // değişken dizi değil
+	const std::type_info& x = typeid(ival); // legal   
+	// const. referans const nesneye bağlanabilir.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+typeid operatörü kullanmanın iki yolu var
+
+typeid(int)
+typeid(Myclass)
+typeid(double) == typeid(int)
+
+typeinfo sınıfının operatör == fonksiyonu var. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+int main()
+{
+	int x = 10;
+	std::cout << (typeid(x) == typeid(int));   // true yazar 
+	
+}
+
+typeid hem compile time hem runtime ile ilgili kullanılabilir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+class type_info {
+public:
+	type_info(const type_info&) = delete;
+	bool operator == (const type_info&)const;
+	const char* name()const;
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+int main()
+{
+	int x = 10;
+	std::cout << typeid(x).name() << "\n";
+	std::cout << typeid(x + 1.2).name() << "\n";
+	std::cout << typeid('A').name() << "\n";
+	
+	char c;
+	std::cout << typeid(+c).name() << "\n";  // int integral promotion
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+unevaluated context : derleyicinin işlem kodu üretmediği bağlam
+
+sizeof, decltype, typeid
+
+#include <typeinfo>
+int main()
+{
+	int x = 10;
+	std::cout << typeid(x++).name() << "\n";
+	std::cout << "x = " <<  x << "\n";  //  x = 10 yazar
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+class Base{
+
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;
+	Base* baseptr = &myder;
+	
+	std::cout << typeid(*baseptr).name() << "\n";  // "class base" yazar
+	// eğer bir sınıf polymorfik sınıf değilse typeid static türü saptar. Dinamik türü vermez
+	// Base sınıfı polymorfik sınıf değil
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+class Base{
+	virtual ~Base() = default;  // polymorfik sınıf oldu
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;
+	Base* baseptr = &myder;
+	
+	std::cout << typeid(*baseptr).name() << "\n";  // "class Der" yazar !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+dynamic_cast operatörü programın hep çalışma zamanına ilişkin,
+
+typeid  ise hem compile time hem runtime ile ilgili kullanılabilir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <typeinfo>
+
+int main()
+{
+	for(int i = 0; i < 100; ++i) {
+		Car* carptr =create_random_car();
+		std::cout << *carptr;
+		std::cout << typeid(*carptr).name() << "\n";
+		(void)getchar();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void car_game(Car& cr)
+{
+	std::cout << cr << "\n";
+	cr.start();
+	cr.run();
+	
+	if(typeid(cr) == typeid(Volvo) ||  typeid(cr) == typeid(VolvoXC90) ||  typeid(cr) == typeid(VolvoS60 ){
+		static_cast<Volvo&>(cr).open_sunroof();
+	}
+	
+	cr.stop();
+}
+
+int main()
+{
+	for(int i = 0; i < 100; ++i){
+		Car* p = create_random_car();
+		car_game(*p);
+		getchar();
+		delete p;
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+acaba nasıl bir büyü gerçekleştiriyor programın çalışma zamanında türün belirlenmesi için ? 
+
+derleyici programın çalışma zamanında her sınıf için bir typeinfo nesnesi oluşturur.
+typeinfo nesnesinin adresini de vtable'da tutuyor. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+void car_game(Car *ptr)
+{
+	if(typeid(*ptr) == typeid(Volvo)){  // polymorfik bir türe ilişkin bir pointer dereference edilip 
+	// typeid operatörün operandı yapıldığında nullptr ise exception throw eder. exception türü : Bad type id 
+	// typeid, typeinfo nesnelerinden birine referans
+	
+	}
+}
+
+Car* foo()
+{
+
+	return nullptr;
+}
+
+int main()
+{
+      try{
+		car_game(foo());  //
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+dynamic_cast'de run time'da belirlenen nesnenin türünü elde etmiyorsunuz, 
+downcasting'in güvenli yapılıp yapılamayacağını test etmiş oluyorsunuz
+
+dynamic_cast<Volvo*>(carptr )   => bu ifade ya nullptr ya değil
+
+if( auto p = dynamic_cast<Volvo*>(carptr )  ){
+
+	// buraya gelmişse Volvo'dur. Ama Volvo'dan da kalıtım ile elde edilmiş sınıflar varsa onlar da olabilir
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+
+};
+
+class B{
+
+};
+
+int main()
+{
+	A ax;
+	
+	static_cast<B>(ax);  // sentax hatası, demekki A ve B arası kalıtım ilişkisi yok !!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+
+};
+
+class B : public A{
+
+};
+
+int main()
+{
+	A ax;
+	
+	static_cast<B>(ax);  // şimdi geçerli, demekki aynı hiyerarşi içinde
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <type_traits>
+
+ileride göreceğiz
+
+*----------------------------------------------------------------------------------------------------- 
+
+Multiple Inheritance (çoklu kalıtım)
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+
+class A{
+
+};
+
+class B{
+
+};
+
+class C : public A , public B {
+
+};
+// her C bir A'dır, bir B'dir.
+
+int main()
+{
+	C cx;
+	B* bptr = &cx;
+	A* aptr = &cx;
+	
+	B& br = cx;
+	A& ar = cx;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class C : public A ,  B {  // yanlış public A, private B demek
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	A()
+	{
+		std::cout << "A default ctor\n";
+	}
+};
+
+class B{
+public:
+		std::cout << "B default ctor\n";
+};
+
+class C : public A , public B {
+
+};
+// her C bir A'dır, bir B'dir.
+
+int main()
+{
+	C cx;  // önce A'nın sonra B'nin const. çağırılacak, kalıtım için yazılan sıraya göre
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	A()
+	{
+		std::cout << "A default ctor\n";
+	}
+};
+
+class B{
+public:
+		std::cout << "B default ctor\n";
+};
+
+class C : public A , public B {
+	C() : B(), A()
+};
+// her C bir A'dır, bir B'dir.
+
+int main()
+{
+	C cx;  // kalıtımdaki sıra gözönüne alınacak,  const. init. listeki sıra değil
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void a_foo();
+	void a_bar();
+	void a_baz();
+};
+
+class B{
+public:
+	void b_foo();
+	void b_bar();
+	void b_baz();
+};
+
+class C : public A , public B {
+	
+};
+
+int main()
+{
+	C cx; 
+	
+	cx.a_bar();
+	cx.b_bar();
+	cx.b_baz();
+	cx.a_baz();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	virtual void a_foo();
+	virtual void a_bar();
+	virtual void a_baz();
+};
+
+class B{
+public:
+	virtual void b_foo();
+	virtual void b_bar();
+	virtual void b_baz();
+};
+
+class C : public A , public B {
+	virtual void a_foo() override;
+	virtual void a_bar() override;
+	virtual void a_baz() override;
+	virtual void b_foo() override;
+	virtual void b_bar() override;
+	virtual void b_baz() override;
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void foo(int, int);
+};
+
+class B{
+public:
+	virtual foo(int);
+};
+
+class C : public A , public B {
+public:
+
+};
+
+int main()
+{
+	C cx;
+	
+	cx.foo(1, 2);  // çoklu kalıtımda isim arama belirli sıraya sahip değil, birden çok sınıfta varsa ambiguity
+	cx.foo(1);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void foo(int, int);
+};
+
+class B{
+public:
+	int foo;  // data member
+};
+
+class C : public A , public B {
+public:
+
+};
+
+int main()
+{
+	C cx;
+	
+	cx.foo(1, 2);  // çoklu kalıtımda isim arama belirli sıraya sahip değil, iki taban sınfta birden aranır, birden çok sınıfta varsa ambiguity
+	cx.foo(1);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void foo(int, int);
+};
+
+class B{
+public:
+	int foo(int);
+};
+
+class C : public A , public B {
+public:
+
+};
+
+int main()
+{
+	C cx;
+	
+	cx.A::foo(1,2);  // ok 
+	cx.B::foo(1);  // ok 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class A{
+public:
+	void foo(int, int);
+};
+
+class B{
+public:
+	int foo(int);
+};
+
+class C : public A , public B {
+public:
+	void func()
+	{
+		foo(1); // ambiguity
+		B::foo(12); // ok
+		A::foo(3, 15); // ok
+		static_cast<A*>(this)->foo(3, 4); // ok
+		static_cast<B*>(this)->foo(3, 4); // ok
+	}
+};
+
+int main()
+{
+	C cx;
+	
+	cx.A::foo(1,2);  // ok 
+	cx.B::foo(1);  // ok 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+Diamond formation (elmas formasyonu)
+DDD (dreadful diamond of derivation, kalıtımın ölümcül elması)
+
+
+derleyici açısından bakarsan iki tane A nesnesi var, B'nin içindeki mi C'nin içindeki mi ?
+
+*----------------------------------------------------------------------------------------------------- 
+
+asıl problem runtime'a ilişkin  (diamond formation)
+
+
+virtual inheritance (sanal kalıtım) buna çözümdür !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void foo();
+};
+
+class Der1 : public Base{
+
+};
+
+class Der2 : public Base{
+
+};
+
+class MDer : public Der1, public Der2{
+
+};
+
+int main()
+{
+	Mder md;
+	md.foo();  // hata,  taban sınıf nesnesinin adresini this pointer'ı olarak kullanır, ama şimdi iki tane 
+	// base nesnesi var, biri Der1'den gelen diğeri Der2'den gelen base 
+	
+	md.Der1::foo();  // ok 
+	md.Der2::foo();  // ok 
+	static_cast<Der1*>(&md)->foo();   // ok 
+	static_cast<Der2*>(&md)->foo();  // ok 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void foo();
+};
+
+class Der1 : public Base{
+
+};
+
+class Der2 : public Base{
+
+};
+
+class MDer : public Der1, public Der2{
+public:
+	void func()
+	{
+		foo();  // ambiguity
+	}
+};
+
+int main()
+{
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void foo();
+};
+
+class Der1 : public Base{
+
+};
+
+class Der2 : public Base{
+
+};
+
+class MDer : public Der1, public Der2{
+public:
+	
+};
+
+void func(Base*);
+void bar(Base&);
+
+int main()
+{
+	MDer mx;
+	
+	func(&mx);  // ambiguity, hangi base,
+	bar(mx);  // ambiguity, hangi base,
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void foo();
+};
+
+class Der1 : public Base{
+
+};
+
+class Der2 : public Base{
+
+};
+
+class MDer : public Der1, public Der2{
+public:
+	
+};
+
+void func(Base*);
+void bar(Base&);
+
+int main()
+{
+	MDer mx;
+	
+	func(static_cast<Der1*> (&mx));   // ok, ambiguity kaldırıldı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Device{
+public:
+	void turn_on()
+	{
+		m_flag = true;
+	}
+	void turn_off()
+	{
+		m_flag = false;
+	}
+	
+	bool is_on()const
+	{
+		return m_flag;
+	}
+private:
+	bool m_flag{};
+};
+
+class Fax : public Device{
+public:
+	void turn_on()
+	{
+		Device::turn_on();
+	}
+
+	void send_fax()
+	{
+		if(is_on()){
+			std::cout <<    "cihaz acik ve fax gönderildi\n";
+		}
+		else{
+			std::cout <<    "cihaz kapalı olduğundan fax gönderilmedi\n";
+		}
+};
+
+class Modem : public Device{
+public:
+	void turn_on()
+	{
+		Device::turn_on();
+	}
+	
+	void send_data()
+	{
+		if(is_on()){
+			std::cout <<  "cihaz acik ve data gönderildi\n";
+		}
+		else{
+			std::cout <<  "cihaz kapalı olduğundan data gönderilmedi\n";
+		}
+	}
+};
+
+class FaxModem : public Fax, public Modem{
+public:
+	
+};
+
+int main()
+{
+	FaxModem fm;
+	
+	fm.Fax::turn_on();
+	fm.send_fax();
+	fm.send_data();
+	
+	// iki tane device olması sorun !!!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+virtual inheritance : tek bir taban nesnesi olması istiyorsanız virtual inheritance ile elde etmek gerekir
+
+class Base{
+
+};
+
+class Der1 : virtual public Base{
+
+};
+
+class Der2 : virtual public Base{
+
+};
+
+class MDer : public Der1, public Der2{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+Diamond modeli şeklinde bir yapıyı avantaj olduğu için mecbur kaldığımız için,
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	void foo()
+	{
+		std::cout << "this = " << this << "\n";
+	}
+};
+
+class Der1 : virtual public Base{
+
+};
+
+class Der2 : virtual public Base{
+
+};
+
+class MDer : public Der1, public Der2{
+
+};
+
+int main()
+{
+	MDer md;
+	
+	md.foo();
+	md.Der1::foo();
+	md.Der2::foo();  // ortada sadece bir base nesnesi var !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Device{
+public:
+	void turn_on()
+	{
+		m_flag = true;
+	}
+	void turn_off()
+	{
+		m_flag = false;
+	}
+	
+	bool is_on()const
+	{
+		return m_flag;
+	}
+private:
+	bool m_flag{};
+};
+
+class Fax : virtual public Device{
+public:
+	void turn_on()
+	{
+		Device::turn_on();
+	}
+
+	void send_fax()
+	{
+		if(is_on()){
+			std::cout <<    "cihaz acik ve fax gönderildi\n";
+		}
+		else{
+			std::cout <<    "cihaz kapalı olduğundan fax gönderilmedi\n";
+		}
+};
+
+class Modem : virtual public Device{
+public:
+	void turn_on()
+	{
+		Device::turn_on();
+	}
+	
+	void send_data()
+	{
+		if(is_on()){
+			std::cout <<  "cihaz acik ve data gönderildi\n";
+		}
+		else{
+			std::cout <<  "cihaz kapalı olduğundan data gönderilmedi\n";
+		}
+	}
+};
+
+class FaxModem : public Fax, public Modem{
+public:
+	
+};
+
+int main()
+{
+	FaxModem fm;
+	
+	fm.Fax::turn_on();
+	fm.send_fax();
+	fm.send_data();
+	
+	// iki tane device olmağı için sorun virtual inheritance ile çözüldü.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <fstream>
+
+int main()
+{
+	using namespace std;
+	
+	fstream fs{"necati.txt"};
+	
+	fs.width(20);  // width ios_base'den gelir
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base(int x) {
+		std::cout << "Base(int x) x = " << x << "\n";
+	}
+};
+
+class Der1 : virtual public Base{
+public:
+	Der1() : Base(0) {
+		std::cout << "Der1 default ctor\n";
+	}
+};
+
+class Der2 : virtual public Base{
+public:
+	Der2() : Base(1) {
+		std::cout << "Der2 default ctor\n";
+	}
+};
+
+class MDer : public Der1, public Der2{
+public:
+	Mder() : Base(3)
+	{
+	
+	}
+};
+
+class NecDer : public MDer{
+public:
+	NecDer() : Base(4)
+	{
+	
+	}
+};
+
+int main()
+{
+	Mder md;  // bir base var ve bir base nesnesi bir kez hayata gelir, iki kez hayata getirilemez
+	// virtual Base objesini init etmek zorunda
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
