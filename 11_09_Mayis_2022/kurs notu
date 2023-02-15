@@ -1,0 +1,472 @@
+
+İçerik:   
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+special member functions
+copy constructor
+copy assignment
+Bir nesneye kendisinin atanması (self assignment):
+rule of five
+Move Semantics: (Taşıma Semantiği)
+kaynağı nasıl çalarım ? 
+derleyici hangi durumlarda sınıfın  hangi özel üye fonksiyonu yazıyor ?
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+sınıfın özel üye fonksiyonları (special member functions)
+
+default : özel yapan derleyici tarafından default edebiliyor (derleyici kodlarını bizim yerimize yazabilir)
+user declared : durumdan vazife çıkaran derleyici veya ben diyorum derleyici sen benim için tanımla 
+
+Eğer derleyici kurallara göre default ederken bir sentax hatası oluşursa const. nesne init ederse vs derleyici üye fonksiyonu delete eder. 
+
+*-----------------------------------------------------------------------------------------------------
+
+special member functions:
+
+default ctor
+destructor
+copy ctor
+	move ctor (C++11)
+copy assignment
+	move assignment(C++11)
+	
+
+copy members:
+copy ctor
+copy assignment
+
+move members:
+move ctor
+move assignment
+
+
+*-----------------------------------------------------------------------------------------------------
+
+default ctor:
+
+Default constructor is the constructor which doesn’t take any argument. It has no parameters. It is also called a zero-argument constructor.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+copy constructor : sınıfın copy ctor. illa olacak (fakat delete edilebilir)
+
+
+class Myclass{
+public:
+	Myclass(const Myclass& other) : ax(other.ax), bx(other.bx), cx(other.cx)  // shallow copy
+	{
+	
+	}
+
+private: 
+	A ax;
+	B bx;
+	C cx;
+};
+
+
+Değer semantiği : herkesin değeri kendine
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Derleyici belirli koşullar oluştuğunda special member functions yazar.
+
+örneğin default const.'ı her zaman yazmaz
+
+class Myclass{
+
+public:
+	// Myclass() = default;
+	Myclass(int);  // sadece bu olursa default ctor. yazmaz
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+copy constructor'ı derleyiciye bırakmayıp kendim yazacağım.
+Böylece shallow copy yerine deep copy yapacağım.
+
+const Sınıfismi& other  => copy constructor
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Örnek: deep copy örneği yaptık
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+copy assignment: (kopyalayan atama operatör fonksiyonu)
+C++'da bir sınıf nesnesine atama operatöründen aynı türden bir nesne atandığında bu işi 
+copy assignment fonksiyonu yapar. Bu bir constructor değildir. 
+Non-static, public, inline üye fonksiyonu. Geri dönüş değeri türü Myclass&
+
+x = y;
+
+class Myclass{
+public:
+	Myclass& operator =   (const Myclass& other)     // copy assignment operator overloading ile yapılıyor. 
+	{
+		ax = other.ax;
+		bx = other.bx;
+		cx = other.cx;
+	}
+private:
+	A ax;
+	B bx;
+	C cx;
+};
+
+a = b;   // a.operator = (b);  ile aynı
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Neden kopyalayan atama fonksiyonu kendisine atama yapılmış nesneyi döndürüyor.
+
+a = b;
+
+C++ dilinde atama operatörleri ile oluşturulan ifadelerin değer katagorisi
+L value expr. dır. 
+
+x = y = z = t;  // t'nin değeri hepsine atanır. Bunu sağlayan sağdan sola öncelikli
+x = (y = (z = t));  
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Bir nesneye kendisinin atanması (self assignment):
+
+x = x;  //  hata değil
+
+*p1 = *p2;
+
+r1 = r2;  // referans
+
+*ptr = r; // referans
+
+
+*-----------------------------------------------------------------------------------------------------
+
+eğer kopyalanan atama operator fonksiyonun kendimiz yazıyor isek
+(ve alternatif başka idiomatik başka bir yapı kullanılmayacaksa)
+
+
+resource leak
+
+destructor  // yazmak için kaynağı geri veriyorsun
+copy ctor
+copy assignment
+
+bir sınıfa birini yazıyorsan diğerlerini de yazmalısın
+big 3
+
+big 5
+rule of five
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	Myclass();  //default ctor.
+	~Myclass();  // destructor
+	Myclass(const Myclass&);   // copy ctor.
+	Myclass& operator = (const Myclass&);  // copy assignment (atama operatorü)
+	
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+rule of five
+
+
+destructor : release resources
+
+copy ctor: deep copy
+
+copy assignment : release resources, deep copy
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func();
+};
+
+int main()
+{
+	Myclass m1, m2;
+	(m1 = m2).func();  // 1
+	m1.operator = (m2).func();  // 2
+	
+	m1 = m2;
+	m1.func();  // 3
+	// 1-2-3 aynıdır
+	
+	Myclass k1, k2, k3, k4;
+	k1 = k2 = k3 = k4;
+	k1.operator = (k2.operator = (k3.operator= (k4)));
+	// const nesnelerde const üye fonksiyonlar çağırılabilir
+	// const nesneler için non-const fonksiyonlar çağırılamaz
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Move Semantics: (Taşıma Semantiği)
+
+int main()
+{
+	std::string str(20000, ' A');
+	
+	std::string s{ str };  // yüksek maaliyetli, bundan kurtulmak yerine pointer kopyalama ile halledebilirim.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Myclass x = baska_nesne;  
+// baska_nesne'nin hayatı bitecekse öyle bir kod devreye girsin ki 
+// hayata gelen x nesnesi o kaynağı çalsın, destructor baska_nesnenin kaynağını geri vermesin.
+
+baska_nesne'nin hayatının bitip bitmemesine göre ya kaynağı çalacak veya kaynağı kopyalayacak
+
+*-----------------------------------------------------------------------------------------------------
+
+void func(const int&);  // lvalue reference
+void func(int &&);   // rvalue reference
+
+int main()
+{
+	int x = 5;
+	func(x); // üstteki
+	func(5); // ikisi viable, alttaki çağrılır
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+};
+
+void func(const Myclass&);  // lvalue reference, sınıf nesnesinin hayatı devam edecektir
+void func(Myclass &&);   // rvalue reference, sınıf nesnesinin başka kod tarafından kullanılma ihtimali yok
+// kaynağı çalınabilir !!!
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	Myclass(const Myclass&);  // copy contructor, kaynağı kopyalarken
+	Myclass(Myclass &&);  // kaynağı çalan şekilde kod yazacağız
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+Bir sınıfın bir başka özel üye fonksiyonu move ctor
+kodu derleyici tarafından yazılabilir.
+
+class Myclass{
+
+public:
+	Myclass() = default;
+	Myclass(const Myclass &);  // copy constructor
+	Myclass(Myclass &&); // move constructor
+}
+
+Myclass foo();
+
+int main()
+{
+	Myclass m1;
+	
+	Myclass m2 = m1;  //copy constructor, lvalue
+
+	m1 = foo();  // rvalue exp.
+}
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	Myclass(const Myclass &);  // copy constructor
+	Myclass(Myclass &&); // move constructor
+	Myclass& operator = (const Myclass&); 
+	Myclass& operator = (Myclass&&);  // move assignment
+}
+
+m1 = RValue;
+m1 = Lvalue;
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass m1;
+	
+	Myclass m2 = m1;  // copy contructor'dır,    move contructor değil
+	
+	// öyle bir araç olmalı ki, tür dönüştürme değil value category'i değiştirecek
+	Myclass m2 = static_cast<Myclass&&> (m1);  // rvalue expr.  // fakat zahmetli
+	
+	Myclass m2 = std::move(m1); // sağ taraf rvalue expr. olur   (okunuşu: stud move)
+	
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+};
+
+int main()
+{
+	Myclass m1;
+	Myclass m2;
+	
+	m1 = m2; // kopyalama
+	m1 = std::move(m2); // move assignment ile yapılır.
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+move doesn't move  // taşıma ile alakası yok !!!
+
+std::move(m1); // kaynak çalmak olmuyor, sadece rvalue yapmış oluyoruz.
+
+Myclass m2 = std::move(m1);  // kaynağı çalan m2 nesnesi
+
+*-----------------------------------------------------------------------------------------------------
+
+void foo(Myclass && r);
+
+int main()
+{
+	Myclass x;
+	
+	foo(std::move(x));  // bu fonksiyonun çalınmasıyla ilgisi yok  // atama ya da kopyalama yapılmadı
+	foo( r value expression bir myclass nesnesi);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// kaynağı nasıl çalarım ? 
+void foo(Myclass && r)
+{
+	Myclass m = r;  // yine kopyalar, çalmaz
+	Myclass m = std::move(r); // şimdi kaynak çalınmış olur 
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// öyle fonksiyon yazalım ki gönderilen ifade lvalue ise kaynağı kopyalayalım rvalue ise çalalım
+// cevabı iki fonksiyon yazmak
+
+class Myclass{
+
+}
+
+void func(const Myclass& r)  // lvalue için çağrılır
+{
+	Myclass m = r;  // kaynağı kopyaladım
+}
+
+void func(Myclass&& r) // rvalue için çağırılır
+{
+	Myclass m = std::move(r);  // kaynağı çaldım
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+1. yol:
+Myclass foo();
+
+foo();
+
+2. yol:
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+derleyicinin yazdığı move contructor
+
+Myclass(Myclass &&other) : ax(std::move(other.ax)), bx(std::move(other.bx)), cx(std::move(other.cx))
+{
+
+}
+
+Myclass& operator = (Myclass &&other)    // sanırım move assignment ???
+{
+	ax = std::move(other.ax);
+	bx = std::move(other.bx);,
+	cx = std::move(other.cx);
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+derleyici hangi durumlarda sınıfın  hangi özel üye fonksiyonu yazıyor ?
+
+bir sınıfın bir özel üye fonksiyonu aşağıdaki 3 durumdan birinde olabilir
+
+1.  not exist
+2. user declared (programcı tarafından bildirilmiş)
+3.  implicitly declared (programcı bir bildirim yapmadı, derleyici yazıyor)
+
+
+*-----------------------------------------------------------------------------------------------------
+
+1. not exist
+
+class Myclass{
+public:
+	Myclass(int);  // not exist
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+2. user declared  (alttakiler gibi 3 tipte)
+
+Myclass();
+Myclass() = default;
+Myclass() = delete;
+
+*-----------------------------------------------------------------------------------------------------
+
+3.  implicitly declared 
+
+default
+deleted
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
