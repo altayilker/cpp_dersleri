@@ -1,0 +1,1005 @@
+
+İçerik:   
+
+namespace 
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	operator bool()const;
+};
+
+int main()
+{
+	Myclass m1, m2;
+	auto x = m1 + m2;  // geçerli, x değişkenin türü int
+	
+	// neden geçerli ? 
+	// operator bool fonk. ile implicit conversion yapılır.
+	//  myclass'tan bool türüne dönüşüm yapılır
+	
+	auto x = m1.operator bool() + m2.operator bool();
+	// int altı integral promotion tam sayıya yükseltme
+	// bool int'e  yükseltilir. 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+isim alanları (namespace)
+
+içine isimleri koyabileceğimiz scope'dur.
+
+namespace scope
+class scope
+block scope
+function prototype scope
+function scope
+
+
+*-----------------------------------------------------------------------------------------------------
+
+global namespace : global bölge de bir gizli namespace, bütün namespace'leri içine alır.
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+
+
+}  // sonda noktalı virgül yok
+
+*-----------------------------------------------------------------------------------------------------
+
+int x;
+double x;  // sentaks hatası
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int x = 10;
+}
+
+namespace veli{
+	double x = 3.4;
+}
+
+void x()
+{
+
+}
+
+int main()
+{
+	std::cout << "ali::x = " << ali::x ;
+	
+	x = 5; // hata, bu durumda önce blokta sonra global namespace'de arar.
+	
+	x();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	namespace ali{  // main içinde namespace oluşturulamaz
+	
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int x = 10;
+
+namespace ali{
+	namespace veli{
+		int x;
+	}
+}
+
+ali::veli::x;
+
+*-----------------------------------------------------------------------------------------------------
+
+#include ile bir header file eklendiğinden içeriği global namespace'e eklenmiş olur. 
+
+standart kütüphanenin bütün isimleri ismi std olan bir namespace 
+içinde bildirilmiştir. 
+
+std::vector<int>    // std namespace'i
+
+*-----------------------------------------------------------------------------------------------------
+
+overload değil !!!
+
+namespace ali{
+	void foo(int);
+}
+
+namespace ali{
+	void foo(int, int);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	int x = 5;
+	
+	double x = 4.5;  // geçersiz !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	namespace ali{
+		namespace veli{
+			int x;
+		}
+	}
+}
+
+int main()
+{
+	nec::ali::veli::x;
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Alttaki ikisi birlikte tek bir namespace !!!
+birden fazla başlık dosyasında aynı namespace'e ayıramazdık
+
+namespace nec{
+	int a, b, c;
+}
+
+namespace nec{
+	int x, y ;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace Std{
+	class String {
+	
+	};
+}
+
+namespace Std{
+	class vector {
+	
+	};
+}
+
+yukarıda tek bir namespace var. 
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	void foo()
+	{
+	
+	}
+	
+	void func()
+	{
+		foo();  // veya nec::foo()
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	void foo()
+	{
+	
+	}
+	
+	void func()
+	{
+		int foo = 5;
+		foo();  // hatalı, nec::foo() olarak kullanılmalı !!
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::cout  << "murat" << std::endl;
+	// << operator overloading
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bir ismin nitelenmemiş olmasına rağmen bir namespace içinde aranmasını sağlayan 3 tane araç var.
+
+a) using decleration 
+b) using namespace directive (decleration)
+c) ADL (argument dependent lookup) (Koenig lookup)
+
+*-----------------------------------------------------------------------------------------------------
+
+a) using decleration 
+
+namespace ali{
+	int x, y, z;
+}
+
+using ali::x;  // x'i bildirimin scope'una enjekte eder.
+int x = 5; 
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int x, y, z;
+}
+
+int main()
+{
+	using ali:x;  // sanki x burada bildirilmiş gibi
+	
+	x = 10;  // ok
+	ali::x = 20;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+1.  using bildirimi bir bildirimdir ve her bildirim gibi bu bildirimin de bir scope'u vardır. 
+
+namespace ali{
+	int x, y, z;
+}
+
+void func()
+{
+	using ali::x;
+	x = 5;  // ok
+}
+
+void foo()
+{
+	x = 5;  // sentax hatası
+	using ali::x;
+	x = 3;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+2.  using bildirimi ile bildirilmiş isim bildirimin yapıldığı scope'a enjekte edilir. 
+
+
+namespace ali{
+	int x, y, z;
+}
+
+namespace veli{
+	using ali::x;
+}
+
+int main()
+{
+	veli::x = 10;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int g = 10;
+
+namespace nec{
+	int x = 4;
+}
+
+namespace ali{
+	using ::g;  //ok,  global namespace'deki g ismini ali namespace'ine enjekte etmiş oldum, bu bir tanım değil, bir değişken iki kere tanımlanamaz,
+	sadece isim aramayı yönlendirir
+	
+	using nec::x;
+	int y = 10;
+}
+
+int main()
+{
+	ali::g = 10;
+	ali::x = 10;
+	ali::y = 120;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: x değişkeni static ömürlü mü otomatik ömürlü mü ? statik ömürlü !!!
+
+int g = 10;
+
+namespace nec{
+	int x = 4;  // namespace sadece gizleme alanı, aslında burası global bölge !!!!
+	
+	void foo()
+	{
+		int y = 10;  // otomatik ömürlü 
+	}
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int func()
+{
+	std::cout << "func is called\n";
+	return 5;
+}
+
+namespace nec{
+	int x = func();
+}
+
+int main()
+{
+	std::cout << "main starts\n";
+}
+
+// yukarıdaki kodda önce "func is called" yazısı çıkar !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	int x = 10;
+}
+
+int x = 20;  // ok, çünkü ayrı scope'lar
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	int x = 10;
+}
+
+using nec::x;
+
+int main()
+{
+	int x = 5;  // blok kapsamında üstteki x'i gizledi
+	std::cout << x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	int x = 10;
+}
+
+using nec::x;
+
+int main()
+{
+	::x = 5; 
+	std::cout << x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int x, y, z;
+}
+
+using ali::x, ali::y;  ali::z;  // C++14'den sonra
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ercan{
+	int x = 10;
+}
+
+int x = 20;
+using ercan::x  // hatalı !!
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ercan{
+	int x = 10;
+}
+
+int x = 20;
+
+int main()
+{
+	std::cout << "x = " << x;   // global x kastedilir.
+	// veya ::x yine glolal x kastedilir.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using decleration
+
+using namespace directive : bu da bir bildirimdir, yani tüm bildirimlerde olduğu gibi bu bildirimin de bir kapsamı vardır.
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int a, b, c;
+}
+
+int main()
+{
+	using std::cout, std::endl;
+	
+	cout << "ali" << endl;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace directive : bu da bir bildirimdir, yani tüm bildirimlerde olduğu gibi bu bildirimin de bir kapsamı vardır. 
+
+
+using namespace bildirimi bildirime konu isim alanı içindeki isimleri bildirimin yapıldığı isim alanına enjekte etmez !!!
+
+
+namespace ali{
+	int a, b, c;
+}
+
+void func()
+{
+	using namespace ali;  // ali namespace'ini kapsayan isim alanında bildirilmiş gibi olur.  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int a, b, c;
+}
+
+int main()
+{
+	using namespace ali;  // global namespace'de tanımlanmış gibi görünür durumda
+	
+	a = 5;
+	b = 7;
+	c = 10;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace neco{
+	namespace ali{
+		int a, b, c;
+	}
+}
+
+int main()
+{
+	using namespace neco::ali;  // ali namespace'inde değil de onu kapsayan neco namespace'inde görünür olacak
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace neco{
+	namespace ali{
+		int a, b, c;
+	}
+	using namespace ali;
+}
+
+int main()
+{
+	neco::a = 10;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace neco{
+	namespace ali{
+		int a, b, c;
+	}
+	using namespace ali;
+}
+
+using namespace neco;
+
+int main()
+{
+	a = 10;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace neco{
+	int x, y;
+}
+
+using namespace neco;  // enjekte etmez
+
+int x;  // ok
+
+int main()
+{
+	x = 5;  // hata, ambiguity (hangi ismin kastedildiği belirlenemez)
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace neco{
+	int x, y;
+}
+
+namespace ali{
+	int x, y;
+}
+
+using namespace ali;  // ok
+using namespace neco;  // ok
+
+int main()
+{
+	x = 10;  // sentax hatası, ambiguity
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace neco{
+	int x, y;
+}
+
+void foo()
+{
+	using namespace neco;
+	a = b = c = 10;  // ok
+}
+
+void func()
+{
+	a = 20;  // sentax hatası
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+using namespace std;  // yazılırsa std namespace'i içindeki ifadeler görünür olacaklar.
+eğer bir isim çakışması olursa ambiguity olur.
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	void foo();
+}
+
+namespace veli{
+	void foo = 5;
+}
+
+using namespace ali;
+using namespace veli;
+
+int main()
+{
+	foo(); // isim arama, context kontrolüne sıra gelmedi, sentax hatası, ambiguity
+	ali::foo(); // ok
+	veli::foo = 45;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int a;
+}
+
+using namespace ali;
+
+int main()
+{
+	int a = 10;
+	std::cout << "a = " << a << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int a;
+}
+
+int main()
+{
+	using namespace ali;  // ok, 
+	int a = 10;
+	std::cout << "a = " << a << "\n";
+}
+
+void foo()
+{
+	using namespace ali;
+	a = 6; // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int a = 20;
+}
+
+int main()
+{
+	using namespace ali;  // ok, 
+	std::cout << "a = " << a << "\n";  // a = 20  !!!
+	int a = 10;
+	std::cout << "a = " << a << "\n";  // a = 10
+	std::cout << "ali::a = " << ali::a << "\n";  // a = 20
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	int a = 20;
+}
+
+int main()
+{
+	using namespace ali;  // ok, 
+	int a = a;  // tanımsız davranış, kendi çöp değeri ile init etme
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+namespace ali{
+	void func(int);
+	void foo();
+}
+
+int main()
+{
+	func(10);  // hata
+	foo(); // hata
+	ali::func(10);  // ok
+	ali::foo(); // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+3. argument dependent lookup (ADL)
+eğer bir fonksiyona yapılan çağrıda fonksiyonun ismi bir namespace ile nitelenmemiş ise eğer fonksiyona gönderilen argümanlardan herhangi biri namespace içinde tanımlanan türe ilişkin ise bu isim o türü içine alan namespace içinde de aranır. 
+
+namespace ali{
+
+	class A{
+	
+	};
+	
+	void func(A);
+}
+
+namespace veli{
+	class B{
+		
+	};
+}
+
+int main()
+{
+	ali::A ax;  // ali namespace'inde de arayacam
+	veli::B bx;
+	
+	func(ax); // ok, ADL
+	foo(ax, bx); // önce blokta aranacak, sonra ADL nedeniyle global alanda, ali ve veli namespace'inde aranacaktır. 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	enum Color{Blue, Black, White};
+	
+	void func(Color);
+}
+
+int main()
+{
+	func(ali::Blue);  // ok, o türe ilişkin olması yeterli
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::cout << "merhaba dunya";
+	// <<'i nitelemedim, ADL olmasa hata verirdi
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::cout << "merhaba dunya";
+	std::operator<<(std::cout, "merhaba");
+	operator<<(std::cout, "merhaba");  // hatalı değil, ADL'den dolayı !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	class X{
+		// ...
+	};
+	
+	void func(X)
+	{
+		std::cout << "nec::func\n";
+	}
+}
+
+void func(nec::X)
+{
+	std::cout << "global func\n";
+}
+
+int main()
+{
+	nec::X nx;
+	
+	func(nx); // yanlış, ambiguity, aramada öncelik yok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	class X{
+		// ...
+	};
+	
+	void func(X)
+	{
+		std::cout << "nec::func\n";
+	}
+}
+
+int main()
+{
+	int func = 5;
+	nec::X nx;
+	
+	func(nx); // sentax hatası, sebebi namehiding, 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	class X{
+		// ...
+	};
+	
+	void func(X)
+	{
+		std::cout << "nec::func\n";
+	}
+}
+
+int main()
+{
+	int func(int);
+	nec::X nx;
+	
+	func(nx);  // hatalı, bu bloktaki func fonksiyonu bulunur, yine isim gizlemesi, nx türünden int türüne dönüşüm yok hatası
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	class X{
+	public:
+		operator int()const;
+	};
+	
+	void func(X)
+	{
+		std::cout << "nec::func\n";
+	}
+}
+
+int main()
+{
+	int func(int);
+	nec::X nx;
+	
+	func(nx);  
+	// ok, bu bloktaki func bulunur, nx türünden int türüne implicit conversion var.
+	// derleyici nec'in X'i sınıfı türünden nesneyi int türüne dönüştürme imkanı veren bir fonksiyonu görürse sentax hatası olmaz. 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	class X{};
+	
+	void func(std::vector<X>);
+}
+
+int main()
+{
+	std::vector<nec::X> myvec;
+	func(myvec);  // ok, argüman olan ifadenin ilişkin olduğu namespace'de aranır
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	friend void func(int);
+};
+
+int main()
+{
+	func(10);  // sentax hatası
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	friend void func(Myclass);
+};
+
+int main()
+{
+	Myclass m;
+	func(m);  // ok, ADL
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+anonymous namespace - unnamed namespace
+nested namespace
+inline namespace (modern C++)
+namespace alias
+
+*-----------------------------------------------------------------------------------------------------
+
+anonymous namespace - unnamed namespace
+(internal linkage'a ait)
+eğer bir kaynak dosyada namespace oluşturup isim vermezseniz bu isimleri doğrudan kullanabilirsin (isim alanının dışındaymış gibi)
+
+namespace { 
+	int a, b, c;  // iç bağlantıya ait  
+	// globalde tanımlansalar dış bağlantı olurdu.
+}
+
+int main()
+{
+	a = 45;
+	b = 20;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+linkage (bağlantı):
+
+bir isim projeyi oluşturan birden fazla kaynak dosyada kullanıyor olsun. 
+
+// ali.c
+x = 5;
+
+// veli.c
+x = 10;
+
+eğer x ismi external linkage'a ait ise projeyi oluşturan modüllerin hepsinde kullanılan x aynı varlığa aittir. 
+
+// ali.c
+int x = 5;
+
+//ali.h
+// extern x = 5,
+
+ali.h'yı kaç dosya include ederse etsin, ali.c'deki global x olacak.  
+
+// ali.c
+static int x = 5; // diğer kaynak dosyalarda kullanılacak c'ler ile alakası yok !!!
+
+external linkage
+internal linkage
+no linkage (yerel isimler)
+
+*-----------------------------------------------------------------------------------------------------
+
+hatta static internal linkage yerine unnamed namespace tercih edilir. Eğer sadece tek bir kaynak dosyanın kullanacağı diğer kaynak dosyalarına kapatılmış bir isim oluşturmak istersen unnamed namespace tercih edilmeli.
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace{
+	int x = 10;
+	void foo();
+	class Myclass{
+	
+	};
+}
+
+sadece bu kaynak dosyada kullanılacak. Diğer kaynak dosyalarda kullanılamazlar.
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace{
+	int x = 10;
+}
+
+namespace{
+	int y = x;
+}
+
+int main()
+{
+	x = 99;  // name hiding
+	std::cout << " x =  " << x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+type alias :  using ile yapılır  (typedef kullanmayın)
+
+using Word = int;
+
+typedef yerine using neden eklendi ?
+1) typedef bildirimleri template haline getirilemez
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace alias : (namespace'e eş isim)
+
+nested bir namespace yazma ve okuma zahmetli olabilir
+
+int main()
+{
+	std::ranges::view
+}
+---
+
+namespace ali{
+	namespace veli{
+		namespace necati{
+			int x = 5;
+		}
+	}
+}
+
+int main()
+{
+	ali::veli::necati::x = 45;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace ali{
+	namespace veli{
+		namespace necati{
+			int x = 5;
+		}
+	}
+}
+
+namespace project = ali::veli::necati;
+
+int main()
+{
+	project::x = 45;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace Nec{
+	namespace OldVersionn{
+		class Myclass{
+	
+		};
+	}
+	
+	namespace NewVersion{
+		class Myclass{
+	
+		};
+	}
+	
+}
+
+namespace Current = Nec::OldVersion;
+
+int main()
+{
+	Current::Myclass x;
+}
+
+*-----------------------------------------------------------------------------------------------------
