@@ -1,0 +1,715 @@
+
+İçerik:   
+
+exception handling
+
+özet:
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception handling:
+
+runtime hataları ile ilgili
+
+hataları iki temel kategoriye ayırırsak:
+
+1) programming errors : kod yanlış yazıldığı için bir fonk. işini yapamıyor
+	assertions (doğrulama) : çalışma zamanında devreye giren kodlama hatası bulmak
+	assert macro bildiğinizi kabul ediyoruz.
+	statik, dinamik assertion'lar var.
+	
+2) exception (istisnai) : programın çalışma zamanına yönelik hatalar
+
+*----------------------------------------------------------------------------------------------------- 
+
+geleneksel hata işleme yöntemlerine göre çok büyük avantajları var.
+
+*----------------------------------------------------------------------------------------------------- 
+
+iş gören kod ile 
+hata işleyen kod iç içe geçmiş durumda, bunların ayrılması daha iyi
+
+ortada ne kadar if varsa kodun test edilmesi zor olur, işlenmeyen hata ihtimali artar
+
+*----------------------------------------------------------------------------------------------------- 
+
+müdahale etmeyeceğiniz bir exception'ı yakalamaya çalışmayın
+
+*----------------------------------------------------------------------------------------------------- 
+
+throw
+try
+catch
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception throw etmek : fonksiyon işini yapamadığında bir nesne oluşturuyor, üst katmanlara işini yapamadığını anlatan nesne,
+beni çağıran kodlar işimi yapamadım bu konuda size bilgi verecek bir nesne oluşturdum ve yukarı fırlatıyorum. Kim ki hataya müdahale etmek isterse bu nesneyi yakalar. Programın çalışma zamanında işini yapamayan koddan programın akışının daha yukarıdaki kodlara aktarılmasını sağlayan bir hata nesnesi oluşturmak.
+
+throw statement : işini yapamayan kod bir statement oluşturur, bu statement'ın yürütülmesi ile programın akışı fonk.'dan çıkar ve hataya müdahale eden kod yakalarsa program akışı o koda geçer.
+
+exception handler : hatayı işleyen kod (hatayı yakalayan kod)
+
+uncaught exception :  Hiç bir kod hatayı yakalamazsa
+	std::terminate
+		std::abort
+	
+
+resumptive : devam ettirmeye yönelik
+hata oldu, hatayı yakaladık, resource leak olmadan devam etti
+
+terminative : sonlanacaksa kayıp olmadan sonlanmalı 
+
+*----------------------------------------------------------------------------------------------------- 
+
+try block 
+
+try{
+	int x = 10;
+	foo();  // foo - bar'ı çağırıp exception throw ederse o da yakalanır
+}
+
+// x burada kullanılamaz, try blok scope'unda
+
+*----------------------------------------------------------------------------------------------------- 
+
+bir fonksiyondan çıkmanın 3 yolu 
+	a) return statement
+	b) exit, abort ...  (programın sonlanmasını sağlayan fonksiyona çağrı)
+	c) throw statement
+	d) coroutine (C++20) : fonksiyonun çalışması durdurulup tekrar başlatılabiliyor
+	
+*----------------------------------------------------------------------------------------------------- 
+
+try bloğu içinden gönderilen hata nesnesinin türü int ise programın akışı catch bloğuna girsin ve
+gönderilen hata nesnesinin değeri catch parametresine kopyalansın
+
+try{
+
+}
+catch(int){
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+try{
+
+}
+catch(MyException &r){  // kopyalama semantiği yerine referans semantiği ile yakalanacak, 
+	// polymorfik bir sınıf hiyerarşisi varsa virtual dispatch de devreye girer 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+// catch blokları fonksiyon değil çünkü geri dönüş değeri yok
+
+try{
+
+}
+catch(int){  
+
+}
+catch(double){
+
+}
+catch(unsigned int){
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+try{
+
+}
+catch(...){   //catch all demek, hangi türden hata gönderilse gönderilsin hatayı yakalar !!!
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void f4()
+{
+	std::cout << "f4 cagirildi\n";
+	throw 1;
+	std::cout << "f4 sona erdi\n";
+}
+
+void f3()
+{
+	std::cout << "f3 cagirildi\n";
+	f4();
+	std::cout << "f3 sona erdi\n";
+}
+
+void f2()
+{
+	std::cout << "f2 cagirildi\n";
+	f3();
+	std::cout << "f2 sona erdi\n";
+}
+
+void f1()
+{
+	std::cout << "f1 cagirildi\n";
+	f2();
+	std::cout << "f1 sona erdi\n";
+}
+
+int main()
+{
+	std::cout << "main cagirildi\n";
+	f1();
+	std::cout << "main sona erdi\n";
+}
+
+sonuç: main cagirildi
+	f1 cagirildi
+	f2 cagirildi
+	f3 cagirildi
+	f4 cagirildi
+
+hata yakalanmadığı için terminate fonk. çağırıldı o da abort fonk. çağırdı.
+1) terminate 
+2) abort
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+burayı anlamazsanız üzülmeyin, C'de function pointer'ı öğrenmemiş olabilirsin
+
+https://www.section.io/engineering-education/function-pointers-in-c++/
+
+
+terminate'in özelleştirilmesi
+
+// using terminate handler = void (*)();
+// veya typedef void (*terminate_handler)();  // terminate_handler function pointer türü
+// terminate_handler  set_terminate(terminate_handler);
+// abort'u çağırmak yerine sizin kayıt ettirdiğiniz fonk. çağıracak 
+
+void f4()
+{
+	std::cout << "f4 cagirildi\n";
+	throw 1;
+	std::cout << "f4 sona erdi\n";
+}
+
+void f3()
+{
+	std::cout << "f3 cagirildi\n";
+	f4();
+	std::cout << "f3 sona erdi\n";
+}
+
+void f2()
+{
+	std::cout << "f2 cagirildi\n";
+	f3();
+	std::cout << "f2 sona erdi\n";
+}
+
+void f1()
+{
+	std::cout << "f1 cagirildi\n";
+	f2();
+	std::cout << "f1 sona erdi\n";
+}
+
+void necfunc()
+{
+	std::cout << "necfunc cagirildi cunku necfun islevini std::terminate cagirdi\n";
+	std::exit(EXIT_FAILURE);
+}
+
+int main()
+{
+	auto fp =std::set_terminate(&necfunc);   
+	 // set_terminate abort yerine belirledigim fonk. (necfunc'ı) cagirdi
+	// set_terminate'in geri dönüş değeri func. pointer
+	
+	
+	
+	std::cout << "main cagirildi\n";
+	f1();
+	std::cout << "main sona erdi\n";
+}
+
+// programın sonlanmasını istemiyorsak exception yakalanmalı
+// exception'ı throw statement'ın olduğu fonk.'da yakalayabilirim. Veya onu çağıran fonk. veya onu da çağıran
+fonk. yakalayabilirim.
+
+*----------------------------------------------------------------------------------------------------- 
+
+void f4()
+{
+	std::cout << "f4 cagirildi\n";
+	throw 1;  // 1.4 yap ve hatanın yakalanamadığını gör !!!
+	std::cout << "f4 sona erdi\n";
+}
+
+void f3()
+{
+	std::cout << "f3 cagirildi\n";
+	f4();
+	std::cout << "f3 sona erdi\n";
+}
+
+void f2()
+{
+	std::cout << "f2 cagirildi\n";
+	f3();
+	std::cout << "f2 sona erdi\n";
+}
+
+void f1()
+{
+	std::cout << "f1 cagirildi\n";
+	f2();
+	std::cout << "f1 sona erdi\n";
+}
+
+void necfunc()
+{
+	std::cout << "necfunc cagirildi cunku necfun islevini std::terminate cagirdi\n";
+	std::exit(EXIT_FAILURE);
+}
+
+int main()
+{
+	std::cout << "main cagirildi\n";
+	
+	try{
+		f1();
+	}
+	catch(int){  // int türden gönderilen hata nesnesini yakalar!!!
+		// burada integral promotion ne de tür dönüşümü var
+		
+		std::cout << "main fonksiyonu içinde hata yakalandı\n";
+	}
+	
+	std::cout << "main sona erdi\n";
+}
+
+// hata yakalandığında hiç birşey olmayacak, catch içindeki kodlar yürütülecek
+
+*----------------------------------------------------------------------------------------------------- 
+
+programın sonlanmasını istemiyorsak exception'ları yakalamam gerekir
+
+*----------------------------------------------------------------------------------------------------- 
+
+	try{
+		f1();
+	}
+	catch(int x){  // x içinde kullanılabilir
+		
+		std::cout << "main fonksiyonu içinde hata yakalandı (catch int x ) x = " << x << "\n";
+	}
+
+*----------------------------------------------------------------------------------------------------- 
+
+	try{
+		f1();
+	}
+	catch(int x){  
+		std::cout << "main fonksiyonu içinde hata yakalandı (catch int x ) x = " << x << "\n";
+	}
+	catch(double x){  
+		std::cout << "main fonksiyonu içinde hata yakalandı (catch double x ) x = " << x << "\n";
+	}
+	catch(char x){  
+		std::cout << "main fonksiyonu içinde hata yakalandı (catch char x ) x = " << x << "\n";
+	}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class ExceptionBase{
+
+};
+
+class NecException : public ExceptionBase{
+
+};
+
+void f4()
+{
+	std::cout << "f4 cagirildi\n";
+	throw NecException{ };  // gecici nesne olusturma ifadesi
+	std::cout << "f4 sona erdi\n";
+}
+
+void f3()
+{
+	std::cout << "f3 cagirildi\n";
+	f4();
+	std::cout << "f3 sona erdi\n";
+}
+
+void f2()
+{
+	std::cout << "f2 cagirildi\n";
+	f3();
+	std::cout << "f2 sona erdi\n";
+}
+
+void f1()
+{
+	std::cout << "f1 cagirildi\n";
+	f2();
+	std::cout << "f1 sona erdi\n";
+}
+
+void necfunc()
+{
+	std::cout << "necfunc cagirildi cunku necfun islevini std::terminate cagirdi\n";
+	std::exit(EXIT_FAILURE);
+}
+
+int main()
+{
+	std::cout << "main cagirildi\n";
+	
+	try{
+		f1();
+	}
+	catch(const NecException& ex){ 
+		
+		std::cout << "main fonksiyonu icinde hata yakalandi (catch const NecException&)\n";
+	}
+	
+	std::cout << "main sona erdi\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	std::cout << "main cagirildi\n";
+	
+	try{
+		f1();
+	}
+	catch(const ExceptionBase&){ 
+		
+		std::cout << "main fonksiyonu icinde hata yakalandi (catch const NecException&)\n";
+	}
+	
+	std::cout << "main sona erdi\n";
+}
+
+eğer catch parametresi bir taban sınıf türünden bir referans (böylece object slicing olmaz, copy const. çağırılmaz) ise
+eğer ExceptionBase'in virtual function'ı olsa virtual dispatch devreye girerdi.
+
+*----------------------------------------------------------------------------------------------------- 
+
+gönderilen hata nesnesinin türü o hata hakkında en önemli bilgi
+
+int türden bir hata nesnesi göndermenin bir esprisi yok. 
+
+hatayı iletmek amaçlı bir sınıf oluşturduğumuzda o sınıfın türü zaten neden hata gönderildiğini anlatan en önemli bilgi
+
+class MathException{
+
+}
+
+class DivideByZeroError{
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+standart kütüphanedeki sınıfların fonk. veya operatörlerin kullanımından dolayı exception throw ederse yakalar
+
+catch(std::exception &ex)
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+catch(std::exception &ex)
+{
+	std::cout << ex.what() << "\n";
+}
+
+hatanın neyle ilgili olduğunu anlatır !!!
+
+virtual dispatch mekanizmasından yararlanabilmek için catch paramatresinin sınıf türünden olmaması gerekiyor. Sınıf türünden referans olması gerekiyor. Çünkü kopyalama söz konusu olunca virtual dispatch devreye girmez, object slicing olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+catch parametrelerini sınıf  türünde yapmayın sınıf türünden referans yapın .
+
+virtual dispatch mekanizmasından yararlanabilmek için catch paramatresinin sınıf türünden olmaması gerekiyor. Sınıf türünden referans olması gerekiyor. Çünkü kopyalama söz konusu olunca virtual dispatch devreye girmez, object slicing olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+catch(std::Myexception &ex)
+{
+	// exception nesnesi değiştirilebilir
+	 ex.set_value(".........");
+}
+
+catch(const std::Myexception &ex)
+{
+	// exception nesnesi salt okuma amaçlı kullanılacak !!!
+	 ex.set_value(".........");  // const üye fonk. değilse sentax hatası
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+runtime hatalarını yakalamak için
+
+class exception{
+public:
+	virtual const char* what()const;
+};
+
+exception sınıfından kalıtım yoluyla bir sınıf oluşturulduğunda ve o sınıf türünden bir hata nesnesi gönderildiğinde o sınıf türünden parametreye sahip catch bloğuyla bu hatayı yakalayabileceğiniz gibi exception türünden referans parametreli catch 
+bloğuyla da yakalayabilirsiniz. What fonks. çağırdığınızda parametre exception ref. ise burada çağırılan fonk. 
+virtual dispatch mekanizması ile kalıtım yoluyla elde edilen sınıfın override olur. 
+Override etmemişse exception'ın what fonk. çağırılacak. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+
+
+exception sınıfından iki tane kalıtım yoluyla sınıf elde edilir. Biri logic_error diğeri runtime_error.
+
+logic_error : programlama yoluyla yakalanabilecek logic hatalar
+domain error, invalid arg, vs.
+
+runtime_error : 
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+out_of_range exception'ı hangi parametreye sahip catch blokları ile yakalayabilirim ?
+
+1) out_of_range
+2) logic_error
+3) exception
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()
+{
+	std::string str("necati ergin");
+	
+	std::size_t idx = 464;
+	
+	auto c = str.at(idx);
+	std::cout << "bu yazi gorulmeyecek\n";
+}
+
+int main()
+{
+	try{
+		func();
+	}
+	// catch(const std::exception& ex){
+	// catch(const std::logic_error& ex){
+	catch(const std::out_of_range& ex){
+		std::cout << " exception caught : " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+	try{
+		func();
+	}
+	catch(const std::exception& ex){
+	
+	}
+	catch(const std::out_of_range& ex){
+		
+	}
+
+doğru değil
+
+alttaki doğru !!! (daha özelden genele sıralama)
+
+	try{
+		func();
+	}
+	catch(const std::out_of_range& ex){
+	
+	}
+	catch(const std::logic_error& ex){
+	
+	}
+	catch(const std::exception& ex){
+	
+	}
+	catch(...){
+	
+	}
+
+*----------------------------------------------------------------------------------------------------- 
+
+throw expr;
+
+class BadDate {
+
+};
+
+void func()
+{
+	BadDate bd;
+	
+	throw bd;
+	
+	// gönderilen hata nesnesi bd nesnesi mi ? 
+	//  hayır !!!
+	//  çünkü bd nesnesinin hayatı bu programın akışı çıktıktan sonra
+	// sona erer. O zaman dangling referans olur. 
+	// Derleyici, kendisi throw ifadesi karşılığı bir exception nesnesi oluşturulur.
+	// gönderilen throw ifadesindeki nesne değil
+	// derleyicinin BadDate türünden bir hata nesnesi oluşturması için 
+	// BadDate sınıfının copy const. çağrı yapması gerekiyor. 
+	// Önce derleyici bir hata nesnesi oluşturacak, bu nesneye ilk değeri veren throw ifadesi
+	// burada da iki ihtimal var, birincisi sınıfın copy const. çağrı yapmak, ikincisi eğer bu ifade 
+	// r value expr. ise sınıfın move const. ile , üçünçü copy elision
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class BadDate {
+
+};
+
+void func()
+{
+	throw std::bad_alloc{};  // geçici nesne oluşturma sentaxı, copy elision'dan faydalanma
+}
+
+bazı sınıfların default const. yok, sadece string veya const char parametreli cont. var.
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <stdexcept>
+
+void func(const std::string& name)
+{
+	if(1){
+		throw std::out_of_range{name + "yazisi"};  // default const. yok
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <stdexcept>
+
+void func(const std::string& name)
+{
+	try{
+		throw std::out_of_range{name + "yazisi"}; 
+	}
+	catch(std::exception ex){  
+	
+	// sentax hatası, referans deklatörü yazılmalı, yoksa virtual dispatch devre dışı kalır, object slicing olur
+	
+	std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+catch(std::exception& ex)  // olmalı !!!
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func(const std::string& name)
+{
+	try{
+		throw std::out_of_range{name + "yazisi"}; 
+	}
+	catch(const char *p){  
+	
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+enum class Alert{Red, Green, Yellow};
+
+void func()
+{
+	throw Alert::Red;
+}
+
+// eğer gönderilen hata nesnesi yakalanırsa programın akışı o catch bloğuna girecek, catch'deki kodlar çalışacak, eğer program sonlandırılabilir veya devam edebilir. Exception handle edilmiş olacak !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+hata işleyen kod (hatayı yakalayan kod) tipik olarak neler yapar ?
+
+try{
+	foo();
+}
+catch(const BadDate&){
+	///
+}
+
+her hatayı yakalamaya çalışmayın !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception safety : gönderilen exception'lar yakalanacak, yakalanmayan exception olmayacak , 
+bir exception yakalandığında da bir kaynak sızıntısı olmayacak
+
+*----------------------------------------------------------------------------------------------------- 
+
+rethrow : exception'ın rethrow edilmesi
+yakalanan hata nesnesinin kendisinin gönderilmesi demek
+
+ben bana düşeni yaptım, ama halen işimi yapamamış durumdayım. Ben de beni çağıranlara 
+aynı exception'ı tekrar gönderiyorum !!!
+
+try{
+	foo();
+}
+catch(const std::exception& ex){ 
+	// ...
+	
+	throw; // rethrow statement, hangi hatayı yakaladıysan onu gönderiyorsun
+	
+	
+	throw ex;  // ikinci bir hata nesnesi oluşturuldu, copy const. çağırılacak ve dinamik tür kaybedilir,
+	// // örneğin out_of_range burada exception türüne dönüşüyor
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+try{
+	foo();
+}
+catch(const std::exception& ex){ 
+	// ...
+	
+	throw;  // rethrow statement
+	throw ex;  // iki throw bambaşka !!!
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception'ın translate edilmesi :
+
+bad alloc yakaladım ama yukarı farklı bir exception gönderdim
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception'ı yakalayan kod neler yapabilir ?
+1) exception'ı tamamen handle eder program catch ile çalışmaya devam eder
+2) exception'ı yakalar ama başka bir sınıf türünden bir exception gönderir
+3) exception'ı yakalar ama kısmi olarak müdahale eder, gönderilen exception'ın kendisini rethrow eder  
+4) exception'ı yakalar sonra sonlandırmayı tercih eder
