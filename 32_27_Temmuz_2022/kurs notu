@@ -1,0 +1,1392 @@
+
+İçerik:
+
+reference qualifier
+TMP (template meta programming) 
+fonksiyonlar için explicit specialization
+Partial specialization
+ALIAS TEMPLATE (tür eş isim şablonu)
+
+özet:
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+mülakat : most vexing parse
+uydurulmuş scott meyers tarafından
+ayrıca universal reference'ı uydurmuş
+
+eğer bir kod yapısı hem bir fonksiyon bildirimi hem  aynı zamanda bir değişken tanımlaması anlamına geliyorsa fonksiyon bildiriminin önceliği var.  Bazı kodlarda bir nesne tanımladığımızı zannedeceğiz (instantiation) olamayacak bir function decleration olacak.
+
+class A{};
+
+class B{
+public:
+	B(A){};
+	
+	void foo();
+};
+
+int main()
+{
+	B bx(A());  // A() geçici nesne gönderiliyor
+	
+	bx.foo();  // hata, bx nesnenin ismi değil !!
+}
+
+ismi bx olan bir fonksiyon tanımlamış oluyoruz !!
+most vexing parse
+Yeni derleyiciler maharetliler, bir uyarı mesajı veriyorlar !!
+
+*-----------------------------------------------------------------------------------------------------    
+
+Nasıl oluyor da bu fonksiyon bildirimi oluyor ?
+
+C bilmek gerek bunu anlamak için. 
+
+class A{};
+
+class B{
+public:
+	B(A){};
+	
+	void foo();
+};
+
+B bx(A(*)());  // geri dönüş değeri A sınıfı olan ve parametresi olmayan bir function adresi isteyen function pointer. Bu aşağıdaki bildirimle aynı
+
+int main()
+{
+	B bx(A());  // A() geçici nesne gönderiliyor
+	
+	bx.foo();  // hata, bx nesnenin ismi değil !!
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+class A{};
+
+class B{
+public:
+	B(A){};
+	
+	void foo();
+};
+
+// int(int)  : bir fonksiyon türü, parametresi int geri dönüş değeri int olan fonksiyon türü
+// int(*)(int) : fonksiyon adresi türü, int(int) fonk.'nun adresi olacak fonksiyon adresi türü
+
+int main()
+{
+	B bx(A());  // A() geçici nesne gönderiliyor
+	
+	bx.foo();  // hata, bx nesnenin ismi değil !!
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+C, C++'da bir fonksiyonun parametresi dizi olamıyor, fonksiyon olamıyor. Ama siz fonk. bildirirken parametresini bir dizi yaparsanız dikey uygulanır ve 
+
+void func(int x[]);
+void func(int* x); // derleyici üsttekini böyle ele alır. 
+
+aynı şey fonksiyon türü için de geçerli
+
+void func(int x());  // fonksiyon parametresi fonks. olamayacağından dikey uygulanır ve 
+void func(int (*x)()); // böyle ele alınır
+
+void func(int (int));
+void func(int(*)(int)); // ikisi arasında fark yok
+
+*-----------------------------------------------------------------------------------------------------    
+
+B bx(A());  // bunu function pointer sentaxı ile yazsaydık bildirimi şu şekilde yapacaktık :
+B bx(A(*)());
+
+*-----------------------------------------------------------------------------------------------------    
+
+kanıtlama:
+
+class A{};
+
+class B{
+public:
+	B(A){};
+	
+	void foo();
+};
+
+// A foo();
+
+int main()
+{
+	B bx(A()); // geri dönüş değeri türü B, ismi bx, parametresi 
+	B bx1(A{});
+	B bx2{ A() };
+	B bx3{ A{} };
+	B bx4((A())); // bu eski C'de geçerli yöntem
+}
+
+
+*-----------------------------------------------------------------------------------------------------    
+
+soru:
+
+// reference qualifier
+class Myclas{
+public:
+	void func()&;  // bu bize anlatılmadı !!!
+};
+
+--------------------
+
+reference qualifier kullanmazsanız bu fonksiyon rvalue, lvalue exp. olan sınıf nesneleri için çağırılabilir
+
+class Myclas{
+public:
+	void func();  // bu bize anlatılmadı !!!
+};
+
+int main()
+{
+	Myclasss m1;
+	m1.func();  // lvalue sınıf nesnesi
+	Myclass{}.func();   // rvalue sınıf nesnesi
+}
+
+----------------
+
+sadece lvalue sınıf nesneleri ile çağırmak, rvalue sınıf nesneleri ile çağırmayı engellemek istiyorum
+
+// reference qualifier
+
+class Myclass{
+public:
+	void func()&;  // bu fonksiyon sadece lvalue olan sınıf nesneleri ile çağrılabilir
+};
+
+int main()
+{
+	Myclasss m1;
+	m1.func();  // lvalue sınıf nesnesi
+	Myclass{}.func();   // sentax hatası, rvalue sınıf nesnesi
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+// reference qualifier
+
+class Myclass{
+public:
+	void func()&&;   // bu fonksiyon sadece rvalue olan sınıf nesneleri için çağrılabilir
+};
+
+int main()
+{
+	Myclass m1;
+	m1.func();  // sentax hatası, lvalue sınıf nesnesi
+	Myclass{}.func();   // ok, rvalue sınıf nesnesi
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+// reference qualifier
+
+class Myclass{
+public:
+	void func()const &;  // bu fonksiyon sadece const lvalue olan sınıf nesneleri ile çağrılabilir
+};
+
+*-----------------------------------------------------------------------------------------------------    
+
+// reference qualifier
+
+class Myclass{
+public:
+
+};
+
+int main()
+{
+	Myclass m;
+	Myclass{} = m; // sentax hatası değil, çağrılan atama operator fonksiyonu, derleyici yazar, default eder, lvalue ref. qualifier taşıyor mu ? hayır, 
+}
+
+--------------------
+
+// reference qualifier
+
+class Myclass{
+public:
+	Myclass& operator = (const Myclass&)& = default;
+	// derleyici lvalue ref. qualifier ekle dedik
+};
+
+int main()
+{
+	Myclass m;
+	Myclass{} = m; 
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+// reference qualifier
+
+class Myclass{
+public:
+	void func()&
+	{
+		std::cout << "Myclass::func()&\n";
+	}
+	
+	void func()const &
+	{
+		std::cout << "Myclass::func()const &\n";
+	}
+	
+	void func()&&
+	{
+		std::cout << "Myclass::func()&&\n";
+	}
+};
+
+int main()
+{
+	Myclass m;
+	const Myclass cm;
+	
+	m.func();// hangisi çağırılacak, ilk olan
+	
+	cm.func(); // ortaki çağrılır
+	
+	Myclass{}.func(); // prvalue expr., en alttaki çağrılır
+}
+
+*-----------------------------------------------------------------------------------------------------    
+
+REFENCE QUALIFIER
+
+reference qualified overload ile olmayan bir arada olamaz, çağrılması değil bir arada olması sentax hatası
+
+class Myclass{
+public:
+	void func()
+	{
+		std::cout << "Myclass::func()&\n";
+	}
+	
+	void func()&
+	{
+		std::cout << "Myclass::func()&\n";
+	}
+};
+
+sentax hatası !!!
+
+*-----------------------------------------------------------------------------------------------------    
+
+template specialization neydi ? 
+template'den derleyicinin yazdığı kod. template'i instantiate ettiğimizde specialization diyorduk.
+
+explicit specialization'da derleyici bu template argümanı kullanıldığında derleyici sen specialization oluşturma.
+Ben sana o kodu veriyorum. Onu kullanacaksın. Hem fonksiyon hem sınıf şablonları için olan bir mekanizma.
+Ama sınıf şablonlarında daha fazla kullanılıyor. Fonksiyon şablonlarında seyrek kullanıyor çünkü fonksiyon şablonlarını
+overload etme imkanı var. Bu daha kolay, daha pratik, hataya kapalı
+
+*-----------------------------------------------------------------------------------------------------    
+
+template <typename T>
+class Nec{
+
+};
+
+template <>
+class Nec<int>{ // class Nec'in int açılımı
+
+};
+
+template <>
+class Nec<double>{ // class Nec'in double açılımı
+
+};
+
+*-----------------------------------------------------------------------------------------------------  
+
+diğer template argümanları için bir specialization oluşturulmasını istemiyorsanız, sınıf şablonunu sadece bildirebilirsiniz.
+Sınıf şablonu delete edilemez.
+
+template <typename T>
+class Nec;
+
+template <>
+class Nec<int>{ // class Nec'in int açılımı
+
+};
+
+template <>
+class Nec<double>{ // class Nec'in double açılımı
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T, typename U>
+class Myclass{
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template<>
+class Myclass<int, double>{
+public:
+	Myclass()
+	{
+		std::cout << "exp. spec. <int, double>\n";
+	}
+};
+
+int main()
+{
+	Myclass<int, int> m1;
+	Myclass<double, int> m2;
+	Myclass<int, double> m3;  // specialization burada kullanılır
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+non-type parametre için de explicit specialization verebilirsiniz
+
+template <int x>
+class Myclass{
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template<>
+class Myclass<5>{
+public:
+	Myclass()
+	{
+		std::cout << "exp. spec. <5>\n";
+	}
+};
+
+int main()
+{
+	Myclass<2> m2;
+	Myclass<3> m3;
+	Myclass<4> m4;
+	Myclass<5> m5;  // sadece burası exp. spec.
+	Myclass<6> m6;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+çok geniş çok detaylı görmeyeceğimiz bir alan var.
+
+TMP (template meta programming) : derleme zamanında bazı değerlerin hesaplanmasına yönelik
+
+// meta function (sınıflarla oluşturulur, compile time'da değer veya tür bilgisi üretmek için sınıfları kullanıyorum)
+
+eski kodlamaya göre
+
+template <int n>
+struct Factorial{  // struct kullanma nedenim struct elemanlarının public olması
+	const static int value = n * Factorial< n -1 >::value;  // sınıfın static elemanı const. ise sınıf içinde ilk değer verilebilir
+};
+
+template< >
+struct Factorial<1> {
+	const static int value = 1;
+}
+
+int main()
+{
+	int a[Factorial<5>::value]
+}
+
+compile time recursive'i sonlandırmak için explicit spec. TMP'de kullanılır. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat sorusu : öyle bir kod yaz ki 0 - 100 arası değerleri yazdırsın ama döngü deyimi kullanmayacaksın.
+
+1. çözüm
+struct Nec{
+	Nec()
+	{
+		static int x = 0;
+		
+		std::cout << x++ << " ";
+	}
+};
+
+int main()
+{
+	Nec a[100];
+}
+
+2. çözüm (TMP ile)
+
+template<int n>
+struct Nec: public Nec<n - 1>{  // Nec'in 100 açılımının taban sınıfı Nec'in 99 açılımı
+	Nec()
+	{
+		std::cout << n << " ";
+	}
+};
+
+template <>
+struct Nec<0>{  // derleyici 0 açılımı için bir spec. kodu yazmayacak
+
+};
+
+int main()
+{
+	Nec<100> x;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+iki tane tipik meta function yapısı var
+1) compile time'da değer hesaplamaya yönelik
+2) compile time'da tür hesaplamak 
+
+*----------------------------------------------------------------------------------------------------- 
+
+fonksiyonlar için explicit specialization
+
+template<typename T>
+void func(const T&)
+{
+	std::cout << "primary template\n";
+}
+
+template<>
+void func(const int&)
+{
+	std::cout << "explicit specialization\n";
+}
+
+void func(double)
+{
+	std::cout << "ordinary function\n";
+}
+
+int main()
+{
+	func(10);  //fonksiyon şablonu seçilecek, int türü için explicit spec. kullanılacak
+	func(0.42); // ordinary function
+	func('A');  //  primary template
+	func("10"); //  primary template
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<typename T>
+void func(T)
+{
+	std::cout << "1";
+}
+
+template<>
+void func(int*)
+{
+	std::cout << "2";
+}
+
+template<typename T>
+void func(T*)
+{
+	std::cout << "3";
+}
+
+int main()
+{
+	int* p = nullptr;
+	
+	func(p);  // cevap : 3,  explicit spec. overload resolution'a katılmaz. 
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template<typename T>
+void func(T)
+{
+	std::cout << "1";
+}
+
+template<typename T>
+void func(T*)
+{
+	std::cout << "3";
+}
+
+int main()
+{
+	int* p = nullptr;
+	
+	func(p);  // partial ordering rules, daha specifik olan çağrılır, 3 yazar
+}
+
+
+*-----------------------------------------------------------------------------------------------------   
+
+template<typename T>
+void func(T)
+{
+	std::cout << "1";
+}
+
+template<typename T>
+void func(int*)
+{
+	std::cout << "2";
+}
+
+template<>
+void func(int*)
+{
+	std::cout << "3";
+}
+
+int main()
+{
+	int* p = nullptr;
+	
+	func(p);  // cevap : explicit spec. ikinci olan seçilecek, T'nin int olması durumunda 3 cevabı verilir. Her template görülür
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template<typename T>
+void func(T)
+{
+	std::cout << "1";
+}
+
+template<>
+void func(int*)
+{
+	std::cout << "3";
+}
+
+template<typename T>
+void func(int*)
+{
+	std::cout << "2";
+}
+
+int main()
+{
+	int* p = nullptr;
+	
+	func(p);  // cevap : en son template görülmez. 
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template<typename T>
+void func(T)
+{
+	std::cout << "1";
+}
+
+template<>
+void func(int*)
+{
+	std::cout << "2";
+}
+
+template<typename T>
+void func(T*)
+{
+	std::cout << "3";
+}
+
+template<>
+void func(int*)
+{
+	std::cout << "4";
+}
+
+int main()
+{
+	int* p = nullptr;
+	
+	func(p);  // cevap : 4, her iki template görülür durumda, daha spesifik olan 2. template seçilir.
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+explicit spec. sadece global fonk. için mi verilir,  sınıfın üye fonk. için de exp. spec. verilebilir mi ?
+evet
+
+template <typename T>
+struct Nec{
+	void func()
+	{
+		std::cout << "primary template\n";  
+	}
+};
+
+template < >
+void Nec<double>::func()
+{
+	std::cout << "explicit spec. for Nec<double>\n";  // explicit specialization sınıf için değil de func için verilmiş
+}
+
+int main()
+{
+	Nec<int>{}.func();  
+	Nec<double>{}.func();
+}
+
+Nec'in double açılımı sözkonusu olduğunda onun func fonksiyonu çağırıldığında explicit spec.
+kodu kullanılacak ama Nec'in diğer açılımları için func fonksiyonu çağırıldığında primary template'deki
+kod kullanılacak.
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T>
+class A{
+public:
+	static int x;
+};
+
+template <typename T>
+int A<T>::x = 99;
+
+template<>
+int A<int>::x = 20;
+
+int main()
+{
+	std::cout << A<double>::x << "\n";
+	std::cout << A<int>::x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+mülakat sorusu: 
+
+sınıf şablonun her bir açılımı ayrı bir sınıf, dolayısıyla siz sınıf şablonuna static veri elemanı koyarsanız,
+her specialization için ayrı bir veri elemanı var.
+
+template <typename T>
+class A{
+public:
+	inline static int x{};
+};
+
+int main()
+{
+	std::cout << A<double>::x++ << "\n";
+	std::cout << A<int>::x++ << "\n";
+	std::cout << A<long>::x++ << "\n";
+	std::cout << A<double>::x++ << "\n";
+}
+
+sınıf şablonu değil de sınıf olsa tüm sınıf nesneleri için bir tane x olacaktı. 
+
+*-----------------------------------------------------------------------------------------------------   
+
+PARTIAL SPECIALIZATION: (kısmi özelleştirme, sadece sınıf şablonları için var)
+
+tür kümesi için mesela dizi türü olması durumunda bu specialization kullanılsın.
+
+template <typename T>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template <typename T>
+class Myclass <T*> {
+public:
+	Myclass()
+	{
+		std::cout << "partial spec. T* \n";
+	}
+};
+
+int main()
+{
+	Myclass<int> m1; // primary template kullanılır çünkü template argümanı bir pointer türü değil
+	Myclass<int*> m2;  // partial spec. T*
+	Myclass<int**> m3;  // partial spec. T*
+	Myclass<double*> m4;   // partial spec. T*
+	Myclass<double> m5;   // primary template
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template <typename T>
+class Myclass <T*> {
+public:
+	Myclass()
+	{
+		std::cout << "partial spec. T* \n";
+	}
+};
+
+template <typename T>
+class Myclass <T&> {
+public:
+	Myclass()
+	{
+		std::cout << "partial spec. T& \n";
+	}
+};
+
+template <typename T>
+class Myclass <T&&> {
+public:
+	Myclass()
+	{
+		std::cout << "partial spec. T&& \n";
+	}
+};
+
+template <typename T>
+class Myclass <T[5]> {  // 5 elemanlı dizi için bu template kullanılacak
+public:
+	Myclass()
+	{
+		std::cout << "partial spec. T[5] \n";
+	}
+};
+
+int main()
+{
+	Myclass<int> m1;  // primary template
+	Myclass<int*> m2;   // partial spec. T*
+	Myclass<int&> m3;  // partial spec. T& 
+	Myclass<int&&> m4;  // partial spec. T&& 
+	Myclass<double[5]> m5;   // partial spec. T[5]
+	Myclass<int[6]> m6;   // primary template
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T, typename U>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template<typename T>
+class Myclass<T, T> {  // argümanları aynı tür olması durumunda partial spec. kullanılır
+public:
+	Myclass()
+	{
+		std::cout << "partial spec\n";
+	}
+};
+
+int main()
+{
+	Myclass<int, double> m1;  // primary template
+	Myclass<int, int> m2;  // partial spec
+	Myclass<int*, int*> m3;  // partial spec
+	Myclass<int*, double*> m4; // primary template
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T, typename U>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template<typename T>
+class Myclass<T, int> {  // argümanlardan ikinci argümanın int olması durumunda kullanılır
+public:
+	Myclass()
+	{
+		std::cout << "partial spec\n";
+	}
+};
+
+int main()
+{
+		Myclass<double, int> m1;
+		Myclass<int, double> m2;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T, typename U>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template<typename T>
+class Myclass<T*, T*> {  // argümanlardan ikisi de pointer olunca kullanılır
+public:
+	Myclass()
+	{
+		std::cout << "partial spec\n";
+	}
+};
+
+int main()
+{
+		Myclass<double, int> m1;  // primary template
+		Myclass<int, double> m2;  // primary template
+		Myclass<long*, long*> m3;  //  partial spec
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+STL'i öğrenirken hepsi karşımıza çıkacak !!!
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T>
+class Myclass {
+public:
+	Myclass()
+	{
+		std::cout << "primary template\n";
+	}
+};
+
+template <typename T, typename U>  // önemli olan template argümanın sayısının tutması
+class Myclass<std::pair<T, U>> {
+public:
+	Myclass()
+	{
+		std::cout << "partial spec.\n";
+	}
+};
+
+int main()
+{
+	Myclass<int> m1;  // primary template
+	Myclass<std::string> m2;  // primary template
+	Myclass<std::pair<int,double>> m3;  // partial spec.
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+// ismi power olan bir meta function oluşturunuz
+// a üstü b hesaplamasını compile time'da yapacak
+
+int main()
+{
+	constexpr auto val = power<2,5>::value;
+	constexpr auto val = power<5,7>::value;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+bir sınıfın bir global fonk. fonksiyon şablonu olabilir
+üye fonksiyonu fonksiyon şablonu olabilir. (member template)
+constructor  fonksiyon şablonu olabilir
+
+*-----------------------------------------------------------------------------------------------------   
+
+class Myclass{
+public:
+	template <typename T>
+	void func(T x);
+};
+
+üsttekini şununla karıştırmayın
+normal sınıf şablonlarının üye fonksiyonu ile karıştırmıyorsunuz
+
+template <typename T>
+class Myclass{
+public:
+	void func(T x);  // bu member template değil
+};
+
+int main()
+{
+	Myclass<int> x;
+	Myclass<double> y;
+	
+	x.func();  // bu bir fonks. şablonu değil
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+soru:
+
+template <typename T>
+class Myclass{
+public:
+	void func(Myclass);  // Myclass<T> demesem de öyle olur.
+};
+
+int main()
+{
+	Myclass<int> m1, m2;
+	Myclass<double>m3;
+	
+	m3.func(m1);  // geçerli mi değil mi ?  geçersiz, Myclass'in int açılımı ayrı bir sınıf, Myclass'ın double açılımı ayrı bir sınıf
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+eğer bir sınıf şablonun bir üye fonksiyonu aynı sınıf şablonundan elde edilecek başka bir specialization türünden parametre alabilsin istiyorsanız bu durumda fonksiyonu member template yapıyorsunuz
+
+template <typename T>
+class Myclass{
+public:
+	template <typename U>
+	void func(Myclass<U> x)
+	{
+		std::cout << "typeid(*this) :  " << typeid(*this).name() << "\n";
+		std::cout << "typeid(x) : " << typeid(x).name() << "\n";
+	}
+};
+
+int main()
+{
+	Myclass<int> m1, m2;
+	Myclass<double>m3;
+	
+	m3.func(m1);  
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+iki değeri birbirleri ile ilişkili kullanmak istiyoruz
+
+template <typename T, typename U>
+struct Pair{   // öğeleri public
+
+};
+
+*-----------------------------------------------------------------------------------------------------   
+
+int main()
+{
+	std::pair<int, string> p;  // pair nesnesi default init edildiğinde first'i ve second'i value init. edilir.
+	// sayı : 0, pointer: nullptr, bool : false, class: default init edilecek
+	
+	std::cout << px.first << "\n";
+	std::cout << px.second.length() << "\n";
+	
+	p.first = 45;
+	p.second = "mustafa";
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T, typename U>
+struct Pair{
+
+};
+
+int main()
+{
+	Pair<double, double> p1;
+	Pair<int, int> p2;
+	
+	p1 = p2;   // hatalı, bunlar ayrı sınıflar
+	
+	std::pair<double, double> p3;
+	std::pair<int, int> p4;
+	p3 = p4;  // ok , demek ki bu sınıfın copy const.'ı member template
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+MEMBER TEMPLATE
+
+template <typename T, typename U>
+struct Pair {
+	Pair& operator = (const Pair&)
+};
+
+int main()
+{
+	Pair<double, double> p1;
+	Pair<int, int> p2;
+	
+	p1 = p2;  // sentax hatası, çünkü aynı tür değil
+}
+
+----------------------------
+
+template <typename T, typename U>
+struct Pair {
+
+	template <typename X, typename Y>  // member template
+	Pair& operator = (const Pair<X, Y>&)
+};
+
+int main()
+{
+	Pair<double, double> p1;
+	Pair<int, int> p2;
+	
+	p1 = p2;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T, typename U>
+struct Pair {
+
+	template <typename X, typename Y>  // member template
+	Pair& operator = (const Pair<X, Y>& other)
+	{
+		first = other.first;
+		second = other.second;
+		
+		return *this;
+	}
+	
+	T first;
+	U second;
+};
+
+int main()
+{
+	Pair<double, double> p1;
+	Pair<int, int> p2;
+	
+	p1 = p2;  // ok
+	
+	Pair<string, string> p3;
+	Pair<double, double> p4;
+	
+	p3 = p4;  // legal olmaz, çünkü string'e double atamış olurum
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+stl'deki birçok algoritma geri dönüş değeri pair
+
+*-----------------------------------------------------------------------------------------------------   
+
+bir fonksiyonun iki tane değer döndürmesi
+
+struct Retval{
+	int x;
+	double dval;
+};
+
+struct Retval foo(void);
+
+----------------------
+
+std::pair<int, int> foo();
+
+*-----------------------------------------------------------------------------------------------------   
+
+class Myclass{
+
+private:
+	std::pair<int, int> m_x;
+};
+
+*-----------------------------------------------------------------------------------------------------   
+
+sınıf şablonları için deduction mekanizması
+bu sınıf şablonlarında yok fonksiyon şablonlarında vardı
+
+template <typename T, typename U>
+class Myclass{
+
+};
+
+int main()
+{
+	// Myclass<int, double> mx; bunu kullanmak istemiyorum
+}
+
+---------------------------
+
+maliyeti de yok, compiler time'da biter
+
+template <typename T, typename U>
+class Myclass{
+	Myclass(const T&, const U&)
+};
+
+template <typename T, typename U>
+Myclass<T, U> make_myclass(const T& t, const U& u)
+{
+	return Myclass<T, U>{t, u};
+}
+
+int main()
+{
+	// Myclass<int, double> mx; bunu kullanmak istemiyorum
+	
+	std::string str{" ali "};
+	double dval{ };
+	
+	auto m = make_myclass(12, 5.65);
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+pair oluşturmanın yolları
+
+1) pair nesnesinin default init. etme
+
+int main()
+{
+	pair<int, double> p1;
+	pair<long, char> p2{ 34L, 'A'};
+	// since C++ 17
+	
+	pair p3{ 3.4f, 8.7};
+	
+	auto p4 = make_pair(34, 4.5);
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+int main()
+{
+	pair<pair<int, double>, pair<string, string>> x;
+	x.first.second;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+pair'in inserter'ı yok (değeri çıkış akımına verecek bir çıkış fonk. yok)
+
+int main()
+{
+	std::cout << make_pair(12, 4.5);  // hata
+}
+---------------------------
+
+kendim yazabilirim
+
+#include <bitset>
+
+template <typename T, typename U>
+std::ostream& operator << (std::ostream& os, const std::pair<T,U>&p);
+{
+	return os << "[" << p.first << ', ' << p.second << "]";
+}
+
+int main()
+{
+	std::cout << std::make_pair(12, 4.5) << "\n";
+	std::cout << std::make_pair(make_pair(12, 4.5), make_pair("ali", bitset<16>(23)) << "\n";  // 3. tane inserter yazar
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+first'ü küçük olan küçüktür,
+first'leri eşit ise second'ı küçük olan küçüktür.
+
+int main()
+{
+	pair p1{ 3, 4.5};
+	pair p1{ 13, 1.2};
+	
+	std::cout << (p1 < p2);
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+fonksiyonu biz yazsak
+
+template <typename T, typename U>
+bool operator<(const std::pair<T, U>& lhs, const std::pair<T, U>& rhs)
+{
+	return lhs.first < rhs.first || !(rhs.first < lhs.first) && lhs.second < rhs.second;  // böyle yazılır dikkat, eşittir'i kullansaydım küçüktür operator fonksiyonu olan fakat eşiti olmayan sınıflar için sentax hatası olurdu
+}
+
+int main()
+{
+	pair p1{ 3, 4.5};
+	pair p1{ 13, 1.2};
+	
+	std::cout << (p1 < p2);
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+ALIAS TEMPLATE (tür eş isim şablonu)
+
+typedef int (*FCMP)(const char*, const char*);  // ikisi de ok
+using FCMP = int(*)(const char*, const char*);  // ikisi de ok, daha okuma kolay, template haline getirme var
+
+int main()
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T>
+using Ptr = T*;   // ne demek
+
+int main()
+{
+	Ptr<int> p;  // int* türünden
+	
+	int x{};
+	Ptr<int> pt;  = &x;
+	
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T, int size>
+using Array = T[size];
+
+int main()
+{
+	Array<double, 5> a;
+	
+	Array<int, 20> a[5];  // int a[5][20]'ye eşdeğer
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T>
+using Array5 = T[5];
+
+int main()
+{
+	Array5<int> a;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+üstteki örnekler pek kullanılmaz
+asıl kullanım amacı
+
+template <typename T, typename U>
+class Myclass{
+
+};
+
+template <typename T>
+using Nec = Myclass<T, int>;
+
+int main()
+{
+	Nec<double>
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+template <typename T>
+using epair = std::pair<T, T>
+
+int main()
+{
+	epair<int> a;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+#include <set>
+#include <function>
+
+int main()
+{
+	std::set<int, std::greater<int>> myset; // yazma zorluğu
+}
+
+-----------------------
+alias template ile yazarsak:
+
+template <typename Key>
+using gset = set::set<Key, std::greater<Key>>;
+
+int main()
+{
+	gset<int> myset;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+container'lar da sınıf şablonudur
+
+container adaptörü denilen sınıflar var,bir container nesnesini composition containment yoluyla eleman olarak alarak
+bir data type oluşturuyorlar
+
+3. container adaptörü var
+1) stack
+2) queue
+3) priority queue
+
+*-----------------------------------------------------------------------------------------------------   
+
+#include <stack>
+
+int main()
+{
+	std::stack<int, deque<int>>; // stack<int>'e eşdeğer
+	
+	std::stack<int> mystack;
+	
+	std::stack<std::string,  std::vector<std::string>> s_stack;  // yazma ve okuma zorluğu var !!
+}
+-----------------------
+alias template ile yazarsak:
+
+template <typename T>
+using vstack = std::stack<T, std::vector<T>>;
+
+int main()
+{
+	vstack<int>;
+}
+
+*-----------------------------------------------------------------------------------------------------   
+
+hatadan korkmayın hedefinizin dışında kod oluşmasından korkun
+
+*-----------------------------------------------------------------------------------------------------   
+
+alias template'in diğer faydası template kodlar söz konusu olduğu zaman
+typename anahtar sözcüğünü kullanmak zorunluydu. Alias template kullanırsanız
+bir kere kullanırsınız bir daha kullanmak zorunda kalmazsınız
+
+#include <type_traits>
+
+template <typename T>
+using add_pointer_t = typename std::add_pointer<T>::type
+
+int main()
+{
+	// std::add_pointer<int>::type;  // bunun yerine
+	add_pointer_t<int>;  // böylece type'i kullanmak zorunda kalmayacağım
+}
+
+*-----------------------------------------------------------------------------------------------------   
