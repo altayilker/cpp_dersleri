@@ -1,0 +1,868 @@
+
+İçerik:   
+
+
+
+özet:
+
+*----------------------------------------------------------------------------------------------------- 
+
+taban sınıfların destructor'ı public virtual veya protected non-virtual olmalı
+
+class Base{
+public:
+	virtual ~Base() = default;
+	void func(int);
+	void func(long);
+	void func(char);
+};
+
+class Der : public Base{
+public:
+	using Base::func;  // 3 overload da görünür hale gelir
+	void func(int, int);
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.func(12);
+	myder.func(12L);
+	myder.func('A');
+	myder.func(12 ,34);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	virtual ~Base() = default;
+	void func(int);
+};
+
+class Der : public Base{
+public:
+	using Base::func;
+	void func(int);
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.func(12);  // bu durumda türemiş sınıfın func'ı çağrılır
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+protected:
+	int mx;
+};
+
+class Der : public Base{
+public:
+	using Base::mx;
+};
+
+int main()
+{
+	Der myder;
+	
+	myder.mx = 10;  // ok
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+protected:
+	using value_type = int;   // type alias oluşturma sentaxı
+};
+
+class Der : public Base{
+public:
+	
+};
+
+int main()
+{
+	Der myder;
+	
+	Der::value_type x; // geçersiz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+protected:
+	using value_type = int;
+};
+
+class Der : public Base{
+public:
+	using Base::value_type;
+};
+
+int main()
+{
+	Der myder;
+	
+	Der::value_type x; 
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+taban sınıfın const. türemiş sınıf içinde doğrudan görünür değil !!
+
+class Base{
+public:
+	Base(int);
+	Base(int, int);
+	void func(int);
+	void foo(int);
+	void bar(double);
+};
+
+class Der : public Base{
+public:
+	void baz();
+};
+
+int main()
+{
+	Der myder(12, 12);
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base() = default;
+	Base(int);
+	Base(int, int);
+	void func(int);
+	void foo(int);
+	void bar(double);
+};
+
+class Der : public Base{
+public:
+	void baz();
+};
+
+int main()
+{
+	Der d1(1);
+	Der d2(2, 3);
+	Der d3(3.4);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base() = default;
+	Base(int x)
+	{
+		std::cout << "Base(int)\n";
+	}
+	
+	Base(int x, int y)
+	{
+		std::cout << "Base(int x, int y) x = " << x <<  " y = " << y  << "\n";
+	}
+	
+	void func(int);
+	void foo(int);
+	void bar(double);
+};
+
+class Der : public Base{
+public:
+	Der(int x) : Base(x){}
+	Der(int a, int b) : Base(a, b)
+	{
+		
+	}
+	void baz();
+};
+
+int main()
+{
+	Der myder1(12);
+	Der myder2(1, 2);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	Base() = default;
+	Base(int x)
+	{
+		std::cout << "Base(int)\n";
+	}
+	
+	Base(int x, int y)
+	{
+		std::cout << "Base(int x, int y) x = " << x <<  " y = " << y  << "\n";
+	}
+	
+	void func(int);
+	void foo(int);
+	void bar(double);
+};
+
+class Der : public Base{
+public:
+	using Base::Base;
+	void baz();
+};
+
+int main()
+{
+	Der myder1(12);
+	Der myder2(1, 2);
+}
+
+using  taban sınıfın sadece public const. 'larını interface'e katar
+
+*----------------------------------------------------------------------------------------------------- 
+
+inheritat
+
+
+
+
+
+
+class Base{
+protected:
+	Base() = default;
+	Base(int x)
+	{
+		std::cout << "Base(int)\n";
+	}
+	
+	Base(int x, int y)
+	{
+		std::cout << "Base(int x, int y) x = " << x <<  " y = " << y  << "\n";
+	}
+	
+	void func(int);
+	void foo(int);
+	void bar(double);
+};
+
+class Der : public Base{
+public:
+	using Base::Base;
+	void baz();
+};
+
+int main()
+{
+	Der myder1(12);
+	Der myder2(1, 2);
+}
+
+using  taban sınıfın sadece public const.'larını interface'e katar. Protected'ları katmaz
+
+*----------------------------------------------------------------------------------------------------- 
+
+kalıtımda yüksek bağımlılık oluşur, composition daha iyi bir seçenek
+her sınıfı taban sınıf olarak kullanabileceğini düşünmeyin.
+
+protected bölümü varsa kalıtımda kullanılması gerektiği açık.
+
+*----------------------------------------------------------------------------------------------------- 
+
+ikinci contexual keyword
+
+final class
+final override
+
+belirli bağlamda kullanılınca keyword etkisi yapar.
+
+bazı bağlanma bir sınıfın kalıtımda kullanılmasını istemiyorsunuz
+türemiş sınıf veya taban sınıf final yapılabilir
+
+*----------------------------------------------------------------------------------------------------- 
+
+final class : don't inherit it
+
+class Base final{
+
+};
+
+class Der : public Base{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base final{
+
+};
+
+class Der final: public Base{
+
+};
+
+class SDer : public Der{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+final override : bir fonksiyonu niteler
+
+void start()final override
+{
+
+}
+
+void start()override final
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	virtual void f();
+	virtual void g();
+	virtual void h();
+};
+
+class Der : public Base{
+public:
+	void f()override;
+	void g()override;
+	void h()final override;
+};
+
+class SDer : public Der{
+public:
+	void f()override;
+	void g()override;
+	void h()final override;  // sentax hatası olur
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Car{
+public:
+	virtual Car* clone() = 0;
+	virtual void start() = 0;  // pure virtual function
+	virtual void run() = 0;
+	virtual void stop() = 0;
+	virtual ~Car() = default;
+};
+
+en az bir pure virtual function'ı olduğundan abstract class'dır. Bu sınıf türünde nesne oluşturulamaz.
+Bir sınıfın bir tane dahi pure virtual function'ı yoksa concrete sınıf. Bu sınıf türünden nesne oluşturulabilir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+sınıfın public interface : sınıfın public kısmındaki öğeler ve başlık dosyasındaki global bildirimlerden oluşur. 
+client kodu yazan programcı public interface'i kullanarak yapacaksın. Bu senin API'ın. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+polymorfik sınıfların destructor'larının ya virtual -public olması ya da non-virtual, protected olması gerekir !!!
+
+eğer taban sınıfın destru. virtual değilse taban sınıf pointer'ı ile türemiş sınıf nesnesini delete etmesi tanımsız davranış ve C++ 10 temel günahından biri (espri !!!, en çok yapılan hatalardan biri)
+
+taban sınıfın destructor'ı virtual ise polymorfik bir sınıf olur.
+
+*----------------------------------------------------------------------------------------------------- 
+
+constructor virtual olamaz, ama program çalışma zamanında belli olan bir türden bir nesne oluşturmam
+gerekiğinde clone idiom'unu kullanıyoruz.
+
+*----------------------------------------------------------------------------------------------------- 
+
+modern C++ ile C++'a eklenen
+1) taşıma semantiği
+2) perfect forwarding
+3) memory model, thread (C++11'den önce yoktu)
+
+*----------------------------------------------------------------------------------------------------- 
+
+global fonksiyonu virtual yapmak
+		std::cout << *cp;
+
+
+
+
+class Car{
+public:
+	virtual void print(std::ostream&)const = 0;
+	virtual Car* clone() = 0;
+	virtual void start() = 0;  // pure virtual function
+	virtual void run() = 0;
+	virtual void stop() = 0;
+	virtual ~Car() = default;
+};
+
+class Bmw : public Car {
+public:
+	virtual void print(std::ostream&)const override
+	{
+		return  os << "I am a BMW";
+	}
+
+
+
+#include <thread>
+
+int main()
+{
+	using namespace std::literals;
+	
+	for(int i = 0; i < 100; ++i){
+		Car* cp = create_random_car();
+		std::cout << *cp;
+		cp->start();
+		cp->run();
+		cp->stop();
+		
+		delete cp;
+		std::this_thread::sleep_for(100ms);
+	}
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Car& other)
+{
+	other.print(os);
+	return os;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+double dispatch : öyle durumlar var ki bir nesnenin değil iki nesnenin türüne bağlı
+
+void collide(Car* p1, Car* p2)
+{
+	// hangi kodun çalışacağı hem p1 hem p2'nin türüne bağlı
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+covariance
+variance return type
+
+fonksiyon imzası aynı fakat döndürdüğü değer farklı türse sentax hatası olur.
+Eğer taban sınıfın sanal fonksiyonunun geri dönüş değeri türü T bir sınıf türü olmak üzere
+T* ya da T& ise türemiş sınıfın override edebilmesi için T* ise T*, T& ise T& olması gerekiyor.
+Ama türemiş sınıf override ederken T* yerine D*(T'den public kalıtımla elde edilmiş) döndürebilir. 
+
+class B{
+};
+
+class D : public B{
+
+};
+
+class Base{
+public:
+	virtual B* foo();
+	virtual B& bar();
+	virtual B baz();
+};
+
+class Der : public Base{
+public:
+	D* foo()override;   // covariance
+	D& bar()override; // covariance
+	virtual D baz()overrride;  // hatalı !!!
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class B{
+};
+
+class D : public B{
+
+};
+
+class Base{
+public:
+	virtual B* foo();
+	virtual B& bar();
+};
+
+class Der : public Base{
+public:
+	B* foo()override;   // covariance
+	D& bar()override; // covariance
+	
+};
+
+int main()
+{
+	Der myder;
+	D* derptr = myder.foo();  // legal değil, tür dönüştürme operatörü kullanılmalı
+	
+	D* derptr = static_casst<D*>(myder.foo());  // legal
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	Bmw* p1 = new Bmw;
+	Bmw* p2 = p1->clone();  // sentax hatası, çünkü clone geri dönüşü Car*
+}
+
+bu problem şöyle çözülebilir:
+
+Bmc* clone()override
+{
+	return new Bmw(*this);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int a[]  = {1, 2, 3, 4, 5};
+	
+	for(auto i : a){
+		i += 10;  // dizinini elemanları değişmez !!!
+	}
+}  
+
+---------------------------------------
+
+int main()
+{
+	int a[]  = {1, 2, 3, 4, 5};
+	
+	for(auto &i : a){
+		i += 10;  // dizinini elemanları değişir
+	}
+}    
+
+*----------------------------------------------------------------------------------------------------- 
+
+for(auto x : con){
+
+}
+
+for(const auto x : con){
+	// okuma amaçlı kullanım
+}
+
+for(auto &x : con){
+	x.set(1);  // container'daki eleman set edilir.
+}
+
+for(const auto &x : con){
+	x.set(1);  // salt okuma amaçlı
+}
+
+for(auto &&x : con){  // x sağ taraf referansı değil !!! forwarding reference
+	
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclasss{
+
+};
+
+void func(Myclass&& r) // bu fonk. parametresi r value referans
+{
+	// hatalı olan bu fonksiyona Myclass nesnesini göndererek o nesnenin taşındığını düşünmek !!!
+	
+	Mclass x(std::move(r)); // şimdi taşımış oluruz nedeni x için move const. onun kaynağını çalacak
+	
+	Myclass y;
+	y = std::move(r); // taşımayı move assignment gerçekleştirdi
+	
+	
+	Myclass y(r);  // bu taşıma yapmaz !!! copy const. çağırılır.
+}
+
+int main()
+{
+	Myclass m;
+	
+	func(std::move(m));  
+}
+
+// m nesnesini func fonksiyonunda taşımış olduk mu ??? yanlış !!!
+sadece sağ taraf değerinin bu referansa bağlamış olduk 
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+
+};
+
+template <typename T>
+void func(T&&)  // sağ taraf referansı değil ileride göreceğiz forwarding (universal ) referance
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+polymorfik listeler:
+
+elemanları referans olan bir dizi oluşturulamaz.
+
+constexpr std::size_t size{100};
+
+int main()
+{
+	Car* a[size];
+	
+	for(auto &p : a){  // range base for loop veya for(auto p: a)
+		p =  create_random_car();
+	}
+	
+	
+	for(auto p : a){
+		std::cout << *p;
+		p->start();
+		p->run();
+		p->stop();
+		delete p;
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+Sonraki konular:
+
+multiple inheritance
+	virtual inheritance
+
+RTTI
+
+private inheritance
+protected inheritance
+
+NVI idiom (non virtual interface)
+
+exception handling
+
+*----------------------------------------------------------------------------------------------------- 
+
+SOLID principles
+
+L : türemiş sınıf taban sınıfın vaad ettiğinden daha fazlasını vaad etmeyecek, daha çoğunu talep etmeyecek
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Volvo : public Car{
+public:
+	virtual void print(std::ostream&)const override
+	{
+		return  os << "I am a Volvo";
+	}
+	
+	Volvo* clone()override
+	{
+		return new Volvo(*this);
+	}
+	
+	void open_sunroof()
+	{
+		std::cout << "Volvo'nun tavanı acildi\n";
+	}
+	
+	void start()
+	{
+		std::cout << "Volvo has just started!\n";
+	}
+	void run();
+	{
+		std::cout << "Volvo is running now!\n";
+	}
+	void stop();
+	{
+		std::cout << "Volvo has stopped!\n";
+	}
+};
+
+------------------------------------
+
+void car_game(Car* p)
+{
+	std::cout << *p;
+	p->start();
+	p->run();
+	// eger araba volvo ise cam tavan acilsin
+	
+	p->stop();
+}
+
+int main()
+{
+	for(int i = 0; i < 100; ++i){
+		Car* p = create_random_car();
+		car_game(p);
+		delete p;
+	}
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+RTTI için 
+
+dynamic cast operatörü
+typeid operatörü
+	type_info sınıfı
+
+*----------------------------------------------------------------------------------------------------- 
+
+upcasting: türemiş sınıftan taban sınıfa yapılan örtülü dönüşüm
+downcasting: taban sınıftan türemiş sınıfa dönüşüm
+
+dynamic cast
+
+*----------------------------------------------------------------------------------------------------- 
+
+car nesnesi adresini bir volvo nesnesi adresi olduğundan emin olarak kullanabilir miyim ?
+
+void car_game(Car* p)
+{
+	std::cout << *p;
+	p->start();
+	p->run();
+	// eger araba volvo ise cam tavan acilsin
+	// eğer p volvo cinsinden ise
+	Volvo* vp = dynamic_cast<Volvo *>(p);
+	auto vp = dynamic_cast<Volvo *>(p);
+	
+	// dynamic cast operatorü p Volvo türünden değilse nullptr üretir
+	if(vp){  
+		vp->open_sunroof();
+		(void)getchar();
+	}
+	// vp burada da kullanılabilir scope leakage !!!
+	
+	p->stop();
+}
+
+int main()
+{
+	for(int i = 0; i < 100; ++i){
+		Car* p = create_random_car();
+		car_game(p);
+		delete p;
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void car_game(Car* p)
+{
+	std::cout << *p;
+	p->start();
+	p->run();
+	// eger araba volvo ise cam tavan acilsin
+	// eğer p volvo cinsinden ise
+	
+	
+	if(auto vp = dynamic_cast<Volvo*>(p)){  
+		vp->open_sunroof();
+		(void)getchar();
+	}
+	
+	vp;  // burada kullanılamaz !! scope'u bitti !!!
+	
+	p->stop();
+}
+
+int main()
+{
+	for(int i = 0; i < 100; ++i){
+		Car* p = create_random_car();
+		car_game(p);
+		delete p;
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+tür dönüştürme operatörleri:
+static_cast
+const_cast
+reinterpret_cast
+dynamic_cast 
+
+dynamic_cast<target type>(expr)
+
+*----------------------------------------------------------------------------------------------------- 
+
+// if with initilizer
+if(int x = foo(); x != 0 ){
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int* foo();
+if(int* p  = foo() ){ // foo()'nun geri dönüş değeri nullptr değilse if'e girer
+
+}
+
+// if with initilizer
+if(int* p  = foo() ; p){ 
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+dynamic cast operatörü polymorfik bir sınıf için kullanılmak zorunda
+
+class Base{
+
+};
+
+class Der : public Base{
+public:
+	void derfoo();
+};
+
+void func(Base* baseptr)
+{
+	if(Der *dp = dynamic_cast<Der*>(baseptr)){
+		dp->derfoo();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+	virtual ~Base();  // şimdi doğru, çünkü Base polymorfik sınıf oldu !!!
+};
+
+class Der : public Base{
+public:
+	void derfoo();
+};
+
+void func(Base* baseptr)
+{
+	if(Der *dp = dynamic_cast<Der*>(baseptr)){
+		dp->derfoo();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+static_cast operatörü ile dönüşüm olması runtime_polymorphism olduğu anlamına gelmez
+
+
