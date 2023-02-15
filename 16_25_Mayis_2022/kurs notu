@@ -1,0 +1,882 @@
+
+İçerik:   
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+çıkış akımı:
+giriş akımı:
+Karşılaştırma operatörlerinin overload edilmesi:
+aritmetik operatörlerin overload edilmesi:
+işaret operatorlerin overload edilmesi:
+++ ve -- operatörleri overload edilmesi:
+global değişken kullanmak istediğinden emin misin ? 
+operator overload 2. kısım (daha zor)
+[ ] overload edilmesi : 
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+Date mydate{31, 12, 2022};
+
+auto x = ++mydate;  // 1.01.2023
+// auto x = mydate++; // 31.12.2022
+
+*------------------------------------------------------------------------------------------------------
+
+const doğruluğu yurtdışı mülakatlarda red nedeni 
+
+*------------------------------------------------------------------------------------------------------
+
+neden hem global operator hem üye operator fonksiyonları var ?
+
+1. neden 
+x + y;  // x.operator+(y);
+
+x + 5;  // x.operator+(5);
+
+5 + x;  // sıkıntı !!!
+// global op., operator+(5, x)
+
+
+2.  neden 
+
+class Bigint {
+
+};
+cout << x; 
+
+std::stream& operator <<(std::stream&, const Bigint&)
+
+
+*------------------------------------------------------------------------------------------------------
+
+en çok sorulan bir operatörü overload edicem ama global operator  fonksiyonu mu üye operator fonksiyonu mu yazayım ?
+aslında yazılımcıya kalır ama
+
+genel tavsiyeler:
+1) aynı işi yapacak global operator ve üye operator fonksiyonun ikisi birden olmasın
+2) simetrik operatörleri global operator fonksiyonu olarak yaz
+a op b
+b op a
+
+a + b
+b + a
+
+*------------------------------------------------------------------------------------------------------
+
+atama operatorü var
+toplama operatorü var
++= 'de var anlamına geliyor mu ? hayır
+
+class Myclass{
+public:
+	Myclass& operator=(int);
+	Myclass operator+(int)const;
+};
+
+int main()
+{
+	Myclass m;
+	m += 10;  // sentax hatası
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+// nesneleri int gibi kullanacak 
+// int wrapper (C++ en iyi olduğu yerlerden biri)
+
+ne kadar az makine kodu o kadar az maaliyet
+
+// int yerine Mint wrapper bir çok avantaj sağlayabilir
+
+// mint.h
+#include <iosfwd>
+class Mint{
+public:
+	Mint() = default;
+	Mint(int x) : m_x{x} {}
+	friend  std::ostream& operator << (std::ostream&, const Mint&);
+private:
+	int m_x{};
+};
+
+int main()
+{
+	Mint mx(12);
+	std::cout << mx;   // std::cout  bir nesnedir bir fonksiyon değil
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+https://en.wikipedia.org/wiki/Alexander_Stepanov
+
+*------------------------------------------------------------------------------------------------------
+
+1) başlık dosyalarında using bildirimi kullanmayın !!!
+using ctd::cout
+using namespace std;
+
+2) gereksiz başlık dosyalarını include etmeyin !!!
+
+*------------------------------------------------------------------------------------------------------
+
+Farklı using kullanım amaçları:
+
+namespace ali{
+	int x;
+}
+
+using namespace std;  // 1
+using ali::x;  // 2
+// 1, 2 using aynı anlamda değil
+
+using Word = int; //3
+
+enum class Color {Blue, Red, Green};
+
+void func()
+{
+	using enum Color;  // 4
+}
+
+class Base{
+public:
+	int func();
+};
+
+class Der : public Base{
+public:
+	using Base:func();  // 5
+};
+
+void func()
+{
+	using enum Color;  // 4
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+using namespace std;  //  asla başlık dosyasında kullanma !!!
+başlık dosyasındaki isimler nitelenmiş olarak kullanılır !!!
+başlık dosyasında include koruması yapmayı ihmal etme
+#pragma once
+https://docs.microsoft.com/tr-tr/cpp/preprocessor/once?view=msvc-170
+
+
+ama standart olmadı, %100 standart için babadan kalma multiple inclusion guard kullanın, ifndef
+
+// mint.h
+#include <iosfwd>
+class Mint{
+public:
+	Mint() = default;
+	Mint(int x) : m_x{x} {}
+	friend  std::osteram& operator << (std::ostream&, const Mint&);
+private:
+	int m_x{};
+};
+
+*------------------------------------------------------------------------------------------------------
+
+isim verme vermeme kararı
+verip vermeme mecburiyeti yok !!!!
+
+#include "mint.h"
+
+int main()
+{
+	Mint m;
+	m.set();
+	// alan hesaplama, height*width
+	// ikisi de double, ayırmak için isim verilebilir
+}
+
+
+kural : fonksiyonların tanımında dummy parametrelere isim vermeyin !!!
+
+void func(int x, int)  
+{
+	// int:dummy ise isim verme
+}
+
+*------------------------------------------------------------------------------------------------------
+
+// translation unit (ön işlemci progm. çıktısı)
+
+*------------------------------------------------------------------------------------------------------
+
+çıkış akımı:
+
+// mint.h
+
+#pragma once
+
+#include <iosfwd>
+
+class Mint{
+public:
+	Mint() = default;
+	Mint(int x) : m_x{x} {}
+	friend  std::ostream& operator << (std::ostream&, const Mint&);
+	void set(int val);
+private:
+	int m_x{};
+};
+
+std::osteram& operator << (std::ostream&, const Mint&)
+{
+	///....
+}
+
+// one definition rule ihlal edilmiş, inline anahtar sözcüğü kullanılmalı
+
+
+*------------------------------------------------------------------------------------------------------
+
+// mint.h
+
+#pragma once
+
+#include <iosfwd>
+
+class Mint{
+public:
+	Mint() = default;
+	Mint(int x) : m_x{x} {}
+	friend  std::ostream& operator << (std::ostream&, const Mint&); // friend yapmak zorunda değilim
+	void set(int val);
+private:
+	int m_x{};
+};
+
+
+// mint.cpp 
+ // implementation or source file
+#include "mint.h"
+#include <ostream>
+
+// çok verbose kod oluşmuyorsa using kullanma taraftarı değiliz
+
+std::ostream& operator<<(std::ostream& os, const Mint& mint)
+{
+	return os << '(' << mint.m_x << ')';
+}
+
+#include "mint.h"
+#include <iostream>
+#include <fstream>
+
+int main()
+{
+	Mint m1{ 25 }, m2{ 457};
+	
+	std::cout << m1 << " " <<  m2 << '\n';
+	
+	std::ofstream ofs{ "out.txt};
+	
+	if(!ofs){
+		std::cerr << "out.txt dosyasi olusturulamadi\n";
+		exit(EXIT_FAILURE);
+	}
+	ofs << m1 << " " << m2 << "\n";
+} 
+
+
+*------------------------------------------------------------------------------------------------------
+
+giriş akımı:
+
+
+// mint.h
+
+#pragma once
+
+#include <iosfwd>
+
+// int türünden Mint türüne otomatik dönüşüm olmasını istiyorsanız explicit const. olmayacak ama doğal olanı otomatik dönüşüme (implicit conversion) izin vermemek.
+
+class Mint{
+public:
+	Mint() = default;
+	explicit Mint(int x) : m_x{x} {}
+	friend  std::osteram& operator << (std::ostream&, const Mint&); 
+	friend std::osteram& operator >>(std::ostream&, const Mint&); 
+	void set(int val);
+private:
+	int m_x{};
+};
+
+
+// mint.cpp 
+ // implementation or source file
+#include "mint.h"
+#include <ostream>
+#include <istream>
+
+// çok verbose kod oluşmuyorsa using kullanma taraftarı değiliz
+
+std::ostream& operator<<(std::ostream& os, const Mint& mint)
+{
+	return os << '(' << mint.m_x << ')';
+}
+
+std::ostream& operator>>(std::ostream& is, Mint& mint)
+{
+	return is >> mint.m_x;
+}
+
+
+#include "mint.h"
+#include <iostream>
+#include <fstream>
+
+int main()
+{
+	std::cout << "iki tam sayi girin: ";
+	Mint m1{}, m2{};
+	
+	// constructor explicit olunca copy init geçersiz olur ve Mint m1 = 12; yazamam
+	
+	m1 = static_cast<Mint>(34);  // legal
+	m1 = Mint{35};  // legal
+	
+	std::cin >> m1 >> m2;
+	
+	std::cout << "m1 = " << m1 << " m2 = " << m2 << "\n";
+	
+}
+
+// üstteki friend sınıfları dosyadan da okur ve yazar
+*------------------------------------------------------------------------------------------------------
+
+C++20 standartları ile bu konudaki kurallar değişti. Önce bunu hiç dikkate almayacağız.
+
+*------------------------------------------------------------------------------------------------------
+
+// C++20 öncesi için boiler-plate code
+
+Karşılaştırma operatörlerinin overload edilmesi:
+
+// mint.h
+
+#pragma once
+
+#include <iosfwd>
+
+class Mint{
+public:
+	Mint() = default;
+	explicit Mint(int x) : m_x{x} {}
+	friend  std::osteram& operator << (std::ostream&, const Mint&); 
+	friend std::osteram& operator >>(std::ostream&, const Mint&); 
+	void set(int val);
+	
+	friend bool operator<(const Mint&lhs, const Mint& rhs)  
+	{
+		// global oluyor yoksa friendlik veremem
+		return lhs.m_x < rhs.m_x;
+	}
+	
+	friend bool operator==(const Mint&lhs, const Mint& rhs)  
+	{
+		return lhs.m_x == rhs.m_x;
+	}
+	
+private:
+	int m_x{};
+};
+
+inline bool operator!=(const Mint &lhs, const Mint& rhs)
+{
+	return !(lhs == rhs);
+}
+
+inline bool operator>=(const Mint&lhs, const Mint& rhs)  
+{
+	return !(lhs.m_x < rhs.m_x);
+}
+
+inline bool operator>(const Mint&lhs, const Mint& rhs)  
+{
+	return lhs.m_x < rhs.m_x;
+}
+
+inline bool operator<=(const Mint&lhs, const Mint& rhs)  
+{
+	return !(lhs.m_x < rhs.m_x);
+}
+
+
+// başlık dosyasında yapmamızın sebebi fonksiyonun inline olması. 
+a) one definition rule ihlal edilmez
+b)derleyiciye inline exp. imkanı veriyoruz
+
+Başlık dosyasında olmazsa inline exp. yapamaz çünkü kodunu görmezdi.
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using namespace std;
+	
+	Mint s1{1243}, s2{ 24}, s3{24};
+	
+	// bool çıkışta 0-1 yerine true-false çıkarmak için formatlama yapmak gerekiyor
+	
+std::cout.setf(std::ios::boolalpha);
+
+std::cout << (m1 == m2) << '\n'; // << daha öncelikli
+std::cout << (m2 == m3) << '\n'; 
+std::cout << (m2 < m3) << '\n'; 
+}
+
+*------------------------------------------------------------------------------------------------------
+
+C++20'de çok şey değişti !!! şimdilik geçiyoruz !!!
+
+*------------------------------------------------------------------------------------------------------
+
+aritmetik operatörlerin overload edilmesi:
++, -, * simetrik operatorler
+yalnız bunların overload edilmesinde konvensiyonel bir yapı var. Bu tekniği göstereceğiz (scott meyers)
+
+
+// mint.h
+
+#pragma once
+
+#include <iosfwd>
+
+class Mint{
+public:
+	Mint() = default;
+	explicit Mint(int x) : m_x{x} {}
+	
+	Mint& operator+= (const Mint&other){
+	// geridönüş türü Mint&, atama op. lvalue exp. oluşturudukları içindir
+		
+		m_x += other.m_x;
+		return *this;  
+		
+		// const üye fonk. olmayacak çünkü nesneyi değiştirir
+	}
+	
+	// code...
+	
+private:
+	int m_x{};
+};
+
+inline Mint operator+(const Mint&lhs, const Mint& rhs)
+{
+	// otomatik ömürlü nesneye ref. dönerseniz tanımsız davranış
+	// static ömürlü nesneye ref. dönerseniz o ifadede üç toplama varsa hepsi aynı nesneyi döndürmüş olur
+	// dinamik ömürlü nesneye ref. dönerseniz  kim delete edecek ?
+	
+	return Mint { lhs}  += rhs;
+	// aynısı
+	// Mint retval { lhs };
+	// retval += rhs;
+	// return retval;
+}
+
+
+inline Mint operator-(const Mint&lhs, const Mint& rhs)
+{
+	return Mint { lhs}  -= rhs;
+}
+
+
+int main()
+{
+	using namespace std;
+	
+	Mint s1{1243}, s2{ 24}, s3{24};
+	
+	std::cout << m1 + m2 + m3 << "\n";
+	// gereken her yerde copy elision yapılacak
+}
+
+
+
+*------------------------------------------------------------------------------------------------------
+
+işaret operatorlerin overload edilmesi:
+
+class Mint {
+	// code. ..
+	
+	Mint operator+()const  
+	{
+		return *this;
+	}
+	
+	Mint operator-()const  
+	{
+		return Mint{-m_x};
+	}
+
+	// code...
+	
+private:
+	int m_x{};
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+soru:  işaret operatörü neden const oldu ?
+
+int main()
+{
+	int x = 10;
+	-x; // x'in değeri değişmez
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+++ ve -- operatörleri overload edilmesi:
+
+olayı zorlaştıran
+++x (prefix)                        x++ (postfix)
+Lvalue expr                        R value expr
+
+
+dikkat : derleyici  son ek ++ olduğunu fonksiyonunun int parametresinden anlıyor
+
+Mint& operator++()  //prefix
+{
+	++m_x;
+	return *this;
+}
+
+Mint operator++(int)  // postfix
+{
+	Mint retval{ *this };
+	++*this;  // veya => operator++();
+	
+	return retval;
+}
+
+int main()
+{
+	Mint m1{ 25 };
+	Mint m2 = ++m1;
+	
+	Mint m2 = m1++;
+	
+	std::cout << m1 << " " << m2 << <"\n";
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+Mint& operator--()  //prefix
+{
+	--m_x;
+	return *this;
+}
+
+Mint operator--(int)  // postfix
+{
+	Mint retval{ *this };
+	--*this;  // veya => operator--();
+	
+	return retval;
+}
+
+int main()
+{
+	Mint m1{ 25 };
+	Mint m2 = --m1;
+	
+	Mint m2 = m1--;
+	
+	std::cout << m1 << " " << m2 << <"\n";
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+global operator fonk. olarak yazılsaydı
+
+// friend olma zorunluluğu yok çünkü pivate bölüme erişmeyecek
+
+friend Mint& operator--(Mint& mint)  //prefix
+{
+	--mint.m_x;
+	return mint;
+}
+
+friend Mint operator--(Mint& mint, int)  // postfix
+{
+	Mint retval{ mint };
+	--mint;  
+	
+	return retval;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+global olmak ne demek ?
+
+global fonks. sınıfın üye fonk. değil
+
+// global function - free function - standalone function
+// class scope içinde değil
+// namespace scope'ta
+
+void foo()
+{
+
+}
+
+class Myclass {
+
+     void foo(); // asla global fonks. değil, member function'dır
+
+	friend void foo();  // global fonks.
+};
+
+*------------------------------------------------------------------------------------------------------
+
+// global değişken kullanmak istediğinden emin misin ? 
+
+bağımlılık yaratır ve kodun değiştirilmesini zorlaştırıyor, ama zorunlu iseniz kullanın
+
+std::cout =>> global değişken
+
+dezavantajlar:
+hayata main fonk. çağırılmadan başlar ve 
+main fonk. kodu sonrası destroy olur.
+1)kaynak kullanımı varsa kaynakları bloke eder
+2) multithread programlarda paralel programlama zorlaşır
+3) constructor'ları exception gönderirse bunların kodu main öncesi çalıştığı için bu exception'ı yakalama şansı yok
+4) static init. fiasco, farklı dosyalarda staic ömürlü değişkenlerin hangisinin const. önce çağırılacağı garanti altında değil
+
+diyelim ki global değişken kullanıcam
+1) sadece kendi modülünde kullanılacak (iç bağlantı, internal linkage) 
+cpp'de tanımla h'de extern bildirim yapma
+
+// necati.h
+
+//necati.cpp
+namespace{
+	T x; 
+}
+
+
+dışa açmak için
+// necati.h
+class Myclass;
+extern Myclass x;
+
+//necati.cpp
+T x; 
+
+
+*------------------------------------------------------------------------------------------------------
+
+global değişkeni cpp dosyasında doğrudan tanımlarsanız sentax hatası ?????
+
+// necati.h
+
+inline Myclass m;  // C++17
+
+*------------------------------------------------------------------------------------------------------
+
+global değişkene (nesnelere) alternatif
+
+//necati.h
+
+// lazy initialization ???
+inline Myclass&& get_instance()
+{
+	static Myclass m;  // ilk çağırıldığı yere kadar init. edilmez
+	
+	return m;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+singleton :
+
+bir sınıf türünden tek bir nesne olacak ve 
+tek nesneye global bir erişim olacak
+ikinci bir nesne oluşturulamamalı !!!
+
+*------------------------------------------------------------------------------------------------------
+
+#include <random>
+
+std::mt19937& rg19937()
+{
+	static std::mt19937 eng{std::random_device{}() };
+	
+	// std: namespace
+	// mt19937 : sınıf ismi
+	// static : static yerel değişken
+	// eng ismi
+	// { } direk init.
+	//  std::random_device{}  temporary object
+	// geçici nesneyi value init. edilir.
+	// std::random_device{}() operator overloading
+	
+	return eng;
+}
+
+int main()
+{
+	rg19937()();  // rg19937() : sınıf nesnesi döndürdü, sonra tekrar fonks. çağrı operator. fonksiyonu oldu
+	
+	auto & eng = rg19937();
+	
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+operator overload 2. kısım (daha zor)
+
+[ ] overload edilmesi
+*
+->
+type-cast operator functions
+operator overloading for enum types
+
+
+*------------------------------------------------------------------------------------------------------
+
+[ ] overload edilmesi : 
+
+ptr[n]  // *(ptr + n)
+// ptr adresten n uzaklıktaki nesneye eriş
+
+a[i] : lvalue
+a[i] için bir fonksiyon çağırılacaksa geri dönüş değeri referans olmalı aksi halde lvalue expr. olmaz
+
+hangi türler için aynı çağrışımı verir
+array-like sınıflar
+a) vector sınıfı (dinamik dizi)
+	[]  operator fonk. overload edilmiş
+	
+	vector<int> ivec(12);
+	ivec[5] = 45; //  ivec.operator[](5)
+
+b) string sınıfı
+	[]  operator fonk. overload edilmiş
+
+std:string name{  "sultan caliskan"};
+
+for(size_t i{}; i < name.size(); ++i){
+	std::cout << name[i] << " ";
+}
+
+c) dec sınıfı
+
+
+
+
+*------------------------------------------------------------------------------------------------------
+
+class Nec{
+public:
+	int& operator[](int i)
+	{
+		std::cout << "Nec::operator[]() i = " << i << "\n";
+		return g;
+	}
+};
+
+int main()
+{
+	Nec mynec;
+	
+	mynec[5];  // mynec.operator[](5)
+}
+
+*------------------------------------------------------------------------------------------------------
+
+array sınıfı : bir wrapper, c dizilerini sarmalar
+
+niye kullanayım ? 
+stl'e uyumlu, array to pointer conv. devre dışı bırakır
+
+int main()
+{
+	int a[10];
+	
+	std::array<int, 10> ar;
+	
+	ar[2] = 2;  // ar.operator[](i); overload
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+soru:
+
+int main()
+{
+	using namespace std;
+	
+	const vector<int> ivec{1, 4, 6, 78, 2 ,1};
+	
+	auto val = ivec[3];
+	ivec[4] = 999;  // nasıl illegal ???
+
+}
+
+cevap: const overloading, []  tipik olarak const. overload ediliyorlar
+
+*------------------------------------------------------------------------------------------------------
+
+const overload
+
+class Myclass{
+public:
+	void func();
+	void func()const;
+};
+
+int main()
+{
+	Myclass m;
+	const Myclass cm;
+	
+	m.func(); 
+	// const olmayan nesne için const. olmayan üye fonksiyon çağırılacak
+	
+	cm.func();
+	// const olan nesne için const. üye fonksiyon çağırılacak
+}
+
+*------------------------------------------------------------------------------------------------------
+
+class ivector{
+
+public:
+	int& operator[](std::size_t idx);
+	const int& operator[](std::size_t idx)const;
+};
+
+int main()
+{
+	ivector myvec;
+	
+	auto val = myvec[2];
+	myvec[2] = 4;
+	
+	ivector myvec2;
+	
+	auto val = myvec[2];
+	myvec[2] = 4;  // sentax hatası
+}
