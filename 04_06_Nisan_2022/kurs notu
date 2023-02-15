@@ -1,0 +1,794 @@
+
+İçerik:   
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+if with initializer:
+geçici nesne:
+R value reference:
+type deduction:
+reference collapsing rules 
+decltype
+unevaluated context
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+
+C++'da if deyimi (scope leakage'i engellemek)
+
+scope leakage (kapsam sızıntısı) : değişkenin ismi kullanılması söz konusu olan alanın dışında da kullanılabilme potansiyelinde ise buna scope leakage denir.
+
+
+int func();
+
+int main()
+{
+	// C++ if içerisinde değişken bildirimi yapılabilir ama ilk değer vermek koşulu ile !!
+	
+	if(int x = func()){  // x'in değeri nonzero ise true'dur
+		
+		// int x;  x = func() ; if(x !=0)  ile aynı
+		std::cout << "true path x = " << x << "\n";
+	}
+	else {
+		std::cout << "false path x = " << x << "\n";
+	}
+	
+	x = 45; // sentax hatası !!! x burada geçerli değil
+	// bu if deyimi scope leakage'i engeller !!!
+
+}
+
+
+
+*------------------------------------------------------------------------------------------------------
+
+scope leakage neden kötü ?
+1) hata yapma riskiniz artar
+2) kodu okuyan yanılır
+3) kaynak tutuyor olabilir,
+
+*------------------------------------------------------------------------------------------------------
+
+
+if with initializer: (scope leakage'i engeller)
+
+int foo();
+
+int main()
+{
+	if(int x = foo(); x > 10) {
+	// int x = foo(); x > 10 aynısı fakat if dışında x kullanılabilir C++17
+	
+	} 
+	else{
+	
+	}  // x biter
+	
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	switch(int x = foo()){
+	case 1: std::cout << 1; break;
+	case 2: std::cout << 2; break;
+	} // x 'in bilinirliği burada biter !!!
+
+
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int& r = 10;  // sentax hatası, lvalue ref.'e lvalue ile ilk değer vermek gerekir
+	
+	double dval = 3.4;
+	int& ref = dval;  // sentax hata, aynı tür olmalı
+	
+	const int& h = 10;  // doğru !!!
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+geçici nesne:
+
+int main()
+{
+	double dval = 3.4;
+	
+	const int& r1= 10;  // doğru !!!
+	// derleyici durumdan vazife çıkartarak
+	/* pseudo code
+	int gn = 10;
+	const int &r1 = gn;
+	*/
+	// referans geçici nesneye bağlanmış durumda
+	geçici nesnenin hayatı ref.'ın scope sonuna kadar hayatta kalır
+	
+	
+	const int& r2 = dval;  // narrowing conversion'dan dolayı uyarı verir
+	/* pseudo code
+		int gn = dval;
+		const int &r1 = gn;
+	*/
+}
+
+*------------------------------------------------------------------------------------------------------
+
+void func(T &tr);  // lvalue ref. alan fonksiyonu sadece lvalue expres. ile çağrılabilir, rvalue ile çağrılamaz
+
+void func(const T &tr);  // const olduğundan lvalue ref. alan fonksiyonu hem lvalue hem rvalue expr. ile çağırabilirsin
+
+
+*------------------------------------------------------------------------------------------------------
+
+R value reference: (modern C++ ile dile eklendi)
+
+neden böyle bir araç eklendi ?
+
+dilde modern C++ öncesi problem yaratan
+1) move semantics (taşıma semantiği) yoktu
+derleyicinin daha efficient bir kod üretme olanağı
+copy yapılan yerde move yapılınca iyi bir verim elde edildi.
+Hayatı bitecek bir nesnenin kaynaklarını başka bir nesneye aktarmaya move semantics deniyor
+
+2) generic programlamada sorun vardı.
+perfect forwarding (mükemmel gönderim)
+
+2 maddeyi de mümkün kılacak Rvalue reference'ları eklediler.
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x;
+	
+	int &&r = x; // okunuşu: int ref ref
+	// sağ taraf referansı sol taraf değerine bağlanamaz
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+lvalue = lvalue or rvalue
+const lvalue = lvalue or rvalue
+
+
+lvalue_ref  (&)  = lvalue  // lvalue bind to lvalue ref 
+rvalue_ref (&&) = rvalue    // rvalue bind to rvalue ref
+const_lvalue_ref = rvalue or lvalue  // istisna !!!
+
+
+*------------------------------------------------------------------------------------------------------
+
+int foo();
+int& bar();  // referans döndürür adres değil !!
+
+int main()
+{
+	int &r1 = foo();  // geçersiz, rvalue expr. to lvalue ref
+	int &&r2 = foo(); // ok, rvalue ref.'e rvalue ile ilk değer
+	
+	int &r3 = bar();  // ok, lvalue expr. to lvalue ref
+	int &&r4 = bar();   //  sentax hatası
+}
+
+&d adres ise rvalue, referans ise lvalue ref. olur.
+
+
+*------------------------------------------------------------------------------------------------------
+
+void foo(int&);  // lvalue expression ile çağrı yapılabilir
+
+void bar(const int&);  // lvalue veya rvalue exp. ile çağrı yapılabilir
+
+void baz(int&&);   // rvalue ile çağrı yapılabilir
+
+
+*------------------------------------------------------------------------------------------------------
+
+
+genel kural: bir isim formunda olan ifade lvalue expression'dır.
+
+
+data type
+value category (expression'ın niteliği)
+
+void func(int&& x)  // x lvalue mu ? x burada ifade değil bildirim
+{        // ifadenin value category'si olur.
+
+	x;  // x ifadesinin değer kategorisi nedir ? lvalue expression, dikkat !!!!
+	// bir isim formunda olan ifade lvalue expression'dır.
+}
+
+
+ispat :
+void func(int&& x) 
+{
+	int& r = x; // ok, lvalue to lvalue ref.
+	int&& r = x;  // geçersiz ifade, eğer x rvalue exp. olsa  bu ifade geçerli olurdu, 
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+type deduction: (tür çıkarımı)
+
+Bir tür bilgisi açıkça bildirilmemesine rağmen derleyici türü çıkarım yaparak belirler.
+tamamen derleme zamanına ait. runtime maliyetle alakası yok.
+
+a) auto type deduction
+b) decltype
+c) decltype (auto)
+
+
+*------------------------------------------------------------------------------------------------------
+
+auto x = expr;
+auto x(expr);
+auto x{expr};
+
+auto'ya karşılık gelen türü anlıyor, x'in türünü anlamıyor.
+auto *p = &ival;  // auto'ya karşılık bir tür çıkarımı
+
+*------------------------------------------------------------------------------------------------------
+
+1) auto x = expr;
+2) auto &x = expr;
+3) auto &&x = expr;
+
+hepsinde tür çıkarımı için uygulanan kurallar başkadır.
+
+
+*------------------------------------------------------------------------------------------------------
+
+neden auto var ?
+
+a) auto ile bir değişken tanımladığınızda ilk değer vermek mecburi
+
+b) kolay yazım ve dolayısıyla hata da azalır !!!
+std::pair>std::vector<int>::iterator, std::list<int>::iterator  foo();
+
+c) 
+
+
+*------------------------------------------------------------------------------------------------------
+
+AAA : almost always auto
+
+
+int main()
+{
+	auto x = 10;  // int
+	auto c = 'A'; // char
+	auto sum = c + x;  // int, çünkü int altı operantlar  
+	işleme sokulurken int'e dönüştürülür, buna integral promotion denir.
+	
+	 auto x = '1' + '2';  // int, integral promotion
+	auto x = '1' ; // char
+	
+	char c = 'A';
+	auto x = +c;  //  int çünkü işaret operatörünün operandı olunca integral promotion
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+auto ile yapılan tür çıkarımında const'luk düşer (normal değişkenlerde)
+
+int main()
+{
+	int x = 10;
+	
+	auto p = &x;  // int*, p'nin türü int*
+	
+	const int x = 10;
+	auto y = x;  //  auto ile yapılan tür çıkarımında const'luk düşer, int
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	const int x = 10;
+	const auto y = 10;  // derleyici auto için çıkarım yapar, auto = int,  y'nin türü const int
+	
+	auto z = x; // auto = int, const int olmaz !
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+auto ile yapılan tür çıkarımında referans olma düşer
+
+int main()
+{
+	int x = 10;
+	int& r = x;
+	
+	auto y = r;  //  int, çünkü x demek r demek
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+auto ile yapılan tür çıkarımında const'luk düşer (normal değişkenlerde)
+auto ile yapılan tür çıkarımında top level const'luk ve  referanslık düşer (pointer'da, referansta)
+dizilerde ise const'luk düşmez çünkü bu top level const. değildir
+
+int main()
+{
+	int x = 10;
+	const int& r = x;
+	
+	auto y = r;  //  int
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int a[3] = {1, 2, 3};
+	
+	auto p = a; 
+	 // array decay, p'nin türü int*, auto = int*
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	const int a[3] = {1, 2, 3};
+
+	auto p = a; 
+	// const'luk düşmez bu top level const. değil, array decay'de elde edilen tür const int*, 
+	auto = const int*
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	auto p = "arda";   // p'nin türü const char*
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+function pointer:
+
+https://www.geeksforgeeks.org/function-pointer-in-c/
+https://www.section.io/engineering-education/function-pointers-in-c++/
+
+
+void fun(int a)
+{
+    printf("Value of a is %d\n", a);
+}
+  
+int main()
+{ 
+    void (*fun_ptr)(int) = fun;  // & removed
+  
+    fun_ptr(10);  // * removed
+  
+    return 0;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int func(int);
+// fonksiyonun türü int(int)
+// fonksiyonun adresinin türü int(*)(int)
+
+int main()
+{
+	auto p = func;  // function to pointer conversion
+	// auto : int (*) (int)   
+	
+	int (*p)(int) = func;  // auto ile aynı
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int *foo(int*, int*);
+
+int main()
+{
+	int* (fp)(int*, int*) = foo;
+	auto fp = foo; // aynısı
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+2) auto &x = expr   'nin kuralları
+const'luk düşmez
+
+int main()
+{
+	int x{10};
+	
+	auto& y = x;  // int &y = x;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+const'luk düşmez
+
+int main()
+{
+	const int x{10};
+	
+	auto& y = x;   // const'luk düşmez, auto'ya karşı gelen const int türü,
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int a[3] = {1, 2, 3};
+	
+	auto& x = a;  // auto'ya karşı gelen tür int[3]
+	// auto olmadan bildirim
+	int(&x)[3] = a;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	const int a[3] = {1, 2, 3};
+	
+	auto& x = a;  // const int[3]
+	// const'luk düşmedi, array decay olmadı
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	auto& x = "eray";
+	//  auto = const char[5];
+	// auto olmasa :
+	const char(&x)[5] = "eray"; 
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int foo(int);
+
+int main()
+{
+	auto x = foo;  // auto : decay, function to pointer conversion, function pointer
+	
+	auto& x = foo;  // auto:  int(int) 
+	// auto olmadan:
+	int (&x)(int) = foo;
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	int* ptr = &x;
+	
+	auto &p = ptr;
+	// auto olmadan
+	int*& p = ptr;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	int* ptr = &x;
+	
+	auto& y = *ptr;  
+	// auto olmadan
+	int& y = *ptr;
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+3)  gelecekte görülecek
+
+int main()
+{
+	int ival = 10;
+	
+	auto&& x = ival;
+	// bu forwarding reference, bu rvalue değil
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+reference collapsing rules (reference bozulma kuralları):  ????????
+
+https://isocpp.org/blog/2012/11/universal-references-in-c11-scott-meyers
+
+
+T&         & :          T&  (lvalue ref to lvalue ref: lvalue ref.)
+T&         && :       T& (lvalue ref. to rvalue ref: lvalue ref. )
+T&&      &  :         T&  (rvalue ref. to lvalue ref  : lvalue ref.)
+T&&      && :       T&& (rvalue ref. to rvalue ref: rvalue ref.)
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int ival = 10;
+	
+	auto&& x = ival;
+	// int& x = ival;   // üstteki ile karşılaştırınca, auto'ya karşılık gelen tür lvalue ref.
+	// bu durumda rvalue ref.'e lvalue ref. oluştu. Reference collapsing'den lvalue ref. oluşur.
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	auto&& x = 20;  //auto : int  // rvalue ref to rvalue
+	int && x = 20;  // aynı
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
+int main()
+{
+	auto&& x = expr;  // iki ihtimal var, x ya lvalue ref veya rvalue ref olacak. Başka ihtimal yok.
+	ilk değer veren ifadenin türüne bağlı 
+	expr. lvalue ise referans lvalue ref. olur
+	expr. rvalue exp. ise referansım rvalue ref. olur.
+}
+	
+*------------------------------------------------------------------------------------------------------
+
+C'de bir türe eş-isim vermek için typedef anahtar sözcüğü kullanılır. 
+C++'da using anahtar sözcüğü ile de yapılır. typedef de geçerli !!
+
+*------------------------------------------------------------------------------------------------------
+
+typedef int WORD;
+using WORD = int;
+
+typedef int *iptr;
+using iptr = int*;
+
+typedef int inta[5];
+using inta = int[5];
+
+typedef int (*fptr)(int);
+using fptr = int (*)(int);
+
+
+*------------------------------------------------------------------------------------------------------
+
+reference collapsing rules geçerli
+
+int main()
+{
+	using lref = int&;  // lref : int&'in türeş ismi
+	
+	int ival = 5;
+	lref& r = ival;  // r 'nin türü int&, lref'de int&, dolayısıyla lvalue ref'e lvalue ref.,
+	
+	int ival{2};
+	lref &&r = ival;  // sağ taraf ref. sol taraf ref. oluştu,  
+	r halen rvalue ref.
+	
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	using ref = int&&;
+	
+	ref&& r = 10;  //sağ taraf ref. sağ taraf ref., r'nin türü int&&
+	
+} 
+
+*------------------------------------------------------------------------------------------------------
+
+decltype:  // decleration type'dan uydurma
+
+compile time'da bir tür elde edilir. 
+Tür kullanılan her yerde kullanılabilir.
+
+int main()
+{
+	int x = 10;
+	
+	decltype(x);  // int
+	
+	decltype(x) ival = 5;
+	
+}
+
+
+*------------------------------------------------------------------------------------------------------
+
+int x = 10;
+decltype(x) foo(decltype(x));   // int foo(int)
+
+
+*------------------------------------------------------------------------------------------------------
+
+struct Data{
+	int a, b;
+};
+
+int main()
+{
+	Data mydata;
+	decltype(mydata.a);  // int
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	const int x = 20;
+	decltype(x); // const int
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int a[5] = {};
+	
+	decltype(a) b;  // int[5]
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	int& r = x;
+	
+	decltype(r) a;  // hata çünkü referanslara ilk değer verilmeli
+}
+
+*------------------------------------------------------------------------------------------------------
+
+başlangıç seviyesi en iyi kitap : C++ primer (lhoye, barabara, libmann)
+fakat C++ 11 standartları
+
+*------------------------------------------------------------------------------------------------------
+
+expression'da tür çıkarımı nasıl olur ?
+
+int main()
+{
+	int ival = 45;
+	decltype((ival));  // iki parantez olunca isim kuralı biter ve expr. olur.
+}
+
+*------------------------------------------------------------------------------------------------------
+
+decltype operandı olan ifadenin value category'si
+a) PR value expr.  =>  T
+b) Lvalue expr.    =>   T&
+c) X value expr.   =>   T&&
+
+int main()
+{
+	int ival = 45;
+	decltype(ival + 5);  // int
+	
+	decltype((ival)); // int&
+	decltype((ival)) x;  // hata olur çünkü ref. ilk değer vermek gerekir
+	
+	int *ptr = &ival;
+	int a = 5;
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int ival = 45;
+	int *ptr = &ival;
+	int a = 5;
+	
+	decltype(*ptr) b = a;
+	// *ptr : lvalue, b : lvalue ref.
+	// yani int&
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int a[5] = {0};
+	
+	decltype(a[2]); // lvalue expr., int&
+
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	decltype(++x); // lvalue expr. , int&
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int&& foo();
+
+int main()
+{
+	int x = 10;
+	
+	decltype(foo()) = 5; // xvalue expr. , int&&
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x = 10;
+	
+	decltype(++x) y = x;  // lvalue expr.,  int&
+	
+}
+
+*------------------------------------------------------------------------------------------------------
+
+unevaluated context: 
+kodda bir ifade olmasına rağmen, derleyici dilin kurallarına göre o ifade için bir işlem kodu üretmiyor. Böyle bağlamlara denir.
+
+C'de sadece sizeof operatorü
+
+int main()
+{
+	int x = 10;
+	size_t n = sizeof(x++);
+	
+	std::cout << "x : " << x;  // x = 10
+}
+
+*------------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int x{};
+	
+	decltype(x++) y = 5;  // işlem kodu üretilmez, sadece tür çıkarımı yapılır decltype ile !!!
+	
+	std::cout << "x : " << x;  // x = 0
+}
+
+*------------------------------------------------------------------------------------------------------
+
+
