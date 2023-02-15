@@ -1,0 +1,1912 @@
+
+İçerik:   
+
+inheritance - kalıtım
+runtime polymorphism
+
+
+Özet :
+
+bir türemiş nesnesi hayata geldiğinde önce içindeki taban nesnesi hayata geliyor,  sonra elemanlar bildirimdeki sırayla hayata geliyor. Ondan sonra Türemiş sınıfın constr. içine girer !!!!
+
+türemiş sınıf nesnesinin adresini taban nesnesinde tutabiliriz. Burda örtülü dönüşüm otomatik yapılır. referans semantiği ile yapılabiliyor. 
+Ama nesnelerin birbirine atanmasından kaçınıyoruz (object slicing)
+
+önce default cont. default ederken taban sınıf alt nesnesini default const. çağrı yaparak init eder. Ondan sonra türemiş sınıfın const. gövdesine girecek. 
+
+Soru: taban sınıf nesnesinin default const. yoksa ne olur ?
+Derleyici türemiş sınıfın cont. deleted olarak belirler. Sentax hatası yok ben bir türemiş sınıf türünden nesne oluşturmadığım sürece.
+
+sDer sınıfının const. yazıyorsanız const. init list ile sadece direkt Der class'ı init edilir, ama Base class init edilemez. 
+
+özet: copy const. siz yazıyorsanız taban sınıf nesnesinin copy const. edilmesinden siz sorumlusunuz. move const. siz yazıyorsanız taban sınıf nesnesinin move const. edilmesinden siz sorumlusunuz. 
+member'larda da böyle.
+
+
+virtual void fly() = 0; 
+// 3. kategori, pure virtual function (saf sanal fonk.)
+// abstract sözcüğü C++'da yok, bunun implementasyonu yok anlamına geliyor
+
+imza : geri dönüş haricindeki kısım fonksiyonun imzasıdır. const da imzanın bir parçası 
+
+sanal fonksiyonu override etmek için aynı imza ve aynı geri dönüş değeri tipi olmalı !!!
+
+
+virtual dispatch mekanizması üç şekilde karşımıza çıktı
+1. taban sınıf pointer'ı ile sanal fonksiyonun çağırılması
+2. taban sınıf referansı ile sanal fonksiyonun çağırılması
+3. taban sınıfın sanal olmayan non-static fonksiyonun bir sanal fonksiyonu çağırması
+
+*-----------------------------------------------------------------------------------------------------
+
+constructor - destructor:
+
+bir türemiş nesne hayata geldiğinde önce içindeki taban nesnesi hayata geliyor,  
+sonra elemanlar bildirimdeki sırayla hayata geliyor. 
+Ondan sonra Türemiş sınıfın constr. içine girer !!!!
+
+bir sınıf nesnesi içerisinde başka bir sınıf nesnesi varsa bu kalıtım veya composition dolayısı ile olabilir. 
+
+*-----------------------------------------------------------------------------------------------------
+
+türemiş sınıf nesnesinin adresini taban nesnesinde tutabiliriz. Burda örtülü dönüşüm otomatik yapılır. referans semantiği ile yapılabiliyor. 
+Ama nesnelerin birbirine atanmasından kaçınıyoruz (object slicing)
+
+*-----------------------------------------------------------------------------------------------------
+
+MIL ile taban nesnesini init edecek kod yazmazsanız derleyici her zaman hem kendi yazdığı default ettiği türemiş sinıf const.'da hem de sizin yazdığınız fakat taban sınıf nesnesini init etmediğiniz const.'da taban sınıfın default const.'a yapılan çağrıyı ekler.
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base Default Ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base Destructor\n";
+	}
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;  
+	// önce default cont. default ederken taban sınıf alt nesnesini default const. çağrı yaparak init eder. Ondan sonra türemiş sınıfın const. gövdesine girecek. Türemiş nesnesinin dest. girince hayata önce gelen daha sonra hayata veda eder. 
+
+
+1. önce taban sınıfın const.
+2. sonra türemiş sınıf const.
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: taban sınıf nesnesinin default const. yoksa ne olur ?
+
+Derleyici türemiş sınıfın cont. deleted olarak belirler. Sentax hatası yok ben bir türemiş sınıf türünden nesne oluşturmadığım sürece. Oluşturunca sentax hatası verir. 
+Bu durum 
+
+class Base{
+public:
+	Base(int)
+	{
+		std::cout << "Base Default Ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base Destructor\n";
+	}
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der myder;  // sentax hatası 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: ekranda sırasıyla hangi yazılar görülür ?
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base Default Ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base Destructor\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der()
+	{
+		std::cout << "Der Default Ctor\n";
+	}
+	
+	~Der()
+	{
+		std::cout << "Der Destructor\n";
+	}
+};
+
+int main()
+{
+	Der myder;  //  
+}
+
+cevap:
+std::cout << "Base Default Ctor\n";
+std::cout << "Der Default Ctor\n";
+std::cout << "Der Destructor\n";
+std::cout << "Base Destructor\n";
+
+hayata önce gelen daha sonra hayata veda eder. 
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: ekranda sırasıyla hangi yazılar görülür ?
+
+class Member{
+public:
+	Member()
+	{
+		std::cout << "Member Default Ctor\n";
+	}
+	
+	~Member()
+	{
+		std::cout << "Member Destructor\n";
+	}
+};
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base Default Ctor\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base Destructor\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der()
+	{
+		std::cout << "Der Default Ctor\n";
+	}
+	
+	~Der()
+	{
+		std::cout << "Der Destructor\n";
+	}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Der myder;  // hem taban sınıf alt nesnesi, hem 
+	member nesnesi hayata gelecek. Hayata gelme sırası önce base sonra member. Bu esnada hata meydana gelse nesne oluşmaz.
+}
+
+cevap:
+std::cout << "Base Default Ctor\n";
+std::cout << "Member Default Ctor\n";
+std::cout << "Der Default Ctor\n";
+std::cout << "Der Destructor\n";
+std::cout << "Member Destructor\n";
+std::cout << "Base Destructor\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member()
+	{
+		std::cout << "Member Default Ctor\n";
+	}
+	
+	~Member()
+	{
+		std::cout << "Member Destructor\n";
+	}
+};
+
+class Base{
+public:
+	Base(int)
+	{
+		std::cout << "Base(int)\n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base Destructor\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der()
+	{
+		std::cout << "Der Default Ctor\n";
+	}
+	
+	~Der()
+	{
+		std::cout << "Der Destructor\n";
+	}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Der myder;  // sentax hatası,
+	// base'in default const. yok, deleted değil !!! dikkat, Der'in const. derleyici yazsaydı deleted olurdu. Ben yazdım.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: ekranda sırasıyla hangi yazılar görülür ?
+
+https://www.studytonight.com/cpp/initializer-list-in-cpp.php
+
+class Base{
+public:
+	Base(int x)
+	{
+		std::cout << "Base(int x) x = " << x << "n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base Destructor\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der() : Base(0)
+	{
+		std::cout << "Der Default Ctor\n";
+	}
+	
+	~Der()
+	{
+		std::cout << "Der Destructor\n";
+	}
+};
+
+int main()
+{
+	Der myder; 
+}
+
+cevap:
+std::cout << "Base(int x) x = " << x << "n";
+std::cout << "Der Default Ctor\n";
+std::cout << "Der Destructor\n";
+std::cout << "Base Destructor\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: ekranda sırasıyla hangi yazılar görülür ?
+
+class Base{
+public:
+	Base(int x)
+	{
+		std::cout << "Base(int x) x = " << x << "\n";
+	}
+	
+	Base()
+	{
+		std::cout << "Base Default Ctor\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der(int i) : Base(i)  // Base{i}
+	{
+		std::cout << "Der(int x) x = " << i << "\n";
+	}
+	
+	Der()
+	{
+		std::cout << "Der Default Ctor\n";
+	}
+};
+
+int main()
+{
+	Der myder(12); 
+	Der mineder;
+}
+
+cevap:
+Base(int x) x =  12
+Der(int x) x =  12
+Base Default Ctor
+Der Default Ctor
+
+*-----------------------------------------------------------------------------------------------------
+
+class Person{
+public:
+	Person(const std::string& name);
+private:
+	std::string mname;
+};
+
+class Employee : public Person{
+public:
+	
+};
+
+derleyici default const. delete edecek.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Person{
+public:
+	Person(const std::string& name);
+private:
+	std::string mname;
+};
+
+class Employee : public Person{
+public:
+	Employee();  // artık taban sınıf nesnesinin
+	const. edilmesinden ben sorumluyum, default const. çağırılır
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Person{
+public:
+	Person(const std::string& name);
+private:
+	std::string mname;
+};
+
+class Employee : public Person{
+public:
+	Employee(const std::string& name) : Person(name)
+	{
+		
+	} 
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+multilevel inheritance
+
+her SDer nesnesi Base'dir.
+Base sDer'in taban sınıfıdır. 
+
+*-----------------------------------------------------------------------------------------------------
+
+sDer sınıfının const. yazıyorsanız const. init list ile sadece direkt Der class'ı init edilir, ama Base class init edilemez. 
+
+class Base{
+public:
+	Base(int);
+};
+
+class Der : public Base{
+public:
+
+};
+
+class SDer : public Der{
+public:
+	SDer() : Base(0)  // hata !! indirect base class hatası
+	{
+	
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const. \n";
+	}
+	
+	~Base()
+	{
+		std::cout << "Base destructor \n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der()
+	{
+		std::cout << "Der default const. \n";
+	}
+	
+	~Der()
+	{
+		std::cout << "Der destructor \n";
+	}
+};
+
+class SDer : public Der{
+public:
+	SDer()
+	{
+		std::cout << "SDer default const. \n";
+	}
+	
+	~SDer()
+	{
+		std::cout << "SDer destructor \n";
+	}
+};
+
+int main()
+{
+	SDer sx;
+}
+
+cevap:
+Base default const.
+Der default const.
+SDer default const.
+SDer destructor
+Der destructor
+Base destructor
+
+*-----------------------------------------------------------------------------------------------------
+
+copy constructor:
+
+bir türemiş sınıf nesnesi copy const. edildiğinde türemiş sınıf nesnesinin copy const. çağırılacak.  Eğer türemiş sınıf nesnesinin copy const. derleyici tarafından default edilmişse derleyici türemiş sınıf için yazdığı copy const.'da taban sınıf nesnesini copy const. eder. Hem member'lar için hem kalıtımda geçerli.
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const.\n";
+	}
+	Base(const Base&)
+	{
+		std::cout << "Base copy const.\n";
+	}
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	Der der1;
+	
+	Der der2 = der1; //  derleyicinin yazdığı Base'deki copy const. çağırılır. 
+}
+
+cevap: 
+Base default const.
+Base copy const.
+
+*-----------------------------------------------------------------------------------------------------
+
+Der'in copy const.'ını ben yazarsam:
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const.\n";
+	}
+	Base(const Base&)
+	{
+		std::cout << "Base copy const.\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der() = default;
+	Der(const Der&)
+	{
+		std::cout << "Der copy const.\n";
+	}
+};
+
+int main()
+{
+	Der der1;
+	
+	Der der2 = der1; 
+}
+
+cevap: 
+Base default const.
+Base default const.
+Der copy const.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const.\n";
+	}
+	Base(const Base&)
+	{
+		std::cout << "Base copy const.\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der() = default;
+	Der(const Der& other) : Base(other)
+	{
+		std::cout << "Der copy const.\n";
+	}
+};
+
+int main()
+{
+	Der der1;
+	
+	Der der2 = der1; 
+}
+
+cevap: 
+Base default const.
+Base copy const.
+Der copy const.
+
+*-----------------------------------------------------------------------------------------------------
+
+özet: eğer türemiş sınıfın copy const. derleyici yazarsa derleyicinin yazdığı copy const. türemiş sınıf nesnesi içerisindeki taban sınıf nesnesini copy cont. edecek. Ama türemiş sınıfın copy const. kendiniz yazıyorsanız türemiş sınıf içindeki taban nesnesinin de copy const. edilmesini istiyorsanız 
+	Der(const Der& other) : Base(other)
+şeklinde taban sınıfın copy const. çağırılmasını sağlamalısınız.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+move constructor:
+
+türemiş sınıfın eğer move const. varsa türemiş sınıf nesnesi için move cont. çağırılır. Move const. derleyici yazmışsa taban nesnesini de move const. eder.
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const.\n";
+	}
+	Base(const Base&)
+	{
+		std::cout << "Base copy const.\n";
+	}
+	
+	Base(Base&&)
+	{
+		std::cout << "Base move const.\n";
+	}
+};
+
+class Der : public Base{
+public:
+	
+};
+
+int main()
+{
+	Der der1;
+	
+	Der der2 = std::move(der1);  //
+}
+
+cevap: 
+Base default const.
+Base move const. (der2'nin içindeki base nesnesinin hayata getirilmesi için)
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const.\n";
+	}
+	Base(const Base&)
+	{
+		std::cout << "Base copy const.\n";
+	}
+	
+	Base(Base&&)
+	{
+		std::cout << "Base move const.\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der() = default;
+	Der(Der&&){
+		std::cout << "Der move const.\n";
+	}
+};
+
+int main()
+{
+	Der der1;
+	
+	Der der2 = std::move(der1);  //
+}
+
+cevap:
+Base default const.
+Base default const.
+Der move const.
+
+*-----------------------------------------------------------------------------------------------------
+
+Tıpkı copy const. olduğu gibi move const. kendim yazıyorsam ve taban nesnesinin move cont. ile hayata gelmesini istiyorsam move const. çağırılmasını sağlamalıyım.
+
+class Base{
+public:
+	Base()
+	{
+		std::cout << "Base default const.\n";
+	}
+	Base(const Base&)
+	{
+		std::cout << "Base copy const.\n";
+	}
+	
+	Base(Base&&)
+	{
+		std::cout << "Base move const.\n";
+	}
+};
+
+class Der : public Base{
+public:
+	Der() = default;
+	Der(Der&& other) : Base(std::move(other)){
+		std::cout << "Der move const.\n";
+	}
+};
+
+int main()
+{
+	Der der1;
+	
+	Der der2 = std::move(der1);  //
+}
+
+cevap:
+Base default const.
+Base move const.
+Der move const.
+
+*-----------------------------------------------------------------------------------------------------
+
+özet: copy const. siz yazıyorsanız taban sınıf nesnesinin copy const. edilmesinden siz sorumlusunuz. move const. siz yazıyorsanız taban sınıf nesnesinin move const. edilmesinden siz sorumlusunuz. 
+member'larda da böyle.
+
+*-----------------------------------------------------------------------------------------------------
+
+Atama operatör fonksiyonları:
+
+copy assignment
+
+class Base{
+public:
+	Base& operator =(const Base&)
+	{
+		std::cout << "Base copy assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+};
+
+int main()
+{
+	Der x, y;
+	
+	x = y;
+}
+
+cevap: 
+Base copy assignment
+
+*-----------------------------------------------------------------------------------------------------
+
+Der'in copy assignment'ını kendim yazsam
+
+class Base{
+public:
+	Base& operator =(const Base&)
+	{
+		std::cout << "Base copy assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+	Der& operator=(const Der&)
+	{
+		return *this;
+	}
+};
+
+int main()
+{
+	Der x, y;
+	
+	x = y;
+}
+
+Derleyici sizin yazdığınız copy assignment, move assignment fonk. müdahale etmez. Bu fonks. çağırılır. x'in içindeki base olduğu değeri ile kalır.
+
+*-----------------------------------------------------------------------------------------------------
+
+Hem copy assignment'i ben yazmak istiyorum 
+hem de derleyicinin yazacağı copy assignment'ta olduğu gibi taban sınıf için de copy assignment'in çağırılmasını istiyorum.
+
+class Base{
+public:
+	Base& operator =(const Base&)
+	{
+		std::cout << "Base copy assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+	Der& operator=(const Der&other)
+	{
+		Base::operator=(other);
+		return *this;
+	}
+};
+
+int main()
+{
+	Der x, y;
+	
+	x = y;
+}
+
+cevap: 
+Base copy assignment
+
+Base için copy assignment tanımlamasaydık derleyici yazardı.
+
+*-----------------------------------------------------------------------------------------------------
+
+Hatırlatma:
+
+Eğer şu 3 fonk. biri bildirilmiş ise derleyici sınıfın move member'larını yazmaz. (not declared)
+
+copy const.
+move const.
+destructor
+
+Eğer şu 2 fonk. biri bildirilmiş ise derleyici sınıfın copy member'larını  delete eder
+
+move const.
+move assignment
+
+*-----------------------------------------------------------------------------------------------------
+
+Hangi special member'ları var ?
+
+1)
+class Base{
+
+};  // hepsi var
+
+2)
+class Base{
+public:
+	Base();
+};  // hepsi var
+
+3)
+class Base{
+public:
+	Base(const Base&);
+};  // default const. yok, destr. var, copy assignment var, move member'lar not declared (yok demek) 
+
+4)
+class Base{
+public:
+	Base(Base&&);
+};  // default const. yok, destr. var, copy members deleted, move assignment not declared (yok demek) 
+
+*-----------------------------------------------------------------------------------------------------
+
+move assignment:
+
+class Base{
+public:
+	Base& operator= (Base&&)
+	{
+		std::cout << "Base move assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+};
+
+int main()
+{
+	Der x, y;
+	x = std::move(y);
+}
+
+x için move assignment çağırılacak. Der'in move assignment'ini derleyici yazdı. Taban nesnesini de move assign edecek şekilde yazdı. 
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base& operator= (Base&&)
+	{
+		std::cout << "Base move assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+	Der & operator = (Der && other)
+	{
+		Base::operator = (std::move(other));
+		return *this;
+	}
+};
+
+int main()
+{
+	Der x, y;
+	x = std::move(y);
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base& operator= (Base&&)
+	{
+		std::cout << "Base move assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+	Der & operator = (Der && other)
+	{
+		Base::operator = (other);
+		return *this;
+	}
+};
+
+int main()
+{
+	Der x, y;
+	x = std::move(y);
+}
+
+yanlış, base'in copy assignment'ı delete edilmiş durumda
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base& operator= (Base&&)
+	{
+		std::cout << "Base move assignment\n";
+		return *this;
+	}
+	
+	Base& operator= (const Base&  other)
+	{
+		std::cout << "Base copy assignment\n";
+		return *this;
+	}
+};
+
+class Der : public Base{
+public:
+	Der & operator = (Der && other)
+	{
+		Base::operator = (other);
+		return *this;
+	}
+};
+
+int main()
+{
+	Der x, y;
+	x = std::move(y);
+}
+
+sentax hatası olmaz ama der'in move cont, move assignment'ı çağırılır. Bu kodla der'in move assignmet'ı base'in move assignment'ını değil de copy assignment'ını çağırmış olur.
+
+*-----------------------------------------------------------------------------------------------------
+
+runtime polymorphism (virtual functions)
+
+interface terimini fonksiyonun imzası anlamında (java gibi değil)
+
+*-----------------------------------------------------------------------------------------------------
+
+Airplane
+
+Boeing Airplane'in verdiği fly fonksiyonu ile uçacak
+
+1. kategori : 
+türemiş sınıflara interface verilecek, türemiş sınıfların seçim hakkı yok
+
+2. kategori : 
+her uçak uçar isterse airplane'in verdiği kodla uçar isterse kendi kodu ile uçar. Taban sınıf türemiş sınıflara seçim hakkı veriyor. Türemiş sınıfın kendi fonksiyonunu sağlamasına function override etmesi deniyor. 
+
+3. kategori :
+türemiş sınıflara sadece interface veriyorsun. Implementasyon vermiyorsun. Türemiş sınıfı kendi fonksiyonunu yazmasına zorluyorsun. buna da override etmesi denir. 
+
+void fly()
+
+*-----------------------------------------------------------------------------------------------------
+
+eğer bir sınıfın 2.  veya 3. kategoride en az bir fonksiyonu varsa polymorphic class denir.
+eğer bir sınıfın 3. kategoride en az bir fonksiyonu varsa abstract class (soyut sınıf) denir.
+
+her abstract class bir polymorphic class'tır.
+ama her polymorphic class bir abstract class değil
+
+*-----------------------------------------------------------------------------------------------------
+
+concrete class (somut sınıflar) : nesne oluşturulan sınıflar
+
+abstract class (soyut sınıflar) : nesne oluşturulamayan sınıflar
+
+*-----------------------------------------------------------------------------------------------------
+
+class Airplane{
+public:
+	void takeoff();  
+	// hem interface hem implementasyon, 1. kategori
+	
+	virtual void land();  
+	// 2. kategori, virtual function.
+	// bu bir virtual member fonksiyon (sanal üye fonksiyon), istersem kendim overwrite edebilirim, istesem overwrite etmeyebilirim, seçim benim.
+	
+	virtual void fly() = 0; 
+	// 3. kategori, pure virtual function (saf sanal fonk.)
+	// abstract sözcüğü C++'da yok, bunun implementasyonu yok anlamına geliyor
+};
+
+virtual anahtar sözcüğü sadece bir yerde definition veya decleration'da olabilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+function override : late binding'tir (dynamic binding)
+
+*-----------------------------------------------------------------------------------------------------
+
+class Car{
+public:
+	void start()
+	{
+		std::cout << "Car has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Car is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Car has stopped!\n";
+	}
+};
+
+class Bmw : public Car{
+public:
+	void start()
+	{
+		std::cout << "Bmw has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+class Fiat : public Car{
+public:
+	void start()
+	{
+		std::cout << "Fiat has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Fiat is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Fiat has stopped!\n";
+	}
+};
+
+class Volvo : public Car{
+public:
+	void start()
+	{
+		std::cout << "Volvo has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Volvo is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Volvo has stopped!\n";
+	}
+};
+
+class Toyota : public Car{
+public:
+	void start()
+	{
+		std::cout << "Toyota has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Toyota is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Toyota has stopped!\n";
+	}
+};
+
+class Dacia : public Car{
+public:
+	void start()
+	{
+		std::cout << "Dacia has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Dacia is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Dacia has stopped!\n";
+	}
+};
+
+void car_game(Car &cr)
+{
+	cr.start();
+	cr.run();
+	cr.stop();
+	std::cout << "----------------------\n";
+}
+
+int main()
+{
+	Bmw bmw;
+	Toyota toyota;
+	Dacia dacia;
+	
+	car_game(bmw);
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Car{
+public:
+	virtual void start()
+	{
+		std::cout << "Car has just started!\n";
+	}
+	virtual void run()
+	{
+		std::cout << "Car is running now!\n";
+	}
+	virtual void stop()
+	{
+		std::cout << "Car has stopped!\n";
+	}
+};
+
+class Bmw : public Car{
+public:
+	void start()
+	{
+		std::cout << "Bmw has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+class Fiat : public Car{
+public:
+	void start()
+	{
+		std::cout << "Fiat has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Fiat is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Fiat has stopped!\n";
+	}
+};
+
+class Volvo : public Car{
+public:
+	void start()
+	{
+		std::cout << "Volvo has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Volvo is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Volvo has stopped!\n";
+	}
+};
+
+class Toyota : public Car{
+public:
+	void start()
+	{
+		std::cout << "Toyota has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Toyota is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Toyota has stopped!\n";
+	}
+};
+
+class Dacia : public Car{
+public:
+	void start()
+	{
+		std::cout << "Dacia has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Dacia is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Dacia has stopped!\n";
+	}
+};
+
+void car_game(Car &cr)
+{
+	cr.start();
+	cr.run();
+	cr.stop();
+	std::cout << "----------------------\n";
+}
+
+int main()
+{
+	Bmw bmw;
+	Toyota toyota;
+	Dacia dacia;
+	
+	car_game(bmw);
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+kalıtımın en önemli özelliği eski kodların yeni kodları kullanmasını sağlamak.
+Kodları yazdıktan aylar sonra kodlara honda eklense honda için olan kodlar çalışacak.
+
+*-----------------------------------------------------------------------------------------------------
+
+çalışma zamanında polymorphism'in çalıştığını ispatlayacaz.
+
+#include <random>
+
+class Car{
+public:
+	virtual void start()
+	{
+		std::cout << "Car has just started!\n";
+	}
+	virtual void run()
+	{
+		std::cout << "Car is running now!\n";
+	}
+	virtual void stop()
+	{
+		std::cout << "Car has stopped!\n";
+	}
+};
+
+class Bmw : public Car{
+public:
+	void start()
+	{
+		std::cout << "Bmw has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+class Fiat : public Car{
+public:
+	void start()
+	{
+		std::cout << "Fiat has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Fiat is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Fiat has stopped!\n";
+	}
+};
+
+class Volvo : public Car{
+public:
+	void start()
+	{
+		std::cout << "Volvo has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Volvo is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Volvo has stopped!\n";
+	}
+};
+
+class Toyota : public Car{
+public:
+	void start()
+	{
+		std::cout << "Toyota has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Toyota is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Toyota has stopped!\n";
+	}
+};
+
+class Dacia : public Car{
+public:
+	void start()
+	{
+		std::cout << "Dacia has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Dacia is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Dacia has stopped!\n";
+	}
+};
+
+void car_game(Car &cr)
+{
+	cr.start();
+	cr.run();
+	cr.stop();
+	std::cout << "----------------------\n";
+}
+
+Car* create_random_car()
+{
+	static std::mt19937 eng{std::random_device{} ()};
+	static std::uniform_int_distribution dist{ 1, 5};
+	
+	switch(dist(eng)){
+	case 1: std::cout  << "Bmw\n"; 
+			return new Bmw;
+	case 2: std::cout  << "Fiat\n"; 
+			return new Fiat;
+	case 3: std::cout  << "Volvo\n"; 
+			return new Volvo;
+	case 4: std::cout  << "Toyota\n"; 
+			return new Toyota;
+	case 5: std::cout  << "Dacia\n"; 
+			return new Dacia;
+	}
+}
+
+int main()
+{
+	for(;;)  // sonsuz döngü
+	{
+		Car *p = create_random_car();
+		car_game(*p);
+		(void)getchar();
+	}
+}
+
+koda bakarak arabanın bmw mi toyota mi olduğu anlaşılamaz. Bu da araç markasının run time'da belirlendiğini kanıtlar.
+
+*-----------------------------------------------------------------------------------------------------
+
+imza : geri dönüş haricindeki kısım fonksiyonun imzasıdır.
+
+class Base{
+public:
+	virtual void vfunc();
+};
+
+class Der : public Base{
+public:
+	int vfunc();  // hata
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc();
+};
+
+class Der : public Base{
+public:
+	void vfunc(int);  // override değil !!!
+	// ayrı fonksiyonlar !! ama sentax hatası değil
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+sanal fonksiyonu override etmek için aynı imza ve aynı geri dönüş değeri tipi olmalı !!!
+
+class Base{
+public:
+	virtual void vfunc();
+};
+
+class Der : public Base{
+public:
+	void vfunc();  // overwrite
+	// burada virtual kullansan da kullanmasan  da bu  fonksiyon virtual
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+ancient C++  vs modern C++
+
+*-----------------------------------------------------------------------------------------------------
+
+Tavsiye !!! kullansan iyi olur !!!
+override terimi (contextual keyword)
+belirli bir bağlamda kullanılınca anahtar sözcük etkisi yapar. Başka yerde kullanınca anahtar sözcük olmaz
+
+class Base{
+public:
+	virtual void vfunc();
+};
+
+class Der : public Base{
+public:
+	void vfunc()override;  
+};
+
+int main()
+{
+
+}
+
+nedeni şu : eski kodları yeni derleyicide kullanınca sorun olmasın diye contextual keyword terimi getirdiler.
+
+*-----------------------------------------------------------------------------------------------------
+
+"const" da imzanın bir parçası 
+
+class Base{
+public:
+	virtual void vfunc()const;
+};
+
+class Der : public Base{
+public:
+	void vfunc();   // it is not an override
+};
+
+int main()
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+override ile overload farkı !!!!
+
+*-----------------------------------------------------------------------------------------------------
+
+vfunc'ın kaç overload'ı var ?
+3
+
+class Base{
+public:
+	virtual void vfunc();
+	virtual void vfunc(int );
+	virtual void vfunc(int , int)const;
+};
+
+class Der : public Base{
+public:
+	void vfunc();
+	void vfunc(int);  // int parametreli fonk. override etti.
+	void vfunc(int, int);
+};
+
+int main()
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+türemiş sınıfta virtual sözcüğü yazılması tercihe bırakılır !!!
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	virtual void vfunc()  // virtual sözcüğü yazılmayabilir !!!!
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Virtual dispatch mekanizması : (sanal gönderim mekanizması)
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	
+	Base *baseptr = &myder;
+	
+	baseptr->vfunc();  // der'in vfunc()'ı çağırılır
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+referans semantiği ile :
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	
+	Base& baseref = myder;
+	
+	baseref.vfunc();  // der'in vfunc()'ı çağırılır
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Dikkat !!!
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	
+	Base baseref = myder; // object slicing, istenmez
+	
+	baseref.vfunc();  // virtual dispatch mekanizması devreye girmez !!!
+	// çağırılan fonk. base sınıfın fonk. olur
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+free function : global func.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+void func(Base& r)
+{
+	r.vfunc();
+}
+
+void foo(Base* ptr)
+{
+	ptr->vfunc();
+}
+
+int main()
+{
+	Der myder;
+	
+	func(myder);
+	foo(&myder);
+	// her ikisinde virtual dispatch devreye girer.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+	
+	void foo()  // gizli parametre Base*
+	{
+		vfunc();  // foo()'nun this'ini vfun'a geçmiş oluruz
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+void func(Base& r)
+{
+	r.vfunc();
+}
+
+void foo(Base* ptr)
+{
+	ptr->vfunc();
+}
+
+int main()
+{
+	Der myder;
+	
+	myder.foo();  // virtual dispatch mekanizması devreye girer !!!
+}
+
+sonuç : "Der::vfunc()\n"
+
+*-----------------------------------------------------------------------------------------------------
+
+dispatch mekanizması üç şekilde karşımıza çıktı
+1. taban sınıf pointer'ı ile sanal fonksiyonun çağrılması
+2. taban sınıf referansı ile sanal fonksiyonun çağrılması
+3. taban sınıfın sanal olmayan non-static fonksiyonun bir sanal fonksiyonu çağırması
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+	
+	void foo()  
+	{
+		Base::vfunc();
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+
+int main()
+{
+	Der myder;
+	
+	myder.foo();  // virtual dispatch mekanizması devreye girer !!!
+}
+
+sonuç : "Base::vfunc()\n"
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()  // virtual yaz veya yazma virtual'dır !!!
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Car{
+public:
+	virtual void start()
+	{
+		std::cout << "Car has just started!\n";
+	}
+	virtual void run()
+	{
+		std::cout << "Car is running now!\n";
+	}
+	virtual void stop()
+	{
+		std::cout << "Car has stopped!\n";
+	}
+};
+
+class Bmw : public Car{
+public:
+	void start()
+	{
+		std::cout << "Bmw has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+class Fiat : public Car{
+public:
+	void start()
+	{
+		std::cout << "Fiat has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Fiat is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Fiat has stopped!\n";
+	}
+};
+
+class Volvo : public Car{
+public:
+	void start()
+	{
+		std::cout << "Volvo has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Volvo is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Volvo has stopped!\n";
+	}
+};
+
+class VolvoS60 : public Volvo{
+public:
+	void start()
+	{
+		std::cout << "VolvoS60 has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "VolvoS60 is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "VolvoS60 has stopped!\n";
+	}
+};
+
+class Toyota : public Car{
+public:
+	
+};
+
+class Dacia : public Car{
+public:
+	void start()
+	{
+		std::cout << "Dacia has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Dacia is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Dacia has stopped!\n";
+	}
+};
+
+void car_game(Car &cr)
+{
+	cr.start();
+	cr.run();
+	cr.stop();
+	std::cout << "----------------------\n";
+}
+
+Car* create_random_car()
+{
+	static std::mt19937 eng{std::random_device{} ()};
+	static std::uniform_int_distribution dist{ 1, 6};
+	
+	switch(dist(eng)){
+	case 1: std::cout  << "Bmw\n"; return new Bmw;
+	case 2: std::cout  << "Fiat\n"; return new Fiat;
+	case 3: std::cout  << "Volvo\n"; return new Volvo;
+	case 4: std::cout  << "Toyota\n"; return new Toyota;
+	case 5: std::cout  << "Dacia\n"; return new Dacia;
+	case 6: std::cout  << "VolvoS60\n"; return new VolvoS60;
+	}
+}
+
+int main()
+{
+	for(;;)  // sonsuz döngü
+	{
+		Car *p = create_random_car();
+		car_game(*p);
+		(void)getchar();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
