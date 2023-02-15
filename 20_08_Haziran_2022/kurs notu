@@ -1,0 +1,320 @@
+
+İçerik:   
+
+string
+
+*-----------------------------------------------------------------------------------------------------
+
+ödev açıklaması !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+string sınıfı:
+
+vector ve string sınıfı dynamic array'dir.
+
+Dinamik dizi yapısı nedir ?
+
+Öğeler ardışık olarak bir bellek bloğunda tutulur. 
+
+reallocation : yeni bloğa taşınır ve eski blok free edilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+sınıf şablonu, generic bir kod
+
+// string türüne türeş isim verilmeseydi string kullandığım her yerde bunu yazmam gerekecekti
+using string = std::basic_string<char, std::char_traits<char>, std::allocator<char>>
+
+int main()
+{
+	std::string s1;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+string is an STL container.
+
+container: aynı türden öğeleri veri yapısı ilkesiyle bir arada tutan yapı
+
+*-----------------------------------------------------------------------------------------------------
+
+STL sequential containers:
+
+std::vector
+std::list
+std::forward_list
+std::array
+std::string
+
+associative containers:
+std::set
+std::multi_set
+std::map
+std::multimap
+
+unordered associative containers:
+std::unordered_set
+std::unordered_multiset
+std::unordered_map
+std::unordered_multimap
+
+*-----------------------------------------------------------------------------------------------------
+
+operator overloading çok kullanıyor
++
++=
+<
+
+*-----------------------------------------------------------------------------------------------------
+
+string demekle ne kastediyorsun
+a) std::string sınıfı türünden bir nesne
+b) genel  olarak bir yazı
+c) ntbs (sonunda null karakter olan bir yazı adresi)
+
+*-----------------------------------------------------------------------------------------------------
+
+cstring : yazının sonunda null karakter var
+char str[100] = "ali ekrem";
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	char str[100];
+	str[0] = 'O';
+	str[1] = 'K';
+	
+	string s(str);  //tanımsız davranış
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+cstring parametre deyince const char* alır, aldığı adresteki yazının sonunda null karakter olduğunu bilerek işlemini yapacak. null karakterle karşılaşmazsa hata verir. 
+
+*-----------------------------------------------------------------------------------------------------
+
+string                 const std::string&
+string                 const std::string&&
+cstring              const char*
+data                   const char*, std::size_type n
+range                 [konum1 konum2)  // ilk konum dahil,                                     ikinci konum hariç
+fill                        string::size_type, char
+char                    char
+substring          const string& str , string::size_type idx
+substring          const string& str , string::size_type idx, string::size_type n
+initializer_list    std::initializer_list
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	char str[100 ] = "mustafa";
+	string s(str, 4);    // "must"
+	string s(str, 28);  // tanımsız davranış
+	string s(str+1, 2);  // 
+	
+	string s(str +1, str + 5); // "usta"
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str = "murat gunay";
+	
+	string s(str, 6);   // gunay
+	string s(str, 3);   // at gunay
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string str = "eray goksu";
+	string s(str, 2, 2);  // "ay"
+	string s(str, 2, 30);  // "ay goksu"
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <initializer_list>
+
+int main()
+{
+	std::initializer_list<int> x{1, 4, 6, 7, 9};
+	// içinde ilk değere pointer ve son değere pointer tutuluyor.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <initializer_list>
+
+int main()
+{
+	std::initializer_list<int>mylist{1, 2, 3, 4, 5};
+	
+	std::cout << "sizeof(mylist) = " << sizeof(mylist) << "\n";
+	// 8 =>  int türden iki pointer
+	
+	std::cout << "mylist.size() = " << mylist.size() << "\n";
+	// 5 
+	
+	auto p1 = mylist.begin();
+	auto p2 = mylist.end();
+	
+	cout << *mylist.end() << "\n";
+	
+	for(auto i : mylist){
+		std::cout << i << "\n";
+	}
+	
+	for(const auto i : mylist){
+		std::cout << i << "\n";
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void func(int);
+
+int main()
+{
+	for(auto i : {2,3,5,7,11}){
+		func(i);
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void func(std::initializer_list<int> x)
+{
+	std::cout << "x.begin() = " << x.begin() << "\n";
+	std::cout << "x.end() = " << x.end() << "\n";
+}
+
+int main()
+{
+	std::initializer_list<int> mylist{2, 5, 6, 7, 9, 13};
+	
+	std::cout << "mylist.begin() = " << mylist.begin() << "\n";
+	std::cout << "mylist.end() = " << mylist.end() << "\n";
+	
+	func(mylist);  // shallow copy, aslında copy yok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	std::initializer_list<int> mylist{2, 5, 6, 7, 9, 13};
+	*mylist.begin() = 56;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	auto x = {1, 3, 5, 6, 7};
+	// std::initializer_list<int> x = {1, 3, 5, 6, 7};
+	
+	auto x = {1, 3, 5, 6.7, 7}; // sentax hatası, tür çıkarımı yapılabilmesi için aynı türde olmalı
+	
+	auto x{10};  // int
+	auto x{10, 20};  // sentax hatası !!!
+	auto y = {10};   // initializer list
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	auto x1 = {1};    // initializer list
+	auto x2 = {1, 2};   // initializer list
+	auto x3 = {1, 2, 3};  // initializer list
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+stl'de bazı fonksiyonların parametresi initializer list
+
+int main()
+{
+	std::vector<int> vec1{1, 3, 5, 7, 10};  // initializer list constructor
+	
+	vec1.insert(vec1.begin(), {3, 7, 9});  // ikinci parametre init. list.
+	
+	vec1 = { 7, 9, 11};
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	Myclass(std::initializer_list<int> x)
+	{
+		std::cout << "Myclass(init_list)\n";
+	}
+	
+	Myclass(int)
+	{
+		std::cout << "Myclass(int)\n";
+	}
+};
+
+int main()
+{
+	Myclass m1 = {1, 2, 3, 4, 5};
+	// std::cout << "Myclass(init_list)\n";
+	
+	Myclass m2{10};
+	// std::cout << "Myclass(init_list)\n";
+	
+	Myclass m2(10);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	vector<int> ivec1(100);  // 100'lük
+	vector<int> ivec2{100};  //  1'lik
+	
+	std::cout << "ivec1.size() = " << ivec1.size()  << "\n";
+	std::cout << "ivec2.size() = " << ivec2.size()  << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	vector<int> ivec1(100, 5);  // 100 tane 5 değeri
+	vector<int> ivec2{100, 5};  //  init list. 100 ve 5 değerleri ile başlatıyor.
+	
+	std::cout << "ivec1.size() = " << ivec1.size()  << "\n";
+	std::cout << "ivec2.size() = " << ivec2.size()  << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	string s1(55, 'A');
+	
+	std::cout << "s1.size() = " << s1.size()  << "\n";
+	std::cout << "[ " <<  s1 << "]\n";
+	
+	string s1{55, 'A'};
+	
+	std::cout << "s2.size() = " << s2.size()  << "\n";
+	std::cout << "[ " <<  s2 << "]\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
