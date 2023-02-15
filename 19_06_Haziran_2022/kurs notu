@@ -1,0 +1,1378 @@
+
+İçerik:   
+
+
+
+*-----------------------------------------------------------------------------------------------------
+
+nested namespace :
+
+namespace nec{
+	namespace proj{
+	
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <chrono>
+#include <regex>
+
+int main()
+{
+	std::chrono  (nested namespace)
+	std::regex_constants
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+yeni kolaylık !!!
+
+namespace A:B:C{
+	int x;
+}
+
+namespace A::B{
+	int ival;
+}
+
+namespace A{
+	int* p;
+}
+
+namespace proj = A::B::C;
+
+int main()
+{
+	A::p = nullptr;
+	A::B::ival = 45;
+	A::B::C::x = 10;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+inline namespace
+
+bir namespace'i inline anahtar sözcüğü ile tanımladığımızda 
+o namespace içindeki isimler onu kapsayan namespace'ler içerisinde görülür hale gelirler.
+
+namespace nec{
+	namespace erg{
+		int x, y;
+	}
+	using namespace erg;  // bunun sayesinde görülür
+}
+
+int main()
+{
+	nec::erg::x = 10;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	inline namespace erg{
+		int x, y;
+	}
+}
+
+int main()
+{
+	nec::x = 10;
+	nec::y = 10;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+	inline namespace erg{
+		inline namespace proj{
+			int x;
+		}
+	}
+}
+
+int main()
+{
+	nec::x = 10;
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+inline namespace nec{
+	inline namespace erg{
+		inline namespace proj{
+			int x;
+		}
+	}
+}
+
+int main()
+{
+	x = 10;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+
+	inline namespace old_version{
+		class Myclass{
+			//
+		};
+	}
+	
+	namespace new_version{
+		class Myclass[
+			//
+		};
+	}
+}
+
+int main()
+{
+	nec::Myclass nx;  (hangisi inline ise o alınır)
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace nec{
+
+	namespace old_version{
+		class Myclass{
+			//
+		};
+	}
+	
+#ifdef NEW_VERSION
+	inline
+#endif
+
+	namespace new_version{
+		class Myclass[
+			//
+		};
+	}
+}
+
+int main()
+{
+	nec::Myclass nx;  (hangisi inline ise o alınır)
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Modern C++ 20'de
+
+#include <chrone>
+
+namespace A::B:: inline C{
+	int x = 10;
+}
+
+int main()
+{
+	A::B::C::x = 34;
+	A::B::x = 34;  // geçerli
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+inline'a ne gerek var ?
+x A'nın içinde görülür hale gelir ama hala B namespace'i içerisindedir.
+
+namespace A{
+	inline namespace B{
+		int x = 10; 
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace Nec{
+	namespace Nested{
+		class C{
+		
+		};
+	}
+	using namespace Nested;
+	void func(Nested::C);
+}
+
+int main()
+{
+	Nec::Nested::C x;
+	func(x);  // geçersiz inline kullan
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+namespace Nec{
+	inline namespace Nested{
+		class C{
+		
+		};
+	}
+	void func(Nested::C);
+}
+
+int main()
+{
+	Nec::Nested::C x;
+	func(x);  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+nested types (type members, member types):
+
+türün bildirimini sınıf içinde yaparsanız sınıfın nested type'i olur.
+
+neden sınıf içersinde neden tür bildirimi yapalım ?
+
+
+using Word = int;  // scope'u namespace içinde
+class Myclass{
+
+};
+
+class Myclass{
+	using Word = int;  // class scope içinde, erişim kontrolü gelir
+
+};
+
+class Myclass{
+	typedef int Word; 
+
+};
+
+class Myclass{
+	enum class Color{ white, black};
+
+};
+
+class Myclass{
+	class Nested{
+	
+	};
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+	typedef int Word;
+	Word mx;
+};
+
+class Myclass{
+	Word mx;  // hatalı !!
+	typedef int Word;  
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+struct Word{
+	short x,y;
+};
+
+class Myclass{
+	Word m_a;  // struct Word bulunur !!! İsim arama, aşağıya bakmaz
+	typedef int Word;
+	Word m_b;  // int Word bulunur. 
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+struct Word{
+	short x,y;
+};
+
+class Myclass{
+	void func()
+	{
+		Word wx;  //  int türden, sınıfın üye fonksiyonu içinde
+		yapılan arama 
+	}
+	
+	typedef int Word;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+// isim arama kurallarına göre : sınıfın üye fonksiyonu içinde bir isim kullanıldığında önce blok içinde, bulunamazsa kapsayan bloklar içinde, bulunamazsa class scope içinde aranır.
+
+struct Word{
+	short x,y;
+};
+
+class Myclass{
+	void func();
+	
+	typedef int Word;
+};
+
+void Myclass::func()
+{
+	Word wx;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+struct Word{
+	short x,y;
+};
+
+class Myclass{
+
+	Word a;  // struct 
+	void func()
+	{
+		Word b;  //int
+	}
+	
+	typedef int Word;
+	
+	Word c;  // int
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class List{
+	struct Node{  // nested type
+	
+	};
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+iteratörler de nested type'dir.
+
+class Vector{
+public:
+	class iterator{
+	
+	};
+	iterator begin();
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+örnek nested type'lar
+
+#include <vector>
+
+int main()
+{
+	std::vector<int>::size_type;
+	std::vector<int>::value_type;
+	std::vector<int>::iterator;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	class Nested{
+	private:
+		void func();
+	};
+	void foo()
+	{
+		n.func();  // sentax hatası, private'e erişemez
+	}
+private
+	Nested n;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	class Nested{
+	private:
+	
+		void func();
+	};
+	void foo()
+	{
+		n.func();  // sentax hatası, private'e erişemez
+	}
+private
+	Nested n;
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Dikkat C++11 öncesinde nested type, enclosing type'ın private bölümüne erişmesi geçerli değildi. Fakat sonra geçerli hale geldi.
+
+class Myclass{
+
+private:
+	static int x;
+public:
+	class Nested{
+		void foo()
+		{
+			x = 5; // ok, private bölüme erişimde problem yok
+		}
+	};
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Encloser{
+	struct Nested{
+		std::size_t get_sizeof_x()const
+		{
+			return sizeof(mx);  
+			// Geçerli, mx non static olmasına rağmen, unevaluated context, sadece isim aranır
+		}
+		
+		int get_x()const
+		{
+			return mx;  
+			// hata,  nesneye ihtiyaç var, kimin mx'i
+		}
+		
+		int get_x(Encloser& enc)
+		{
+			return enc.mx; 
+			// ok, eskiden geçersizdi, C++ 11 ile geçerli kılındı
+		}
+	};
+	int mx;
+};
+
+nested type sahip olan sınıf nested type'ın private bölümüne erişemiyor, ama nested type'ın kendi fonksiyonları enclosing type'ın private bölümüne erişebiliyor !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+private:
+	static void foo();
+};
+
+int main()
+{
+	Myclass::foo();  // hata, erişim kontrolüne takılır
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+private:
+	class Nested{
+	
+	};
+};
+
+int main()
+{
+	Myclass::Nested x;  // private bölüme erişim yasak
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+private:
+	class Nested{
+	
+	};
+public:
+	static Nested foo();
+};
+
+int main()
+{
+	Myclass::Nested x = Myclass::foo();  // hata
+	
+	auto x = Myclass::foo();   // ok, tür çıkarımı olduğunda erişim kontrolü devre dışı kaldı. Dilin kuralları private bölümü kullanamazsınız demiyor, private bölümdeki isimler üstünde bir erişim kontrolü var der,  dolayısıyla ismi kullanmazsanız isim kullanılmayan bir yerde isim kontrolünden bahsedemeyiz
+	
+	decltype(Myclass::foo()) n;  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	class Nested{
+	public:
+		void foo()
+		{
+			mx = 10;  // ok
+		}
+	private: 
+		int mx;
+	};
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	class Nested{
+	public:
+		void foo();
+	private: 
+		int mx;
+	};
+}
+
+void Myclass::Nested::foo()
+{
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	class Nested{
+	public:
+		void foo(Nested);
+	private: 
+		int mx;
+	};
+};
+
+void Myclass::Nested::foo(Nested x)
+{
+	Nested n;  // hata yok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	class Nested{
+	public:
+		Nested foo();
+	private: 
+		int mx;
+	};
+};
+
+// fonksiyonun geri dönüş değeri class scope içinde değildir
+Nested Myclass::Nested::foo() // hata
+{
+
+}
+
+Myclass::Nested Myclass::Nested::foo() // ok
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	class Nested{
+	public:
+		Nested foo();
+	private: 
+		int mx;
+	};
+	
+	// nested sınıfın üye fonksiyonunun tanımını onu kapsayan sınıfın içinde yapılamaz
+	void Nested::foo()  // hata
+	{
+	
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+Composition (containment)
+
+association
+	aggregation
+		composition
+	
+iki sınıf arasında eğer bu iki sınıf türünden nesneler bir araya gelip bir iş gerçekleştiriyorlarsa bu sınıflar arası association var denir. 
+Eğer bir nesne bir nesnenin sahibi durumunda ise buna aggregation denir.
+Composition : sahip olan nesne hayata geldiğinde sahip olunana da hayata geliyor, sahip olan nesnenin hayatı bittiğinde sahip olunanın da hayatı bitiyor. 
+
+*-----------------------------------------------------------------------------------------------------
+
+containment: bir sınıfın başka bir sınıf türünden veri elemanına sahip olması
+
+class Myclass{
+
+private:
+	Nec necx;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// has a relationship
+class Engine{
+public:
+	void start();
+	void stop();
+};
+
+class Car{
+	void start()
+	{
+		eng.start();
+	}
+private:
+	Engine eng;
+};
+
+int main()
+{
+	Car mycar;
+	mycar.start();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// composition
+class istack{
+public:
+	bool empty()const
+	{
+		return ivec.empty();
+	}
+	void push(int val)
+	{
+		ivec.push_back(val);
+	}
+private:
+	std::vector<int> ivec;  // sahip olduğu vector'u kullanır
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Engine{
+private:
+	void set_xyz();
+};
+
+class Car{
+public:
+	void carfunc()
+	{
+		eng.set_xyz();  // sentax hatası
+		// elemana sahip olduğuna göre onun private bölümüne erişeiblirim, yanlış,  friend'lik verilse sentax hatası olmaz
+	}
+private:
+	Engine eng;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bir başka sınıf türünden nesneye sahip olmanız onun private bölümüne erişim hakkı vermez, böyle bir erişim gerekirse friend bildirimi kullanılır. 
+
+class Engine{
+private:
+	void set_xyz();
+	friend class Car;
+};
+
+class Car{
+public:
+	void carfunc()
+	{
+		eng.set_xyz();  // sentax hatası
+		// elemana sahip olduğuna göre onun private bölümüne erişeiblirim, yanlış,  friend'lik verilse sentax hatası olmaz
+	}
+private:
+	Engine eng;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+bir sınıf nesnesi oluşturulduğunda sınıf nesnesinin oluşması demek önce non-static elemanlarının hayata gelmesi demek
+
+class Engine{
+public:
+
+private:
+};
+
+class Car{
+public:
+	Car()
+	{
+		// ..  constructor'ın içine girdiyse tüm elemanları hayata gelmiştir
+	}
+private:
+	Engine m_eng;
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Engine{
+public:
+	Engine()
+	{
+		std::cout << "Engine default ctor\n";
+	}
+	~Engine()
+	{
+		std::cout << "Engine default destructor\n";
+	}
+private:
+};
+
+class Car{
+public:
+	Car()  // aslında buraya gizli const. init list eklenir
+	{
+		std::cout << "Car default ctor\n";
+	}
+	~Car()
+	{
+		std::cout << "Car default destructor\n";
+	}
+private:
+	Engine n_eng;
+};
+
+int main()
+{
+	std::cout << "main basladi\n";
+	{
+		Car mycar;  // car nesnesi hayatı gelince engine nesnesi hayata gelir
+	}
+	std::cout << "main bitti\n";
+}
+
+------
+sonuç:
+
+main basladi
+Engine default ctor
+Car default ctor
+Car default destructor
+Engine default destructor
+main bitti
+
+*-----------------------------------------------------------------------------------------------------
+
+veri elemanın default initialize edilmesi ne demek ?
+
+eğer veri elemanı const, ref. default init edilmesi sentax hatasıdır
+eğer veri elemanı primitif türler ise  default init. edilmesi indetermined value'da bırakır.
+eğer veri elemanı sınıf türünden ise sınıfın default const. çağrılır.
+Derleyiciye bırakırsanız default const. çağırır.
+
+*-----------------------------------------------------------------------------------------------------
+
+Soru: Owner sınıfının default const. durumu nedir ?
+cevap : Owner sınıfının default const. delete edilmiştir. 
+sentax hatası olmaz,
+
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+
+private:
+	Member mx;
+};
+
+-----
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+	Owner() = delete;  // derleyici yaptı !!!
+private:
+	Member mx;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;  // sentax hatası, delete edilmiş fonk. çağrı yapılmış
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+	Owner();  // ok
+private:
+	Member mx;
+};
+
+-----
+
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+	Owner(){  // sentax hatası, çünkü  çağrı yapan kodu ekledi
+	// Owner() : mx()
+	// no default const. available, çünkü yok
+	}
+private:
+	Member mx;
+};
+
+-----
+
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+	Owner() : mx{10} {  
+	}
+private:
+	Member mx;
+};
+
+-----
+
+class Member{
+public:
+	Member(int);
+};
+
+class Owner{
+public:
+	Owner(){  
+	}
+private:
+	Member mx { 10}; 
+	// init. etmek demek değil, default member init.
+	// gerçek anlamda bir init. değil
+};
+
+int main()
+{
+	Owner x;  // ok
+}
+
+-----
+
+class Member{
+public:
+private:
+	Member();
+};
+
+class Owner{
+public:
+	
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;  // hata, private olduğundan derleyici Owner'in default const. delete eder.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Student{
+public:
+	Student(const char* pname, const char* psurname) : m_name{pname}, m_surname{psurname} {}
+private:
+	std::string m_name, m_surname;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+çok sık yapılan hata:
+constructor init. list yerine constructor'ın ana bloğu içinde sınıfın veri elemanlarına atama yapmaları. İlave maliyet. Birinci tercih constructor init. list'tir.
+
+class Student{
+public:
+	Student(const char *pname, const char* psurname)
+	{ 
+		// zaten m_name ve m_surname default const. ile init edildiler
+		// ilave maliyet
+		m_name = p_name;
+		m_surname = psurname;
+	}
+
+private:
+	std::string m_name, m_surname;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Student{
+public:
+	Student(const char *pname, const char* psurname)
+	{ 
+		m_name = p_name;
+		m_surname = psurname;
+	}
+
+private:
+	std::string m_name, m_surname;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+copy constructor: bir sınıf için copy const. yazmayı derleyiciye bırakırsanız member'ların copy const. çağırır.
+
+class Member{
+public:
+	Member() = default;
+	Member(const Member &);
+	{
+		std::cout << "Member copy ctor\n";
+	}
+};
+
+class Owner{
+public:
+	
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;
+	Owner y = x;  // Owner'in copy const. çağırıldı, ve member'in copy const. çağırıldı
+}
+
+--------
+
+// derleyicinin yazdığı copy const.
+class Owner{
+public:
+	Owner(const Owner& other) : mx(other.mx){}
+private:
+	Member mx;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member() = default
+	{
+		std::cout << "Member default ctor\n";
+	}
+	Member(const Member &);
+	{
+		std::cout << "Member copy ctor\n";
+	}
+};
+
+class Owner{
+public:
+	
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;
+	Owner y = x;  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member() = default
+	{
+		std::cout << "Member default ctor\n";
+	}
+	Member(const Member &);
+	{
+		std::cout << "Member copy ctor\n";
+	}
+};
+
+class Owner{
+public:
+	Owner() = default;
+	Owner(const Owner& other)  //  derleyici mx();
+	{
+		std::cout << "Owner copy ctor\n";
+	}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;   // default const. çağırıldı, ve "Member default ctor\n" yazdı
+	Owner y = x;  // "Member default ctor\n" ve  std::cout << "Owner copy ctor\n"; yazdı.  Neden ????
+}
+
+Dikkat !! bir sınıfa copy cont. yazıyorsanız elemanların hepsinin 
+copy const. edilmesinden siz sorumlusunuz. Eğer herhangi bir elemanın copy const. edilmesini istiyorsanız fiilen yazacağınız 
+copy const.'da const. init. list'le bunu belirtmelisiniz aksi halde 
+derleyici default const.'a yapılan çağrı kodunu ekleyecek. 
+
+Owner(const Owner& other) : mx(other.mx);    // copy const. ile hayata getirilmesi için onu benim yazmam gerekir. 
+
+*-----------------------------------------------------------------------------------------------------
+
+copy assignment : sınıfın copy assign. 'ını derleyici default ederse derleyici veri elemanlarının herbiri için atama operatörünün kullanır. Veri elemanları için de copy assignm.'i çağırmış olur.
+
+class Member{
+public:
+	Member& operator = (const Member&)
+	{
+		std::cout << "Member copy assignment\n";
+		return *this;
+	}
+};
+
+class Owner{
+public:
+	// derleyicinin yazdığı operatör atama fonksiyonu
+	// Owner& operator =(const Owner& other)
+	{
+		mx = other.mx;
+	}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x, y;  
+	y = x;  
+}
+
+sonuç :  std::cout << "Member copy assignment\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member& operator = (const Member&)
+	{
+		std::cout << "Member copy assignment\n";
+		return *this;
+	}
+};
+
+class Owner{
+public:
+	// bizim yazdığımız
+	Owner& operator =(const Owner& other)
+	{
+		std::cout << "Owner::copy asssingment\n";
+		mx = other.mx;  // burası olmasa y'nin içindeki mx'e atama yapılmadan eski değeri ile kalacaktı.
+		return *this;
+	}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x, y;  
+	y = x;  
+}
+
+soru : member'in constructor'ı neden çağırılmıyor ??
+nesne zaten hayatta, atama operator fonksiyonu bir const. değil ki
+
+*-----------------------------------------------------------------------------------------------------
+
+class Student{
+public:
+	Student& operator = (const Student &other)
+	{
+		// atama deyimi olmazsa s1 s2'nin doğum tarihini almayacak !!
+	}
+private:
+	Date mbdate;
+}
+
+s1 = s2;
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+
+};
+
+class Owner{  
+public:    
+	// derleyicinin yazdığı 
+	// Owner(const Owner &other) : mx(other.mx){}
+private:
+	Member mx;
+};
+
+Owner'ın copy const.'ını derleyici yazarsa derleyicinin yazdığı copy const.  *this'in mx'ini diğer nesnenin mx'i ile initialize eder. 
+Ama derleyici yerine copy const. siz yazıp mx'i diğer nesnenin mx'i ile init. etmezseniz derleyici 
+	Owner(const Owner &other) : mx()  // derleyici bu :'dan sonraki kısmı ekler
+	{
+	}
+	
+bu da mx'in default init. edilmesi demek !!!!
+
+*-----------------------------------------------------------------------------------------------------
+
+move constructor :
+
+class Member{
+
+};
+
+class Owner{
+public:
+	// derleyicinin yazdığı copy const.
+	Owner(const Owner& other) : mx(other.mx){}
+	// derleyicinin yazdığı move const.
+	Owner(Owner&& other) : mx(std::move(other.mx)){ }
+private:
+	Member mx;
+};
+
+
+kendim move const. yazarken hatalı yazarsam move değil copy yapılır
+Owner(Owner&& other) : mx(other.mx){ }
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member() = default;
+	Member(const Member&)
+	{
+		std::cout << "Member copy const.\n";
+	}
+	
+	Member(Member&&)
+	{
+		std::cout << "Member move const.\n";
+	}
+};
+
+class Owner{
+public:
+
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;
+	Owner y = std::move(x);
+}
+
+sonuç: 
+		std::cout << "Member move const.\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member() = default;
+	Member(const Member&)
+	{
+		std::cout << "Member copy const.\n";
+	}
+	
+	Member(Member&&)
+	{
+		std::cout << "Member move const.\n";
+	}
+};
+
+class Owner{
+public:
+	Owner() = default;
+	Owner(const Owner& other) : mx(other.mx){}
+	Owner(Owner&& other) {}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;
+	Owner y = std::move(x);  // move const. yoksa copy cont. çağırılır
+}
+
+sonuç:  member için çıkan bir yazı yok, çünkü move cont.'da default const. çağırıldı, çünkü init edilmedi
+
+*-----------------------------------------------------------------------------------------------------
+
+class Member{
+public:
+	Member() = default;
+	Member(const Member&)
+	{
+		std::cout << "Member copy const.\n";
+	}
+	
+	Member(Member&&)
+	{
+		std::cout << "Member move const.\n";
+	}
+};
+
+class Owner{
+public:
+	Owner() = default;
+	Owner(const Owner& other) : mx(other.mx){}
+	Owner(Owner&& other) : mx(other.mx){}
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;
+	Owner y = std::move(x);  
+}
+
+sonuç:  
+		std::cout << "Member copy const.\n";
+	
+	
+Owner(Owner&& other) : mx(std::move(other.mx)){}  yapılırsa 
+sonuç:  
+		std::cout << "Member move const.\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+move assignment :
+
+class Member{
+
+};
+
+class Owner{
+public:
+	// derleyicinin yazdığı move assignment kodu
+	Owner& operator = (Owner&& other)
+	{
+		mx = std::move(other.mx);  // hiç yazılmazsa veri eski değerde kalır
+		// mx = other.mx;  // böyle olsa copy assingment çalışır
+	}
+	
+private:
+	Member mx;
+};
+
+int main()
+{
+	Owner x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+sınıfın veri elemanlarından biri copy'e kapatılmış olması
+
+class Member{
+public:
+	Member(const Member&) = delete;
+	Member& operator = (const Member&) = delete;
+};
+
+member türünden bir nesneyi ne copy ne taşıyabilirsiniz
+
+*-----------------------------------------------------------------------------------------------------
+
+//member türünden bir nesne copy'lanamaz ama taşınabilir
+
+class Member{
+public:
+	Member() = default;
+	Member(const Member&) = delete;
+	Member& operator = (const Member&) = delete;
+	Member(Member&&);
+	Member& operator = (Member&&);
+};
+
+class Owner{
+public:
+	Member mx;
+}
+
+int main()
+{
+	Owner x;
+	Owner y = std::move(x);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+private:
+	std::unique_ptr<int> uptr; 
+	// unique_ptr'nin copy const. delete edildiği için derleyici copy const. yazarsa sentax hatası olduğundan delete edecek ama move const. bir problem olmaz
+	derleyici copy assignment'i delete edecek ama move assignment delete edilmeyecek.
+	copy constructable olması için siz yazmalısınız
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	Myclass(const Myclass&other) : uptr(new int(*other.uptr))
+	{
+		
+	}
+private:
+	std::unique_ptr<int> uptr; 
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+private:
+	Myclass x;  // hata
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+private:
+	static Myclass x;  // ok
+	Myclass *p;  // ok
+};
