@@ -1,0 +1,1145 @@
+
+İçerik:   
+
+runtime polymorphism
+
+
+özet: 
+
+override etmenin erişim kontrolü ile ilgisi yok !!!
+
+override sadece header'da olacak.
+cpp'de override olmamalı
+
+static tür : derleyicinin koda bakarak anladığı tür
+dinamik tür :derleyicinin çalışma zamanında anladığı tür
+
+static türe ilişkin olanlar :
+isim arama 
+erişim kontrolü
+varsayılan argüman 
+
+dinamik türe ilişkin olanlar :
+virtual dispatch
+
+virtual dispatch mekanizması ne zaman devreye girmez ?
+
+virtual function table : veri yapısı
+
+clone idiomu: 
+
+polymorfik sınıfların destructor'ları 
+ya public virtual
+ya da protected non-virtual olmalı
+
+
+*-----------------------------------------------------------------------------------------------------
+
+tetris oyunu
+C'de yazılırsa aşağıdan yukarı kurgulanır. Class'lar oluşturulur, çatı kodda şeklin ne olduğuna (L, I profil) bakıp o kodu çağırırız. Üst seviye kodlar alt seviyedeki kodlara bağlı.
+
+C++ üst seviye kodlar alt seviye kodlara bağımlılığı yok. Tetris shape sınıfı bir interface oluşturur. Sağa kaydırma, sola kaydırma vs. Virtual dispatch kullanılır. 
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	// ...
+	void func(int);
+};
+
+class Der : public Base{
+public:
+	virtual void func(int);  // hata
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	// ...
+	virtual void func(unsigned int);
+};
+
+class Der : public Base{
+public:
+	virtual void func(int);  //  override değil, hata değil, ama başka bir virtual function
+};
+
+soru :  burada taban sınıfta virtual yazınca türemiş de o fonksiyonu overload etmezsem hata vermez mi ?
+
+*-----------------------------------------------------------------------------------------------------
+
+override sadece header'da olacak.
+cpp'de override olmamalı !!!
+
+override keyword'ün işe yaradığı senaryolar
+
+1.  senaryo :
+
+class Base{
+public:
+	void func(int);
+};
+
+class Der : public Base{
+public:
+	void func(int)override;  // override sözcüğü sayesinde hata verir !!!
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+2.  senaryo :
+
+class Base{
+public:
+	virtual void func(unsigned int);
+};
+
+class Der : public Base{
+public:
+	void func(int)override;  // override sözcüğü sayesinde hata verir !!! imza farklı 
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+override keyword'ünü mutlaka kullanın !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+static tür : derleyicinin koda bakarak anladığı tür
+
+dinamik tür :derleyicinin çalışma zamanında anladığı tür
+
+*-----------------------------------------------------------------------------------------------------
+
+class Car{
+public:
+	virtual void start()
+	{
+		std::cout << "Car has just started!\n";
+	}
+	virtual void run();
+	{
+		std::cout << "Car is running now!\n";
+	}
+	virtual void stop();
+	{
+		std::cout << "Car has stopped!\n";
+	}
+};
+
+class Bmw : public Car{
+public:
+	void start()
+	{
+		std::cout << "Bmw has just started!\n";
+	}
+	void run();
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop();
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+class Fiat : public Car{
+public:
+	void start()
+	{
+		std::cout << "Fiat has just started!\n";
+	}
+	void run();
+	{
+		std::cout << "Fiat is running now!\n";
+	}
+	void stop();
+	{
+		std::cout << "Fiat has stopped!\n";
+	}
+};
+
+class Volvo : public Car{
+public:
+	void open_sunroof();
+	void start()
+	{
+		std::cout << "Volvo has just started!\n";
+	}
+	void run();
+	{
+		std::cout << "Volvo is running now!\n";
+	}
+	void stop();
+	{
+		std::cout << "Volvo has stopped!\n";
+	}
+};
+
+class VolvoS60 : public Volvo{
+public:
+	void start()
+	{
+		std::cout << "VolvoS60 has just started!\n";
+	}
+	void run();
+	{
+		std::cout << "VolvoS60 is running now!\n";
+	}
+	void stop();
+	{
+		std::cout << "VolvoS60 has stopped!\n";
+	}
+};
+
+class Toyota : public Car{
+public:
+	
+};
+
+class Dacia : public Car{
+public:
+	void start()override
+	{
+		std::cout << "Dacia has just started!\n";
+	}
+	void run()
+	{
+		std::cout << "Dacia is running now!\n";
+	}
+	void stop()
+	{
+		std::cout << "Dacia has stopped!\n";
+	}
+};
+
+void car_game(Car& p)
+{
+	p.open_sunroof();  // sentax hatası olur !! p'nin ait olduğu türün scope'unda arar. Static tür.
+	// derleme zamanı açısından baktığımızda p Car türünden, çalışma zamanı açısından baktığımızda p toyota, volvo olabilir. Bu da dinamik tür
+	p.start();
+	p.run();
+	p.stop();
+	std::cout << "----------------------\n";
+}
+
+Car* create_random_car()
+{
+	static std::mt19937 eng{std::random_device{} ()};
+	static std::uniform_int_distribution dist{ 1, 6};
+	
+	switch(dist(eng)){
+	case 1: std::cout  << "Bmw\n"; return new Bmw;
+	case 2: std::cout  << "Fiat\n"; return new Fiat;
+	case 3: std::cout  << "Volvo\n"; return new Volvo;
+	case 4: std::cout  << "Toyota\n"; return new Toyota;
+	case 5: std::cout  << "Dacia\n"; return new Dacia;
+	case 6: std::cout  << "VolvoS60\n"; return new VolvoS60;
+	}
+}
+
+int main()
+{
+	for(;;)  // sonsuz döngü
+	{
+		Car *p = create_random_car();
+		car_game(p);
+		// pointer gönderiyorum, pointer demek adres demek
+		(void)getchar();
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Mülakatlarda sorulur.
+
+*-----------------------------------------------------------------------------------------------------
+
+car_game'e gelen araç volvo ise sunroof'ı open yapmak istesek car_game'e gelen hangi araç anlama imkanı var mı ?
+
+önümüzdeki derslerin konusu,
+mecburiyet yoksa hangi araç anlama imkanı gereksiz. Kötü tasarımdan dolayı olabilir. 
+Bunu anlama yolu var. Zorunlu olmadıkça yapılmaz.
+Dinamik nesnenin ne olduğunu anlamak
+
+RTTI (run time type information) : çalışma zamanında tür belirlenmesi
+compile zamanda anlaşılmaz ama run time'da anlaşılabilir.
+
+type_id
+dynamic_cast
+araçları kullanılır. İleride görülecek.
+
+*-----------------------------------------------------------------------------------------------------
+
+Dinamik tür : davranışı esas alan, programın çalışma zamanında anlaşılan tür.
+Static tür : derleyicinin gözününe aldığı tür.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+private:
+	virtual void vfunc();
+};
+
+class Der : public Base{
+public:
+	void vfunc()override;  // çok sık kullanılan bir araç, doğru kullanım
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+override etmenin erişim kontrolü ile ilgisi yok !!!
+
+class Base{
+public:
+	virtual void vfunc();
+};
+
+class Der : public Base{
+private:
+	void vfunc()override;  // doğru, 
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc();
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+private:
+	virtual void vfunc()override  
+	// virtual olsa olmasa da olur
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+void g(Base& baseref)
+{
+	baseref.vfunc(); 
+	// isim arama static tür, base'in scope'unda bulur, public olduğundan hata olmaz
+}
+
+int main()
+{
+	Der myder;
+	
+	g(myder); // virtual dispatch mekanizması devreye girer.
+}
+
+sonuç : "Der::vfunc()"
+
+access control compile time'a ilişkin
+myder.vfunc();  // şimdi access kontrol yapılır
+
+*-----------------------------------------------------------------------------------------------------
+
+derleme zamanı yapılan (isim arama), erişim kontrolü static türe ilişkin
+hangi fonksiyonunu çağrılacağı virtual dispatch mekanizması dinamik türe ilişkin
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	virtual void vfunc(int x = 10);
+	{
+		std::cout << "Base::vfunc(int x) x = " << x << "\n";
+	}
+};
+
+class Der : public Base{
+public:
+	virtual void vfunc(int x = 77)override  
+	// virtual olsa olmasa da olur
+	{
+		std::cout << "Der::vfunc(int x) x = " << x << "\n";
+	}
+};
+
+void g(Base& baseref)
+{
+	baseref.vfunc(); 
+	// isim arama static tür, base'in scope'unda bulur, public olduğundan hata olmaz
+}
+
+int main()
+{
+	Der myder;
+	
+	g(myder);
+}
+
+Sonuç : varsayılan argüman static türe ilişkin
+
+*-----------------------------------------------------------------------------------------------------
+
+static türe ilişkin olanlar :
+
+isim arama 
+erişim kontrolü
+varsayılan argüman 
+
+*-----------------------------------------------------------------------------------------------------
+
+varsayılan argüman alan fonksiyona argüman göndermeme hakkımız var !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void foo()
+	{
+		vfunc();
+	}
+	
+private:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()override
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	myder.foo();
+}
+
+
+sonuç:  "Der::vfunc()\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	foo()  //  gizli parametre  foo(Base *ptr)
+	{
+		vfunc();   // taban sınıfın parametresine türemiş sınıf nesnesi içindeki taban sınıf nesnesinin adresi geçilmiş olur.
+		// this->vfunc(); 
+	}
+
+int main()
+{
+	Der myder;
+	myder.foo();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	Base()
+	{
+		vfunc();
+	}
+	
+private:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()override
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+}
+
+cevap : önce taban sınıfın constructor'ı çağrılır, ama virtual dispatch mekanizması devreye girmez.
+çünkü bu esnada türemiş nesne hayata gelmedi ki !!!
+sonuç:  "Base::vfunc()\n";
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	~Base()
+	{
+		vfunc();
+	}
+	
+private:
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc()\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void vfunc()override
+	{
+		std::cout << "Der::vfunc()\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+}
+
+cevap : en son türemiş sınıfın destructor'ı çağrılır, ama virtual dispatch mekanizması devreye girmez.
+çünkü hayatı bitmiş, kaynakları geri verilmiş sınıf nesnesini sanki normal hayatta gibi kullanma girişimi olmaz.
+
+*-----------------------------------------------------------------------------------------------------
+
+virtual dispatch mekanizması ne zaman devreye girmez ?
+
+1) doğrudan çağrı nesne yoluyla yapılmışsa sanallık devreye girmez
+	base_object.vfunc(); 
+
+2) sanal fonksiyon çağrısı taban sınıf ismiyle nitelenerek yapılmışsa
+	class Base{
+	public:
+		Base()
+		{
+			Base::vfunc();
+		}
+
+3) taban sınıf const. içinde yapılan sanal fonksiyon çağrıları
+
+4)  taban sınıf destr. içinde yapılan sanal fonksiyon çağrıları
+
+*-----------------------------------------------------------------------------------------------------
+
+Mülakatlarda sorulur !!!
+
+Bu büyü nasıl yapılıyor ?
+hangi fonksiyonun çağrıldığı sadece bir adres göndermeme rağmen çalışma zamanında belli olur ?
+
+C++ standartları implementasyonu anlatmaz.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+private:
+	int x, y;
+};
+
+int main()
+{
+	std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+}
+
+sonuç : 8 byte
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public :
+	void f1();
+	void f2();
+	void f3();
+private:
+	int x, y;
+};
+
+int main()
+{
+	std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+}
+
+sonuç : 8 byte, sınıfın üye fonksiyonlarının sınıf nesnesinin içinde yer kaplamaz
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public :
+	virtual void f1(){}
+private:
+	int x, y;
+};
+
+int main()
+{
+	std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+}
+
+sonuç : 12 byte, çok enteresan
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public :
+	virtual void f1(){}
+	virtual void f2(){}
+	virtual void f3(){}
+	virtual void f4(){}
+private:
+	int x, y;
+};
+
+int main()
+{
+	std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+}
+
+sonuç : 12 byte, sınıfa bir sanal fonk. eklendiğinde polymorphic class olur. Bu sınıftan kalıtım ile elde ettiğimiz
+sınıflar da polymorphic class
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public :
+	virtual void f1(){}
+private:
+	int x, y;
+};
+
+class Der : public Base{
+
+};
+
+int main()
+{
+	std::cout << "sizeof(Base) = " << sizeof(Base) << "\n";
+	std::cout << "sizeof(Der) = " << sizeof(Der) << "\n";
+}
+
+sonuç:
+sizeof(Base) = 12
+sizeof(Der) = 12 
+polymorphic sınıflar 4 byte daha fazla. Çünkü derleyici polymorphic her sınıf nesnesi içine pointer gömer.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+virtual function table : veri yapısı
+
+Car
+--------------------
+vptr   sanal fonksiyon tablo göstericisi
+--------------------
+
+Mercedes ms;
+Audi ad; // 
+
+
+virtual function table for class Toyota
+
+0
+
+1   &Toyota::start
+
+2   &Toyota::run
+
+3   &Toyota::stop
+
+
+virtual function table for class Dacia
+
+0
+
+1   &Dacia::start
+
+2   &Dacia::run
+
+3   &Dacia::stop
+
+
+*-----------------------------------------------------------------------------------------------------
+
+fonksiyon adresi ne demek (C'de function pointer)
+
+*-----------------------------------------------------------------------------------------------------
+
+Car *carptr;
+carptr->run();
+
+siz nesneyi oluşturduğunuz zaman sanal fonksiyon tablosunun adresiyle vptr'yi init eder.
+carptr->vptr[1]();  // function pointer
+
+*-----------------------------------------------------------------------------------------------------
+
+işlem maliyeti:
+
+carptr->vptr[2]()
+
+1. deferencing (nesnenin içindeki sanal fonksiyon tablo pointer'ına erişmek için)
+2.  dereferencing, (sanal fonksiyon tablosundaki belirli index'e erişmek için (fonksiyon adresini elde etmek için))
+
+*-----------------------------------------------------------------------------------------------------
+
+her polymorfik nesne için vptr'nin initialize edilmesi
+her sanal işlev çağrısı için (derleyici bir optimizasyon yapmıyorsa)
+	2x deferencing
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : 20 sınıf var 
+runtime'da 300 nesne var
+
+kaç tane sanal fonksiyon tablosu var ?
+cevap 20 tane, sınıf başına. 
+
+her poliformik sınıf için sanal fonksiyon tablosu veri yapısı oluşturuluyor.
+runtime'da olur. Compile time'da bir nesne ortada yok.
+
+*-----------------------------------------------------------------------------------------------------
+
+
+*-----------------------------------------------------------------------------------------------------
+
+runtime polymorphism dinamik ömürlü nesneler oluşturularak yapılıyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Car{
+public:
+	virtual void start() = 0;  // pure virtual function
+	
+	virtual void run() = 0;
+	
+	virtual void stop() = 0;
+};
+
+int main()
+{
+	Car mycar;  // hata, pure virtual function'a sahip class ile nesne oluşturulamaz !!!
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Bmw bütün pure virtual functionların hepsini override etmek zorunda concrete class olması için. Yoksa abstract class olur.
+
+class Bmw : public Car{
+public:
+	
+	void run();
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop();
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Bmw : public Car{
+public:
+	void start()override
+	{
+		std::cout << "Bmw is starting now!\n";
+	}
+	void run()override
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop()override
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+void car_game(Car* p)
+{
+	p->start();
+	p->run();
+	p->stop();
+}
+
+int main()
+{
+	for(;;){
+		Car* p = create_random_car();
+		car_game(p);
+	}
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+constructor virtual olabilir mi ?
+olamaz !!!
+
+void car_game(Car* p)
+{
+	// *p'nin türü her ne ise o türden değişken tanımlamak istiyorum
+	p->start();
+	p->run();
+	p->stop();
+}
+
+destructor virtual olabilir mi ?
+olmak zorunda
+
+*-----------------------------------------------------------------------------------------------------
+
+clone idiomu: 
+
+class Car{
+public:
+	virtual Car* clone() = 0;
+	
+	virtual void start() = 0;  // pure virtual function
+	
+	virtual void run() = 0;
+	
+	virtual void stop() = 0;
+};
+
+class Bmw : public Car{
+public:
+	Car* clone()override
+	 {
+		return new Bmw(*this);  // copy const.
+		//  return new Bmw;  // default const.
+	}
+	
+	void start()override
+	{
+		std::cout << "Bmw is starting now!\n";
+	}
+	void run()override
+	{
+		std::cout << "Bmw is running now!\n";
+	}
+	void stop()override
+	{
+		std::cout << "Bmw has stopped!\n";
+	}
+};
+
+void car_game(Car* p)
+{
+	// *p'nin türü her ne ise o türden değişken tanımlamak istiyorum
+	Car* carptr =  p-> clone();
+	carptr->start();
+	p->start();
+	p->run();
+	p->stop();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+abstract class (pure virtual function sahibi) cinsinden nesne oluşturulamaz !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+destructor virtual olabilir mi ?
+olmak zorunda
+
+constr. new operatörü ile kaynak edinildi. delete fonksiyonu kullanılmalı ki destructor'ı çağırılsın  !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	~Base()
+	{
+		std::cout << "Base::destructor\n";
+	}
+};
+
+class Der : Base{
+public:
+	~Der()
+	{
+		std::cout << "Der::destructor\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	~Base()
+	{
+		std::cout << "Base::destructor\n";
+	}
+};
+
+class Der : Base{
+public:
+	~Der()
+	{
+		std::cout << "Der::destructor\n";
+	}
+};
+
+int main()
+{
+	Der *ptr = new Der;
+	delete ptr;
+}
+
+sonuç :  Der::destructor
+		Base::destructor
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	~Base()
+	{
+		std::cout << "Base::destructor\n";
+	}
+	
+	virtual void vfunc()
+	{
+		std::cout << "Base::vfunc\n";
+	}
+};
+
+class Der : Base{
+public:
+	~Der()
+	{
+		std::cout << "Der::destructor\n";
+	}
+	
+	virtual void vfunc()override
+	{
+		std::cout << "Der::vfunc\n";
+	}
+};
+
+int main()
+{
+	Base*ptr = new Der;
+	ptr->vfunc();
+	
+	delete ptr;
+}
+
+sonuç : Der::vfunc
+		Base::destructor
+		
+taban sınıf destructor'ı çağrıldı. Tanımsız davranış !!!
+
+
+*-----------------------------------------------------------------------------------------------------
+
+burada %98'lik kural
+
+Virtual destructor : polymorfik sınıfların destructor'ı virtual olmalı. 
+bu durumda virtual dispatch devreye girer. 
+
+class Base{
+public:
+	virtual ~Base()
+	{
+		std::cout << "Base::destructor\n";
+	}
+
+
+sonuç : Der::vfunc
+		Der::destructor
+		Base::destructor
+
+*-----------------------------------------------------------------------------------------------------
+
+burada kalan %2'lik kural
+
+class Base{
+protected:
+	~Base()
+	{
+		std::cout << "Base::destructor\n";
+	}
+
+sonuç : access kontrol ile önüne geçilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	Der *derptr = new Der;
+	delete derptr;  // access kontrol'ün de önüne geçilebilir
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+polymorfik sınıfların destructor'ları 
+
+ya public virtual
+ya da protected non-virtual olmalı
+
+*-----------------------------------------------------------------------------------------------------
+
+Herb Sutter
+https://herbsutter.com/
+
+https://necatiergin2019.medium.com/destructor-ya-public-virtual-ya-da-protected-non-virtual-olmal%C4%B1-9bade0adc886
+
+*-----------------------------------------------------------------------------------------------------
+
+using Word = int;
+using namespace std;
+using std::cout;
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void func(int);
+};
+
+class Der : public Base{
+public:
+	void func(double); // function overloading değil
+};
+
+int main()
+{
+	Der myder;
+	myder.func(10, 10);  // sentax hatası
+ }
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void func(int);
+};
+
+class Der : public Base{
+public:
+	void func(double); // function overloading değil
+};
+
+int main()
+{
+	Der myder;
+	myder.func(10);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+public:
+	void func(int x)
+	{
+		std::cout << "Base::func(int x) x  <<  x << "\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void func(int x)
+	{
+		Base::func(x);
+	}
+	void func(double)
+	{
+		std::cout << "Der::func(double x) x  <<  x << "\n";
+	}
+};
+
+int main()
+{
+	Der myder;
+	myder.func(10);  // function overload resolution ile çağrıldı
+	myder.func(1.5);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Base{
+protected:
+	void func(int x)
+	{
+		std::cout << "Base::func(int x) x  <<  x << "\n";
+	}
+};
+
+class Der : public Base{
+public:
+	
+};
+
+int main()
+{
+	Der myder;
+	myder.func(10);  // legal değil
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+protected fonksiyonu kendi interface'ime katmak istesem public katmak için problem yok. ama protected'de problem var
+Nasıl yapılır ?
+
+class Base{
+protected:
+	void func(int x)
+	{
+		std::cout << "Base::func(int x) x  <<  x << "\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void func(int x)
+	{
+		Base::func(x);
+	}
+};
+
+int main()
+{
+	Der myder;
+	myder.func(10);  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+diğer yol using bildirimi
+
+using Base::func;  // interface katma yolu
+
+class Base{
+protected:
+	void func(int x)
+	{
+		std::cout << "Base::func(int x) x  <<  x << "\n";
+	}
+};
+
+class Der : public Base{
+public:
+	void func(int x)
+	{
+		std::cout << "Base::func(double x) x  <<  x << "\n";
+	}
+		using Base::func;  // interface katma yolu
+};
+
+int main()
+{
+	Der myder;
+	myder.func(10);  // ok
+	
+}
+
+*-----------------------------------------------------------------------------------------------------
