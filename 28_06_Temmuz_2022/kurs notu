@@ -1,0 +1,1490 @@
+
+İçerik:   
+
+exception handling
+
+özet:
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception handling : programın çalışma zamanında oluşan hatalarla baş etmek için dilin içine gömülü araç seti
+
+programlama hataları (ilacı hatalı kodu düzeltmek, assertion)
+runtime hataları (exception handling)
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception handling araç seti:
+
+throw statement :  işini yapamayacağını anlayan kod daha yukarıdaki kodları haberdar etmek için bir hata nesnesi oluşturur. Hata nesnesini yukarı gönderir.
+
+throw expr :   L value olsa dahi gönderilen hata nesnesi nesnenin kendisi (expr) değil derleyici kendi nesnesini oluşturup gönderir. throw ifadesi çoğunlukla bu amaç için özel olarak oluşturulmuş sınıflar türünden. Tipik olarak bir geçici nesne ifadesi ile throw ediyoruz.  Bu sınıflar C++'ın standart kütüphanesinin exception hiyerarşisinde olduğu gibi sınıf olarak hiyarşisinde. Virtual dispatch'i destekliyorlar. Örnek olarak exception const char döndüren const. üye fonksiyonu what gibi.
+
+try : gönderilecek hatayı yakalamak istiyorsam böyle bir blok oluşturuyorum. Buradan çağırılan fonksiyonların veya çağırılan fonksiyonların çağırdığı fonksiyonların gönderdiği hatalar yakalanabilir ve programın akışı catch bloklarından birine çekilecek.
+
+try{
+
+}
+catch()
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+catch ifadesinin genel olarak referans yapıyoruz. Neden ? 
+1) referans yapmazsak copy const. çağırılacak, copy cons. da exception gönderebilir
+2) object slicing olduğu için run time poly.'den faydalanamayacağım.
+
+*----------------------------------------------------------------------------------------------------- 
+
+try{
+
+}
+catch(const std::exception& ex)  // yakaladığım exception nesnesini değiştirmek gibi bir isteğim yoksa const yaparız
+{
+
+}
+
+catch parametresini kullanmayacaksam isim vermeye gerek yok :
+try{
+
+}
+catch(const std::exception&)
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+rethrow : exception'ın rethrow edilmesi
+yakalanan hata nesnesinin (derleyicinin oluşturduğu hata nesnesi)kendisinin gönderilmesi demek
+
+
+try{
+
+}
+catch(const std::exception&)
+{
+	throw;   // rethrow statement
+}
+
+try{
+
+}
+catch(const std::exception& ex)
+{
+	throw ex;  // rethrow statement değil !!! derleyici yeni bir nesne oluşturur, copy const. çağırılır
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()
+{
+	try{
+		throw std::out_of_range{"range hatasi};
+	}
+	catch(const std::exception& ex){
+		std::cout << "hata func icinde yakalandi : " << ex.what() << "\n";
+		
+		// iki farklı throw arasındaki farkı görünüz !!!
+		throw ex;  // yeni bir hata nesnesi, dinamik tür kaybedildi,  exception türünden !!!!
+		throw;   // rethrow'da dinamik tür korunur !!!
+	}
+}
+
+int main()
+{
+	try{
+		func();
+	}
+	catch(const std::out_of_range&)
+	{
+		std::cout << "hata yakalandi (std::out_of_range)\n"
+	}
+	catch(const std::exception&)
+	{
+		std::cout << "hata yakalandi (std::exception)\n"
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <exception>
+#include <stdexcept>
+
+class NecEx{
+public:
+	NecEx() = default;
+	NecEx(const NecEx&)
+	{
+		std::cout << "copy ctor\n";
+	}
+};
+
+void func()
+{
+	try
+	{
+		throw NecEx{};  // temporary object
+	}
+	catch(const NecEx&  // ex)
+	{
+		throw;
+		// throw ex;  // copy const. cagirilir
+	}
+}
+
+int main()
+{
+	try{
+		func();
+	}
+	catch(const NecEx&)
+	{
+		std::cout << "hata main icinde yakalandi" << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <exception>
+#include <stdexcept>
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	throw;    // rethrow
+}
+
+void func()
+{
+	try
+	{
+		throw std::runtime_error{"hata hata hata!\n"};
+	}
+	catch(const std::exception& ex)
+	{
+		std::cout << "hata func icinde yakalandi : " << ex.what();
+		foo();
+	}
+}
+
+int main()
+{
+	try{
+		func();
+	}
+	catch(const std::exception& ex)
+	{
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+rethrow stat.  doğrudan catch bloğu içinde olma şartı yok. 
+catch'den çağıran fonksiyon bloğu içinde de bulunabilir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+// terminate fonk. çağırıldığını gösterelim
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	throw;
+}
+
+int main()
+{
+	foo();
+}
+
+dilin kurallarına göre terminate çağırılıyor, (yakalamazsan !!!)
+ispatı :
+
+-----------------
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	throw;
+}
+
+void n_terminate()
+{
+	std::cout << "n_terminate\n";
+}
+
+int main()
+{
+	set_terminate(&n_terminate);
+	foo();
+}
+
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+exception dispatcher: 
+
+class NecException{
+};
+
+class ErgException{
+};
+
+class CSDException{
+};
+
+void handle_exception()
+{
+	try{
+		throw;  // rethrow
+	}
+	catch(NecException& e){
+	
+	}
+	catch(ErgException& e){
+	
+	}
+	catch(CSDException& e){
+	
+	};
+}
+
+void func()
+{
+	try{
+		// hata
+	}
+	catch(...){  // catch all demek
+		handle_exception();
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+eğer bir hata gönderilirse ve bu hata yakalanamazsa derleyicinin ürettiği kod terminate fonk. çağırır. Terminate de abort'u çağırır. Fakat terminate'in abort yerine sizin belirlediğiniz fonk. çağırması için set_terminate fonk. çağırmalısınız.
+
+*----------------------------------------------------------------------------------------------------- 
+
+hangi durumlarda terminate çağırılır ?
+
+1) yakalanamayan hata nesnesi olduğunda
+2) bir fonksiyon çağrılınca rethrow yürütülüyorsa fakat yakalanan bir hata nesnesi yoksa
+3)  sınıfın copy const. , move const. exception throw ederse terminate çağırılır.
+
+*----------------------------------------------------------------------------------------------------- 
+
+// exception handle edildiğinde programın akışı catch bloğuna çekilir. 
+
+try{
+
+}
+catch(const std::exception& ex){
+	throw ex;
+}
+
+try{
+
+}
+catch(NecEx x) {
+  // sınıfın copy const. , move const. exception throw ederse terminate çağırılır
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+f1 => f2 => f3 =>  f16
+
+içlerinde oluşturulmuş otamatik ömürlü nesneler var. 
+Exception'ı yakalamazsak terminate ile sonlanır. Ama otomatik ömürlü nesnelerin destructor'ının çağırılma garantisi yok. Bu destructorlar dosyayı kapıyor, kaynağı geri veriyor olabilir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct A{
+	A()
+	{
+		std::cout << "A constructor\n";
+	}
+	
+	~A()
+	{
+		std::cout << "A destructor\n";
+	}
+};
+
+struct B{
+	B()
+	{
+		std::cout << "B constructor\n";
+	}
+	
+	~B()
+	{
+		std::cout << "B destructor\n";
+	}
+};
+
+struct C{
+	C()
+	{
+		std::cout << "C constructor\n";
+	}
+	
+	~C()
+	{
+		std::cout << "C destructor\n";
+	}
+};
+
+void baz()
+{
+	std::cout << "baz cagirildi\n";
+	C cx;
+	
+	std::cout << "foo sona erdi\n";
+}
+
+void bar()
+{
+	std::cout << "bar cagirildi\n";
+	B bx;
+	baz();
+	std::cout << "foo sona erdi\n";
+}
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	A ax;
+	bar();
+	std::cout << "foo sona erdi\n";
+}
+
+int main()
+{
+	foo();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct A{
+	A()
+	{
+		std::cout << "A constructor\n";
+	}
+	
+	~A()
+	{
+		std::cout << "A destructor\n";
+	}
+};
+
+struct B{
+	B()
+	{
+		std::cout << "B constructor\n";
+	}
+	
+	~B()
+	{
+		std::cout << "B destructor\n";
+	}
+};
+
+struct C{
+	C()
+	{
+		std::cout << "C constructor\n";
+	}
+	
+	~C()
+	{
+		std::cout << "C destructor\n";
+	}
+};
+
+void baz()
+{
+	std::cout << "baz cagirildi\n";
+	C cx;
+	
+	throw 1;  // yakalanamaz çünkü try bloğu yok, uncaught exception durumunda terminate çağırılacak terminate abort'u çağıracak.
+	Otomatik ömürlü nesnelerin destructorlarının çağırılması konusunda garanti yok.   
+	
+	std::cout << "baz sona erdi\n";
+}
+
+void bar()
+{
+	std::cout << "bar cagirildi\n";
+	B bx;
+	baz();
+	std::cout << "bar sona erdi\n";
+}
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	A ax;
+	bar();
+	std::cout << "foo sona erdi\n";
+}
+
+int main()
+{
+	foo();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+stack unwinding :
+
+bir programın exception safe olabilmesi için 
+hayata gelmiş nesnelerin destructor'larının da çağırılması gerekiyor. Özellikle önemli bir takım işler gerçekleştiriyorlarsa.  Exception'ı yakalarsak dilin kuralları bize şu garantiyi veriyor. Programın akışı exception yakalandığında handler koda geçecek. Catch bloğuna girmeden her bir stack frame'den çıkıldığında otomatik ömürlü nesneler hayata gelmeleri ile ters sırada destroy edilirler.
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct A{
+	A()
+	{
+		std::cout << "A constructor\n";
+	}
+	
+	~A()
+	{
+		std::cout << "A destructor\n";
+	}
+};
+
+struct B{
+	B()
+	{
+		std::cout << "B constructor\n";
+	}
+	
+	~B()
+	{
+		std::cout << "B destructor\n";
+	}
+};
+
+struct C{
+	C()
+	{
+		std::cout << "C constructor\n";
+	}
+	
+	~C()
+	{
+		std::cout << "C destructor\n";
+	}
+};
+
+void baz()
+{
+	std::cout << "baz cagirildi\n";
+	C cx;
+	
+	throw std::runtime_error("bas fonksiyonu icinde hata\n");  
+	
+	std::cout << "baz sona erdi\n";
+}
+
+void bar()
+{
+	std::cout << "bar cagirildi\n";
+	B bx;
+	baz();
+	std::cout << "bar sona erdi\n";
+}
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	A ax;
+	bar();
+	std::cout << "foo sona erdi\n";
+}
+
+int main()
+{
+	try{
+		foo();
+	}
+	catch(const std::exception& ex){
+		(void)getchar();
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+stake frame :  her bir fonksiyonunun stake'deki otomatik ömürlü değişkenleri (parametre değişkenleri dahil) onların bullunduğu stake alanına o fonksiyonun stake frame'i denir.
+
+stake unwinding RAII ideomu ile ayrılmaz bir bütün. RAII ideomu kaynak edinimi constructor ile olur, destructor kaynağı geri verir.Böylece biz bir nesne için destructor'ın çağırıldığından emin olduğumuzda kaynakların da geri verileceğinden eminiz. Bir resource leak olmayacağı garanti altına alınmış olur. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()
+{
+	FILE *f = std::fopen("a.txt", "w");
+	///...
+	
+	// burada exception gönderilirse programın akışı fclose'ı görmeyecek ve bu dosya kapatılmayacak.
+	
+	try{
+		foo();
+	}
+	catch(...) {
+	
+	}
+	
+	std::fclose(f);
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <fstream>
+void func()
+{
+	std::ofstream ofs{ "deneme.txt"};
+	// ofs için çağrılan destructor dosyayı kapatır
+	
+	foo();  // exception throw ederse exception yakalandığında otomatik ömürlü ofs olduğundan dosya kapatılacak. Ama exception gönderilmezse 
+	scope sonunda destructor'ı çağırılacak. RAII ideomu exception handling'de büyük önem taşıyor
+}
+
+
+void func()
+{
+	std::ofstream ofs{ "deneme.txt"};
+
+	// kodlar
+	
+}  // program buraya geldi ofs nesnesi destroy oldu
+
+
+void func()
+{
+	std::ofstream ofs{ "deneme.txt"};
+	
+	// throw  // ofs destructor'ı çağırılması garanti altında, exception yakalandığında stake unwinding sürecinde otomatik ömürlü nesnelerin dest. çağırılmış olacak
+	
+	// kodlar
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct A{
+	A()
+	{
+		std::cout << "A constructor\n";
+	}
+	
+	~A()
+	{
+		std::cout << "A destructor\n";
+	}
+};
+
+struct B{
+	B()
+	{
+		std::cout << "B constructor\n";
+	}
+	
+	~B()
+	{
+		std::cout << "B destructor\n";
+	}
+};
+
+struct C{
+	C()
+	{
+		std::cout << "C constructor\n";
+	}
+	
+	~C()
+	{
+		std::cout << "C destructor\n";
+	}
+};
+
+void baz()
+{
+	std::cout << "baz cagirildi\n";
+	C *cptr = new C;
+	
+	// eğer bir hata throw etmezse sorun yok ama ederse
+	throw std::runtime_error("bas fonksiyonu icinde hata\n");  
+	// C gibi nesneler otomatik ömürlü değil, heap'de yaratılmış nesneler, dinamik nesnelerle ilgili çok dikkatli olmak gerek !!!
+	// burda smart pointer sınıfları devreye giriyor.
+	// en sık kullanılanı unique_ptr
+	// tek sahiplik ilkesi
+	
+	
+	delete cptr;
+	std::cout << "baz sona erdi\n";
+}
+
+
+void bar()
+{
+	std::cout << "bar cagirildi\n";
+	B *bptr = new B;
+	baz();
+	
+	delete bptr;
+	std::cout << "bar sona erdi\n";
+}
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	A *aptr = new A;
+	bar();
+	delete aptr;
+	std::cout << "foo sona erdi\n";
+}
+
+int main()
+{
+	try{
+		foo();
+	}
+	catch(const std::exception& ex){
+		(void)getchar();
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+unique_ptr kullanımı : 
+unique_ptr kullanmadan try bloğu içinde hatayı yakalayıp delete etmeniz gerekirdi, ama karmaşık kod yapısı olurdu
+
+#include <memory>
+struct A{
+	A()
+	{
+		std::cout << "A constructor\n";
+	}
+	
+	~A()
+	{
+		std::cout << "A destructor\n";
+	}
+};
+
+struct B{
+	B()
+	{
+		std::cout << "B constructor\n";
+	}
+	
+	~B()
+	{
+		std::cout << "B destructor\n";
+	}
+};
+
+struct C{
+	C()
+	{
+		std::cout << "C constructor\n";
+	}
+	
+	~C()
+	{
+		std::cout << "C destructor\n";
+	}
+};
+
+void baz()
+{
+	std::cout << "baz cagirildi\n";
+	std::unique_prt<C> upc{new C};
+	
+	throw std::runtime_error("bas fonksiyonu icinde hata\n");  
+	
+	
+	std::cout << "baz sona erdi\n";
+}
+
+
+void bar()
+{
+	std::cout << "bar cagirildi\n";
+	std::unique_prt<B> upc{new B};
+	// gerçek bir pointer değil bir sınıf nesnesi dolayısyla stack unwinding sürecinde otomatik ömürlü bir  sınıf nesnesi olduğu için destructor'ı çağırılacak, 
+	
+	baz();
+	
+	std::cout << "bar sona erdi\n";
+}
+
+void foo()
+{
+	std::cout << "foo cagirildi\n";
+	std::unique_prt<A> upc{new A};
+	
+	bar();
+	
+	std::cout << "foo sona erdi\n";
+}
+
+int main()
+{
+	try{
+		foo();
+	}
+	catch(const std::exception& ex){
+		(void)getchar();
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+akıllı pointer kullanım nedeni : exception safety
+
+bir veri elemanında dinamik ömürlü nesnenin adresi tutuluyor. Smart pointer ölürken destructor'ı çağırılır. Destructor'ı sarmalanan pointer'ı delete eder.
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <memory>
+
+template<typename T>
+class SmartPtr{
+public:
+	SmartPtr(T *p) : mp{p} {}
+	~SmartPtr(T *p) : mp{p} {}
+	{
+		if(mp)
+			delete mp;
+	}
+
+private:
+	T* mp{ nullptr };
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+garanti seviyeleri : 
+1) no guarantee : exception gönderilirse başımıza herşey gelebilir, kabul edilebilir değil
+
+void func()
+{
+	FILE *f = fopen ...
+	
+	foo();  // exception gönderebilir
+	fclose(f);
+}
+
+eğer foo fonk. exception gönderirse programın akışı fclose'u görmeyecek. Dolayısıyla bu exception yakalansa dahi bu dosya kapatılmamaış olacak. Bu da kaynak sızıntısı demek.
+
+2) basic guarantee (no leak guarentee): çok önemli çünkü gerek standart kütüphane fonksiyonlar temel garanti sağlıyorlar. Kabul edilebilir minimal garanti.
+
+eğer fonksiyonun kodu çalışırken fonksiyondan bir exception throw edilerek çıkıldığında hiç bir kaynak sızdırılmamış olur. resource leak, memory leak de olabilir. 
+
+hiç bir kaynak sızdırmayacak
+hayati devam eden nesneler "valid state" (geçerli durum)
+
+invariant (değişmez) 
+
+Myclass mx;  // const. birinci görevi invariant'ları oluşturmak, nesne hayatta iken doğru olması gereken state'i oluşturmak
+
+tuvalet kağıdı dağıtıcısı (invariant en az 1 m tuvalet kağıdına sahip olması gerek)
+public üye fonksiyon çağırıp işi bittiğinde o invariant'lar korunur. 
+
+eğer o fonksiyondan exception nesnesi ile çıkılırsa  yine sınıf nesnesinin invariant'ları tutuyor olacak. Ama nesnenin değerinin operasyon öncesi değerini aynı olma garantisini vermiyor.
+
+Nesne geçerli bir değerde kalacak
+nesnenin state'i değişmiş olabilir.
+nesnenin destructor'ı çağrılabilir. 
+
+
+3) strong guarantee  (commit & rollback) : 
+
+exception ile çıkıldığında kaynak sızdırılmadığı gibi programın state'inde de bir değişiklik olmayacak
+
+class Message{
+private:
+	//...
+public:
+	std::string to_string()const
+	{
+		std::string result;
+		// may throw exception
+		return result;
+	}
+};
+
+void log(const std::vector<Message>& mvec)
+{
+	std::ofstream log_file;
+	log_file.open("log.txt", std::ios_base::app);
+	
+	for(const auto& m : mvec)
+		log_file << m.to_string();
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+void log(const std::vector<Message>& mvec)
+{
+	std::ofstream log_file;
+	log_file.open("log.txt", std::ios_base::app);
+	
+	std::string result;  // strong guarantee sağlamak için kullanıldı !!
+	
+	for(const auto& m : mvec)
+		result +=  m.to_string();
+	// exception throw ederse result destroy olacak, log file kapatılacak. Henüz log file'a birşey yazılmamış olacak
+	
+	logfile << result;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+strong guarantee vermek mümkün olmayabilir.
+örneğin bir vektörü sıralıyorsunuz, swap kaydı nasıl tutulacak, ilk halini tutman gerekir maliyeti var.
+
+*----------------------------------------------------------------------------------------------------- 
+
+no throw guarantee (en yüksek seviye garanti) : 
+benim exception göndermeyeceğime güvenebilirsin garantisi.
+
+no-guarantee veren fonksiyonlar:
+destructor
+swap
+move members (özellikle move ctors)
+operator delete
+cleanup
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <iostream>
+#include <memory>
+#include <vector>
+#include <fstream>
+
+// noexcept specifier
+
+void func()noexcept; 
+
+void func()
+{
+	
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept; 
+void func();  // hata
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept; 
+void foo(); 
+
+noexcept : sadece exception göndermeme garantisi olduğunu gösteriyor.
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept(true); 
+void func()noexcept;   // ikisi aynı
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept(false); 
+void func();  // ikisi eş anlamlı
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept(constant expression);
+// expression  doğru yanlış durumuna göre belirlenir.
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept;
+
+int main()
+{
+	func();
+}
+
+bir fonksiyon noexcept ise fakat runtime'da bu fonksiyonun kodu çalıştığında bir exception throw ederse doğrudan terminate fonks. çağırılıyor !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func()noexcept;
+
+int main()
+{
+	try{
+		func();
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught : " << ex.what() << '\n';
+	}
+}
+
+eğer func fonksiyonu exception throw ederse catch bloğuna girmez, terminate çağırılır. Ve bu compile time'da kontrol edilmez.
+
+*----------------------------------------------------------------------------------------------------- 
+
+void func(int)noexcept;
+
+void nec_t()
+{
+	std::cout << "nec_t\n";
+	std::abort();
+}
+
+int main()
+{
+	set_terminate(nec_t);
+	try{
+		func(12);
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught : " << ex.what() << '\n';
+	}
+}
+
+void func(int x)noexcept
+{
+	try{
+		if(x % 2 == 0)
+			throw std::runtime_error{"hata"};
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+eğer exception fonksiyondan dışarı sızarsa terminate fonksiyonu çağırılıyor.
+
+*----------------------------------------------------------------------------------------------------- 
+
+mülakat sorusu :
+
+destructor neden nothrow garantisi vermek zorunda ?
+
+destructor iki nedenle çağırılabilir 
+1) nesne scope'u bitti 
+2) exception yakalanmış stack unwinding yürütülüyor ve otomatik ömürlü nesnelerin destructor'ları çağırılıyor. Ondan sonra programın akışı catch bloğuna girecek. Ama çağırılan destructor 'da exception throw ederse terminate çağırılacak. Dolayısıyla destructor'ın exception throw etmesi ve bu exception'ın fonk. dışarı çıkması programınızın terminate edebileceği anlamına gelir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Myclass{
+public:
+	~Myclass()
+	{
+		throw 1;
+	}
+};
+
+int main()
+{
+	try{
+	
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+}
+
+// warning verir. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+diğer özel üye fonksiyonların noexcept olup olmadığı koda bakarak anlaşılır
+
+bu sınıfın const.'ı noexcept mi? evet
+bütün özel üye fonksiyonlar derleyici tarafından implicitly declare edildiğinde bütün özel üye fonksiyonlar noexcept kabul edilir.  
+
+class Myclass{
+public:
+	
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+
+};
+
+class Myclass{
+public:
+	Myclass() = default;  // garanti vermez, derleyiciye bağlı
+	Myclass()noexcept = default; // garanti verir
+private:
+	Nec necx;
+};
+
+int main()
+{
+	using namespace std;
+	
+	const auto b = is_nothrow_default_constructible_v<Myclass>;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+compiler optimization
+
+vector sınıfı : dinamik bir sınıf
+
+bir vector sınıfının kapasitesi 3
+bir ekleme işlemi yapıldığında reallocation olacak
+
+eski 3 yeni bellek alanına aktarılması gerekiyor
+burada copy const. çağırılıp kopyalanacak (keşke move olsa), çünkü vector sınıfının push_back, emplack_back fonksiyonları strong guarantee veriyor. Sen push_back yaparsan ya bu push_back başarılı olacak, ya da eski hali korunacak. 
+
+copy'de strong  guarantee verilebilir. Çünkü bellek alanı allocate edilir. Önce bir pointer'da tutulur. Ama exception throw ederse hayata gelmiş nesneleri delete edersiniz. Böylece eski hal korunmuş olur. 
+
+move const. ile taşırsa ve exception throw ederse nesneleri tekrar eski yerine koyamazsınız. Strong guarantee veremez. 
+
+yani siz sınıfınızın move constr. noexcept yapmazsanız
+ciddi bir verim kaybı olur.  Demek ki bir sınıfın move const. noexcept olup olmaması derleyicinin copy const. yoksa move const. çağırılacak onu anlaması için  optimizasyon yapması gerekir. Bu da bir optimizasyon. 
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <string>
+#include <iostream>
+#include <vector>
+
+class Person{
+private:
+	std::string name;
+public:
+	Person(const char* n) : name{n} {
+	}
+	std::string getName() const{
+		return name;
+	}
+	// print out when we copy or move:
+	Person(const Person& p) : name{p.name} {
+		std::cout << "COPY " << name << '\n';
+	}
+	Person(Person&& p) noexcept // guarantee not to throw
+	      : name{ std::move(p.name)} {
+		std::cout << "MOVE " << name << '\n';
+	}
+};
+
+int main()
+{
+	std::vector<Person> coll { "Wolfgang Amadeus Mozart", "Johann Sebastian Bach", "Lodwig Sebastian Bach};
+	std::cout << "capacity : " << coll.capacity() << '\n';
+	coll.push_back("Pjoty Iljitsch Tschaikowski" );
+}
+
+
+noexcept varken move const.
+noexcept yokken copy const. çağırılır.
+
+*----------------------------------------------------------------------------------------------------- 
+
+no except operatörü: (compile time'da)
+
+int main()
+{
+	noexcept();  // no except operatörü
+	// bir ifadeyi operand olarak alır, o ifadenin yürütülmesi sırasında
+	exception throw etmeme garantisi varsa true değer üretir. 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 19;
+	
+	constexpr auto b = noexcept(x+5);  // x+5'in exception üretme ihtimali yok, b true
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+	void foo();
+};
+
+int main()
+{
+	Nec nec;
+	constexpr auto b = noexcept(nec.foo());   // nec.foo()'nun yürütüldüğünde exception üretme ihtimali var, b = false olur
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+
+};
+
+int main()
+{
+	constexpr auto b = noexcept(Nec{});   //  b= true; çünkü Nec sınıfının default const.'ı noexcept
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+	Nec();
+};
+
+int main()
+{
+	constexpr auto b = noexcept(Nec{});   //  b= false; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+	Nec() = default;
+};
+
+int main()
+{
+	constexpr auto b = noexcept(Nec{});   //  b= true; 
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+unevaluated context :decltype, sizeof,  typeid, noexcept
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Nec{
+public:
+	Nec() 
+	{
+		std::cout << "def. ctor " << '\n';  // ekranda görmeyiz, çünkü Nec sınıfının const. çağırılmayacaktı
+	}
+};
+
+int main()
+{
+	constexpr auto b = noexcept(Nec{});   
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	int x = 45;
+	
+	constexpr auto b = noexcept(x++);
+	
+	std:.cout << "x = " << x << "\n";
+	// x = 45 olması garanti altında çünkü unavaluated context   
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+noexcept operatörünün görevi ne olacak
+
+class Myclass{};
+
+void func(const Myclass& r) noexcept(noexcept(Myclass{}))
+{
+	// eğer Myclass'ın default const.'ı noexcept garantisi veriyorsa func'da nothrow garantisi veriyor.
+	// eğer Myclass'ın default const.'ı noexcept garantisi vermiyorsa func'da nothrow garantisi vermiyor.
+}
+
+ilk noexcept : noexcept specifier
+ikinci noexcept : noexcept operatörü
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>
+void func(T); 
+
+// bu fonk. noexcept verip vermemesi türüne bağlı ise
+
+template <typename T>
+void func(T)noexcept(std::is_nothrow_copy_assignable_v<T>); 
+
+*----------------------------------------------------------------------------------------------------- 
+
+https://en.cppreference.com/w/cpp/container/vector/size
+
+size_type size() const noexcept;
+
+
+
+https://en.cppreference.com/w/cpp/container/vector/push_back
+
+If T's move constructor is not noexcept and T is not CopyInsertable into *this, vector will use the throwing move constructor. If it throws, the guarantee is waived and the effects are unspecified.
+
+*----------------------------------------------------------------------------------------------------- 
+
+// function pointer
+
+int main()
+{
+	int (*fp) (int)noexcept;
+	
+	fp(12);  // bu fonksiyonun no throw garantisine güvenebiliriz
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int foo(int);
+
+int main()
+{
+	int (*fp) (int)noexcept;
+	
+	fp = &foo;  // sentax hatası, çünkü foo noexcept garantisi vermiyor
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+int foo(int)noexcept;
+
+int main()
+{
+	auto fp = &foo;  // derleyici fp'yi de noexcept function pointer yaptı.
+}
+
+
+*----------------------------------------------------------------------------------------------------- 
+
+int foo(int)noexcept;
+
+int main()
+{
+	int(*fp)(int);
+	
+	fp = foo;  // ok, no except garantisi vermeyene veren atanabilir.
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+kalıtım :
+
+class Base{
+public:
+	virtual void func()noexcept;  // exception throw etmez
+};
+
+class Der : public Base{
+public:
+	void func()override;  // sentax hatası olur, taban sınıfın verdiği garantiyi gevşetmiş oluyor !!!
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	virtual void func()noexcept;  // exception throw etmez
+};
+
+class Der : public Base{
+public:
+	void func()noexcept override;  // ok
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+class Base{
+public:
+	virtual void func();  // exception throw etmez
+};
+
+class Der : public Base{
+public:
+	void func()noexcept override;  // ok, taaahhütü gevşetmiyorum !!!
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+destructor:
+
+destructor, nothrow garantisi vermek zorunda. Hiçbir şekilde destructor'dan gönderilen exception dışarı sızmayacak. Eğer destructor exception gönderirse ve emit ederse implictly noexcept garantisi verdiği için onu violate etmiş olursunuz. Terminate fonk. çağrılır.
+
+constructor: 
+exception göndermeye en fazla aday olan fonksiyondur.
+
+nesneyi hayata getiriyor bu da nesnenin invariantlarının oluşturulması demek.
+nesne oluşturamazsa constructor exception throw etmeli !!!
+
+constructor çağırıldığında exception throw etmesi hayata gelen bir nesne yok demektir. constructor'ın ana bloğunun kodunun sonuna kadar çalışmamışsa hayata gelen nesne yok. Dolayısıyla destructor çağırılmaz.
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	Nec()
+	{
+		std::cout << "Nec default ctor\n";
+	}
+	
+	~Nec()
+	{
+		std::cout << "Nec default destructor\n";
+	}
+};
+
+int main()
+{
+	{
+		Nec mynec;
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	Nec()
+	{
+		std::cout << "Nec default ctor\n";
+		throw 1;
+	}
+	
+	~Nec()
+	{
+		std::cout << "Nec default destructor\n";
+	}
+};
+
+int main()
+{
+	{
+		Nec mynec;
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+destructor çağırılmayacak, exception yakalansa da yakalanmasa da
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	Nec()
+	{
+		std::cout << "Nec default ctor\n";
+		throw 1;
+	}
+	
+	~Nec()
+	{
+		std::cout << "Nec default destructor\n";
+	}
+};
+
+int main()
+{
+	try{
+		{
+			Nec mynec;
+		}
+	}
+	catch (int){
+		std::cout << "hata yakalandı\n";
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+// destructor çağırılmadı, çünkü nesne hayata gelmedi
+
+*----------------------------------------------------------------------------------------------------- 
+
+struct Nec{
+	Nec()
+	{
+		std::cout << "Nec default ctor\n";
+		mp = new int[100]{};
+		throw 1;
+	}
+	
+	~Nec()
+	{
+		std::cout << "Nec default destructor\n";
+		delete[] mp;
+	}
+	
+	int* mp;
+};
+
+int main()
+{
+	try{
+		{
+			Nec mynec;
+		}
+	}
+	catch (int){
+		std::cout << "hata yakalandı\n";
+	}
+	std::cout << "main devam ediyor\n";
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+default const. exception gönderirirse 
+
+struct Nec{
+	Nec()
+	{
+	}
+	
+};
+
+int main()
+{
+	Nec* p = new Nec;
+	
+	delete p;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <type_traits>
+
+void* operator new(std::size_t sz)
+{
+	std::cout << "operator new called for the size of : " << sz << "\n";
+	
+	if(sz == 0)
+		++sz;
+		
+	if(void* ptr = std::malloc(sz))
+		return ptr;
+	
+	throw std::bad_alloc{};
+}
+
+void operator delete(void* ptr) noexcept
+{
+	std::cout << "operator delete called for the address of : " << ptr << "\n";
+	std::free(ptr);
+}
+
+struct Nec{
+	Nec()
+	{
+		throw 1;
+	}
+	
+	unsigned char buffer[1024]{};
+};
+
+int main()
+{
+	try{
+		Nec* p = new Nec;
+	}
+	catch(const std::exception& ex){
+		std::cout << "exception caught: " << ex.what() << '\n';
+	}
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
