@@ -1,0 +1,1348 @@
+
+İçerik:   
+
+function template
+template argument deduction 
+
+özet:
+
+*----------------------------------------------------------------------------------------------------- 
+
+kursun yarısını geçtik (4 ay bitti), 19 Kasım gibi biter !!!
+
+*----------------------------------------------------------------------------------------------------- 
+
+2 kod çeşidi var
+1) derleyiciye hazır kod
+2) derleyici önce kod yazacak, sonra derleyecek
+
+*----------------------------------------------------------------------------------------------------- 
+
+function template : derleyici bizim için bir fonksiyonun kodunu yazıyor
+
+class template : derleyici bizim için bir sınıf kodu yazıyor.
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <class T>  // class anahtar sözcüğü T bir tür olmak üzere, class anlamında değil
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T>  // tercih et !!! 
+
+template <class T, typename U>  // legal ama kullanma
+
+*----------------------------------------------------------------------------------------------------- 
+
+template parameter
+
+*----------------------------------------------------------------------------------------------------- 
+
+template <typename T, typename U>
+T func(T x, U y)
+{
+
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+1) template argument deduction
+	function templates only
+	class template(CTAD)
+
+2) explicit template argument
+
+*----------------------------------------------------------------------------------------------------- 
+
+non-type parameter : derleyici bu ismi bir sabitin yerine kullanır.
+
+*----------------------------------------------------------------------------------------------------- 
+
+template<int x>
+class Myclass{
+
+};
+
+*----------------------------------------------------------------------------------------------------- 
+
+int main()
+{
+	std::array<int, 10> ax;
+	// array aslında bir sınıf şablonu, ilk parametresi type parametre, ikinci parametresi non-type parametre
+}
+
+------------------
+
+bu sınıf şablonunu biz oluştursaydık
+
+template<typename T, std::size_t size>
+class Array{
+	// ...
+};
+
+int main()
+{
+	Array<double, 20> ax;
+}
+
+*----------------------------------------------------------------------------------------------------- 
+
+#include <vector>
+#include <array>
+#include <bitset>
+
+int main()
+{
+	std::bitset<32> x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <algorithm>
+// başlık dosyasında template kod olacak, derleyici gerçek kodu template'den hareketle compile time'da yazacak. 
+
+*-----------------------------------------------------------------------------------------------------
+
+void swap(int& x, int& y)
+{
+	int temp{x};
+	x = y;
+	y = temp;
+}
+
+void swap(double& x, double& y)
+{
+	double temp{x};
+	x = y;
+	y = temp;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)
+{
+	x.foo();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template kod iki aşamada derleniyor:
+
+1) template koduna karşılık gelen değişkenleri bilmeden template kodu derliyor
+
+template <typename T>
+void func(T x)  // func fonksiyon şablonun ismi
+{
+	x.foo();
+	++x;
+	if(x > 10)
+		x.func();
+}
+
+basic kontroller yapılır, küme parantezleri kapatılmış mı ?
+
+2) template instantiation : derleyici template'den artık fiilen kodu üretecek
+
+template specialization ( double açılımı): 
+fonk. şablonundan yazılmış kod. T yerine double türünün seçilmesi ile yazılacak kod
+double açılımı ayrı bir specialization, int açılımı ayrı bir specialization
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>   // her fonk.'da yazılmalı
+void func(T x)
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>   
+void func(T x)
+{
+	std::cout << "x : " << x << "\n";
+}
+
+int main()
+{
+	func<int>(3.4);  // int specialization talebi 
+	// 3.4 önemli değil , 3 yazar !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+dilin karmaşık olması bizim için avantaj, çünkü çok kolay olsaydı rekabet gücümüz olmazdı :)
+
+*-----------------------------------------------------------------------------------------------------
+
+
+"Parameter" vs "Argument" 
+
+
+A parameter is the variable which is part of the method’s signature (method declaration). An argument is an expression used when calling the method.
+
+Consider the following code:
+
+void Foo(int i, float f)
+{
+    // Do things
+}
+
+void Bar()
+{
+    int anInt = 1;
+    Foo(anInt, 2.0);
+}
+
+Here i and f are the parameters, and anInt and 2.0 are the arguments.
+
+*-----------------------------------------------------------------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+template argument deduction (template argüman çıkarımı)
+
+1. Durum T
+
+template <typename T>
+void func(T x)
+{
+
+}
+
+int main()
+{
+	func(10);
+	auto x = 10;
+}
+
+nasıl auto için tür çıkarımı yapılıyorsa 
+template'de kod çıkarımı aynı
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>  // template parameter
+void func(T x)  // function veya call parameter
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)
+{
+
+}
+
+template <typename T>
+void foo(T& x)
+{
+
+}
+
+template <typename T>
+void bar(T&& x)  // universal reference (forwarding ref. ), sağ taraf referansı değil !!!
+{
+
+}
+
+int main()
+{
+	auto  x = expr;
+	auto &y = expr;
+	auto&& z = expr;
+}
+
+https://isocpp.org/blog/2012/11/universal-references-in-c11-scott-meyers
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)
+{
+
+}
+
+int main()
+{
+	func(12);  // func<int>
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+const.'luk düşer, T int olur !!!
+
+template <typename T>
+void func(T x)
+{
+
+}
+
+int main()
+{
+	const int ival = 10;
+	
+	func(ival);  // const.'luk düşer, T int olur !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+int main()
+{
+	TypeTeller<int> x ;  // derleyici sınıfın tanımının olmadığı bildirir
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+hile !!! const int değil int olduğunu göstermek için
+derleyici hatasına bakılır !!! TypeTeller incomplete type olarak tanımlanır. Hata bundan
+kaynaklanır.
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	const int ival = 10;
+	
+	func(ival);  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+fonksiyonu referans olan isimle çağırırsanız referans da düşer  !!!
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int x = 10;
+	int& r = x;
+	
+	func(r);
+}
+
+// bir ifadenin türü referans olamaz, yoksa int& bir türdür, int&& bir türdür.
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;  
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int x = 10;
+	int& r = x;
+	
+	func<int&>(x);  // ok, T türü int& olur.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+const int&'de ikisi birden düşer
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int x = 10;
+	const int& r = x;
+	
+	func(x); //  T int türü olur
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+eski konu hatırlatma !!!
+
+int a[5] = {1, 2, 3, 4, 5};
+	
+// öyle bir pointer değişken tanımlayın ki ismi p olsun  ve *p ifadesi a dizisinin kendisi olsun.
+int (*p) [5] = &a;  // doğru !!! diziye pointer, bu baya enteresan bilmediğim birşey
+veya int(&r) [5] = a;   // auto& r = a; 
+
+https://www.geeksforgeeks.org/pointer-array-array-pointer/
+
+*-----------------------------------------------------------------------------------------------------
+
+
+Pointer to an Array | Array Pointer
+
+
+
+Syntax:  
+
+data_type (*var_name)[size_of_array];
+
+Example: 
+
+int (*ptr)[10];
+
+
+
+int main()
+{
+    // Pointer to an integer
+    int *p;
+     
+    // Pointer to an array of 5 integers
+    int (*ptr)[5];
+    int arr[5];
+     
+    // Points to 0th element of the arr.
+    p = arr;
+     
+    // Points to the whole array arr.
+    ptr = &arr;
+     
+    cout << "p =" << p <<", ptr = "<< ptr<< endl;
+    p++;
+    ptr++;
+    cout << "p =" << p <<", ptr = "<< ptr<< endl;
+     
+    return 0;
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+fonksiyonu bir dizi ismiyle çağırırsanız array decay olur.
+
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int a[ ] { 1, 4, 5};
+	func(a);
+}
+
+// T int* olur.
+
+*-----------------------------------------------------------------------------------------------------
+
+dizide const'luk düşmez
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	const int a[ ] { 1, 4, 5};
+	func(a);
+}
+
+// T const int* olur.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+fonksiyon string ile çağırılırsa 
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	func("eray"); // const char[5]
+}
+
+// T const char* olur.
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x)
+{
+	TypeTeller<T> t;
+}
+
+int foo(int);
+
+int main()
+{
+	func(foo);  // func(&foo) ile aynı
+	// function to pointer conversion 
+	// int(int) => int(*)(int)
+}
+
+// func(foo); fonksiyon türünü fonksiyon adresi türü olarak kullanır, arada fark yok
+// T  : int(*)(int)
+
+*-----------------------------------------------------------------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+2. Durum (T&)
+
+template <typename T>
+void func(T& x)  // T int ise fonksiyon parametresi x'in türü int& olur
+{
+	TypeTeller<T> t;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T& x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	 int x = 10;
+	func(x);  // T : int, fonksiyon parametresi x : int&
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T& x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	const int x = 10;
+	func(x);  // T : const int, fonksiyon parametresi x : const int&
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T& x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int a[3]{1, 2, 3};
+	
+	func(a);  // T türü nedir ?
+	// T : int[3] üç elemanlı diziye referans olması
+}
+
+
+derleyici şöyle bir kod yazar:
+void func(int(&)[3])
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T& x)
+{
+	T y;  // soru : y nedir ?
+	// cevap : int[3] , T üç elemanlı bir dizi
+}
+
+int main()
+{
+	int a[3]{1, 2, 3};
+	func(a);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)  // T : int*
+{
+	T y; // y pointer bir değişken
+}
+
+int main()
+{
+	int a[3]{1, 2, 3};
+	func(a);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template'deki fonk.'da & varsa const'luk düşmez !!!
+
+template <typename T>
+void func(T& x)  // T : const int[3]
+{
+	
+}
+
+int main()
+{
+	const int a[3]{1, 2, 3};
+	func(a);  // int[3]
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T& x)  // void func(int (&x)(int))  // function reference
+{
+	TypeTeller<T> t;
+}
+
+int foo(int);
+
+int main()
+{
+	func(foo); // T'nin türü : int(int)
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+Function Pointer Syntax :
+
+
+void (*foo)(int);
+
+In this example, foo is a pointer to a function taking one argument, an integer, and that returns void. It's as if you're declaring a function called "*foo", which takes an int and returns void; now, 
+if *foo is a function, then foo must be a pointer to a function.
+
+
+Initializing
+You can get the address of a function simply by naming it:
+void foo();
+func_pointer = foo;
+
+or by prefixing the name of the function with an ampersand:
+void foo();
+func_pointer = &foo;
+
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x, T y);
+
+int main()
+{
+	func(10, 1.20);  // sentax hatası, ambiguity, T hem int hem double olamaz
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x, T y){
+
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	func("ali", "veli");  // ok
+	// T türü const char*
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+1. char ch = 'a'; 
+2. string str = "string!"; 
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <string>
+
+template <typename T>
+class TypeTeller;
+
+template <typename T>
+void func(T x, T y){
+
+	TypeTeller<T> t;
+}
+
+int main()
+{
+    std::string abc = "ali";
+	func(abc, "veli");  // ok  // string'de sıkıntılı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T& x, T& y);  // T : const char[3] or const char[4]
+
+int main()
+{
+	func("ali", "veli");  // ambiguity(belirsizlik)
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template argument deduction tahmin ettiğimizden biraz daha karmaşık. Temel kurallar üstte anlatıldı. 3. kategori karmaşık henüz görülmedi.
+
+*-----------------------------------------------------------------------------------------------------
+
+karmaşık örnekler :
+
+template <typename T>
+class TypeTeller;
+
+template <typename T, int size>
+void func(T(&r)[size])
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int a[5]{};
+	
+	func(a);
+}
+
+a'nin r'ye aktarılması için r'nin 5 elemanlı bir diziye referans olması gerekir.
+T : int, size = 5
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T, int size>
+void func(T x);
+
+int main()
+{
+	int x = 10;
+	int* p = &x;
+	int** ptr = &p;
+	
+	func(x);  // T : int
+	func(p); // T : int*
+	func(ptr); // T : int**
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T, int size>
+void func(T *x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int x = 10;
+	int* p = &x;
+	int** ptr = &p;
+	
+	func(p); // T : int
+	func(ptr); // T : int*
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T, int size>
+void func(T** x)
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int x = 10;
+	int* p = &x;
+	int** ptr = &p;
+	
+	func(ptr); // T : int
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T, typename U>
+void func(T (*)(U)) 
+ // geri fönüş değeri T türü, parametresi U türü olan bir function pointer
+{
+	TypeTeller<T> t;
+}
+
+int foo(double);
+
+int main()
+{
+	func(foo); // func'a foo'nun adresi aktarılır
+	// T : int, U : double olur !!!
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template <typename T, typename U>
+void func()
+{
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	int (*fp)(double) = &func;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+tür çıkarımı basit bir şekilde kurallarla yapılabilir veya son karmaşık örneklerde olduğu gibi yapılabilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T, typename U>
+
+T ile U farklı olmak zorunda değil.
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T, typename U>
+void func(T, U);
+
+int main()
+{
+	func<int>(12, 4.5);  // func<int, double> ile aynı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+T func(int);
+
+int main()
+{
+	func(12); // hata, derleyici geri dönüş değerini anlayamaz
+	// template deduction yapılamadı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)
+{
+	std::cout << typeid(T).name() << "\n";
+}
+
+int main()
+{
+	func(12);  // func'a int argümanla ile çağrı yaparsam derleyici int parametreli bir fonksiyon yazacak
+	
+	func('A');  // az önce yazdığı int parametreli yazdığı fonk.'u mu çağıracak ? yeni fonksiyon yazar
+	
+	func(12u); // yeni fonksiyon yazar
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)
+{
+	std::cout << typeid(T).name() << "\n";
+}
+
+int main()
+{
+	func(1.2);  // double parametreli fonksiyon yazar
+	// ama diğer func fonksiyonlarında da double için yazılan kodu çağırsın dersek şu şekilde yazmalıyız
+	func<double>(12) ;
+	func<double>(12u);
+	func<double>(1.2f);
+	func<double>('A');
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T, typename U = int>
+
+U'nun türü bildirilmezse int kabul edilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)  // T türünün çıkarımı function pointer türü olacak, foo fonksiyonun adresi gönderilir.
+{
+	x();
+}
+
+int foo()
+{
+	std::cout << "int foo()\n";
+}
+
+int main()
+{
+	func(foo);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T x)  // Myclass türünden olur
+{
+	x();  // sınıfın fonksiyon çağrı operator fonksiyonu çağırılacak
+}
+
+class Myclass{
+public:
+	void operator()()const
+	{
+		std::cout << "Myclass::operator()()\n";
+	}
+};
+
+int main()
+{
+	Myclass mx;
+	
+	func(mx);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+STL'de bir çok fonksiyon şablonunda template parametreleri fonksiyon çağrı operatörün operandı olur. Bu durumda fonksiyonun çağırılmasını sağlayan
+1) template parametresinin function pointer türü olması
+2) fonksiyon çağrı operatörünü overload eden bir sınıf türü olması (functor class- function object)
+
+*-----------------------------------------------------------------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+3. Durum (T&&)
+
+forwarding reference (universal reference) :
+
+template<typename T>
+void func(T&& x)  // Template'den sonra && var ise, buna sağ taraf referansı denmez.
+{
+	// ilk çıkış nedeni perfect forwarding
+}
+
+int main()
+{
+	int x = 10;
+	
+	func(x); // sağ taraf referansı olsaydı sentax hatası olurdu, ama sentax hatası yok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template<typename T>
+void func(T&& x)  // T türü int&
+// reference collapsing'e göre int&
+{
+	TypeTeller<T> t;
+	
+	T x;  // veya bu şekilde int& olduğu anlaşılır, hata verir, çünkü referanslara ilk değer vermek zorunlu
+}
+
+int main()
+{
+	int x = 10;
+	func(x);   // L value expression
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+hatırlatma :
+Normal olarak C++ dilinde reference to reference yoktur. Ama öyle yerler var ki oluşan kod da 
+reference to reference oluşuyor. Eğer böyle durumlarda referansa referans oluşursa oluşturulan 
+değişkenin türünün ne olduğunu belirleyen kurallara reference collapsing kuralları deniyor.
+
+reference collapsing : 
+
+T&        &        T&  (sol taraf referansına sol ref. oluşursa sonuç sol taraf ref.)
+T&      &&        T& (sağ taraf referansına sol taraf ref. oluşursa sonuç sol taraf ref.)
+T&&     &         T& (sol taraf ref. sağ taraf ref. oluşursa sol taraf ref. )
+T&&     &&      T&&
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int y;
+	using LRef = int&;
+	
+	LRef& x = y;
+	// reference collapsing'e göre sol taraf ref.'a int&
+	sol taraf ref. &, sonuç : sol taraf ref. 
+	// sol taraf ref.'a ilk değer vermem gerekir, yoksa hata verir.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int y;
+	using Nec = int&;
+	
+	Nec && x= y; // reference collapsing, int & ile &&
+	sonucu int&
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int y;
+	using Nec = int&&;
+
+	Nec && x= 10;  // reference collapsing, int&&'e &&, sonuç int&&
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func(T& x)  // x'in türü int&
+{ 
+
+}
+
+int main()
+{
+	int y = 10;
+	func<int&>(y);  // T'nin int& olması gerektiğini burada belirttim. reference collapsing kuralından int&'e &, sonuç : int&, bu x'in türü olur
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func(T&& x)  // x'in türü
+{ 
+
+}
+
+int main()
+{
+	int y = 10;
+	func<int&&>(y);  // T'nin türü int&& olması gerektiğini belirttim. reference collapsing kuralından int&&'e &&, sonuç : int&&, bu x'in türü olur.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+eğer fonksiyonun parametre değişkeni forwarding reference (scott meyers'in tabiriyle universal reference) ise T için yapılan çıkarım fonksiyona gönderilen argüman olan ifadenin value categorisine bağlı idi. Reference collapsing ile karar verilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+class TypeTeller;
+
+template<typename T>
+void func(T&& x)  
+{ 
+	TypeTeller<T> t;
+}
+
+int main()
+{
+	func(10);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+özet : 1) bir fonksiyonun parametresinin forwarding reference olması ancak template'lerde mümkün. Fonksiyon parametresi T&& biçiminde yazılmalı. 
+
+const T&&  : bu universal reference olmaz, const. olduğundan
+
+func(T&&) bu fonksiyona her şeyi gönderebiliriz. L, R value expr. , const. eleman olabilir
+
+*-----------------------------------------------------------------------------------------------------
+
+template <typename T>
+void func(T&&)
+{
+
+}
+
+int main()
+{
+	int x = 10;  // ok
+	const int cx = 20;   // ok
+	func(x);   // ok
+	func(cx);   // ok
+	func(10);   // ok
+}
+
+bu parametreye neden universal referans denildiği açık değil mi ? bütün türlerle çağrı yapılabilir.
+
+*-----------------------------------------------------------------------------------------------------
+
+aslında yeni birşey öğrenmedik, auto'da öğrenmiştik !!!
+
+template<typename T>
+void func(T&&)
+{
+
+}
+
+int main()
+{
+	auto&& x = 10;  // auto : int
+	// x :  sağ taraf referansı
+	
+	func(10);  // T için yapılan çıkarımdan üstteki auto için yapılan çıkarım aynı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func(T&&)   // T'nin türü int& türüdür.
+{
+
+}
+
+int main()
+{
+	int y = 20;
+	auto&& x = y;  // auto'ya karşı gelen tür int& olacak, referans collapsing ile x : int& olur.
+	func(y);  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : sentax hatası var mı yok mu ?
+
+template<typename T>
+void func(T&&, T)   // ilk T int&, ikinci int olmalı, sentax hatası
+{
+
+}
+
+int main()
+{
+	int x = 4;
+	
+	func(x, x); // hatalı, ambiguity
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+soru : sentax hatası var mı yok mu ?
+
+template<typename T>
+void func(T&&, T)   // rvalue ile çağrıda ilk T int çıkarımı yapılır, ikinci T de int olur. 
+
+}
+
+int main()
+{
+	func(3, 3);  // ok
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <initializer_list>
+
+int main()
+{
+	auto x = {1, 2, 3, 5};
+	
+	std::cout << typeid(x).name() << "\n";
+}
+
+x'in türü initializer_list sınıf şablonunun int açılımı
+
+*-----------------------------------------------------------------------------------------------------
+
+#include <initializer_list>
+
+template<typename T>
+void func(T x);
+
+int main()
+{
+	auto x = {1, 2, 3, 5};
+	
+	func({1, 2, 3, 5}); // sentax hatası, auto'daki çıkarımla aynı olmalı yani inializer_list'in int açılımı olurdu. Ama maalesef burada tür çıkarımı yapılamıyor.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func(T x, int y);  // illa Template parametresi T türünden olmak zorunda değil
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func(std::vector<T> &x);  // T: double
+
+int main()
+{
+	std::vector<double> dvec;
+	func(dvec);
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func()
+{
+	T a[10];
+	T* p = a;
+	T x;
+	T& r = x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func()
+{
+	T (*fp)(T) = nullptr; // fonksiyon pointer'ı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<typename T>
+void func()
+{
+	T* p = nullptr; // p int ise int*
+	// p int* ise int**
+	// p int** ise int*** olur.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+typename kullanmanın zorunlu olduğu senaryo:
+
+template<class T>
+void func(T x)
+{
+	T::nec* p;  // 1. ihtimal : nec isminin bir tür ismi olması (nested type)
+	// 2. ihtimal : nec bir sınıfın static fonksiyonun ismi ise
+	// böyle durumda derleyici bunu anlayamaz, bir ambiguity olmaması için typename anahtar sözcüğü kullanılmalı, bu durumda nec tür bilgisi belirtir.
+	
+	typename T::nec x;  // bir tür ismi olarak kullanmak için bu şekilde kullanılmalı, T:nec tür bilgisi belirtiyor.
+}
+
+------------------------
+
+template parametresine bağlı bir türü, tür bilgisi olarak kullandığınız her yerde typename'i kullanmak zorundaydınız, C++ 20 ile kurallar gevşetildi. İleri C++'da anlatılıyor.
+
+*-----------------------------------------------------------------------------------------------------
+
+template<class T>
+void func(T x)
+{
+	using mytype = T::nec;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+template<class T>
+void func(T x)
+{
+	typename T::Nec* p;  // burda class kullanamıyoruz
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+sınıfın üye fonksiyonu da fonksiyon şablonu olabilir.
+
+class Myclass{
+public:
+	template <typename T>
+	void func(T);
+}
+
+int main()
+{
+	Myclass m;
+	
+	m.func(19);  // derleyici int parametreli bir fonk. yazar.
+	m.func(2.3);  // derleyici double parametreli bir fonk. yazar.  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	template <typename T>
+	void func(T)
+	{
+		x.falanca();  //sentax hatası değil, ama func fonk.'na çağrı yaparsak tanım olmadığından sentax hatası
+	}
+}
+
+int main()
+{
+	Myclass m;
+}
+
+
+*-----------------------------------------------------------------------------------------------------
