@@ -1,0 +1,618 @@
+
+İçerik:   CLASSES
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+class
+
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+unary prefix operator ::
+
+recursive çağrı 
+void func()  // global isim alanı
+{
+	int func = 0;
+	
+	::func();   // doğru, global isim alanında arar, ve bulur
+}
+
+
+class namelookup
+isim veya fonksiyon ismi önce blokta aranır.
+
+inline int z = 10;  // hata yok, inline variable, linker bir tane görür
+// alttakileri h. file koymada sorun var mı ?  (iyi olup olması değil)
+const int x = 10;   // hata yok, global const nesneler internal linkage'da, herbir değişken ayrı bir değer olur.
+
+
+class declaration (forward decleration) :  
+ class Myclass;  // incomplete type
+
+class definition:
+class Myclass{
+
+}   // complete type
+
+empty class: sınıfın hiçbir member'i olmayabilir
+
+class members : anablok içinde tanımlananlara denir
+1) data member (veri elemanı)
+2) member function (üye fonksiyonu, metod)
+3) type member - nested type -member type (tür elemanı)
+	tanımı sınıfın içinde yapılan türlere type member denir.
+
+
+data member
+	static data member : daha önce öğrenilenle ilgisi yok
+	non-static data member
+	
+class Myclass{
+	int x;  // her oluşturulan Myclass nesnesinin int x elemanı var
+	// x değişkeni Myclass nesnesinin içinde bulunur !!!
+	static int s;  // sınıf nesnesinin içinde değil, sınıf başına tek
+}; 
+
+
+object, instance (class ve object farkı)
+instantiate
+
+
+name lookup
+context control  (function, variable, )
+access control (en son kontroldür)
+
+access control  (C'de yok)
+sınıfın her elemanına erişim kontrolü
+
+
+public : erişimde kısıtlama yok (açık)
+private :  sadece kendi kodlarının kullanabileceği, sınıfın client'ına kapalı - kısıtlı
+protected :  tıpkı private gibi, client'lara kapalı, kalıtım ile inheritance ile ulaşılabilir
+
+kalıtımdan bahsetmezsek private = protected
+
+class Myclass{
+	int mx;  // default private'dır  // struct'da tam tersi
+};
+
+
+namespace scope
+class scope
+block scope
+function scope
+function prototype scope
+
+
+pointer başka pointer değişken başkadır.
+pointer genel olarak adres anlamında kullanılan bir terim
+bir adres ifadesi lvalue veya rvalue expression olabilir !!
+
+
+multiple inclusion guard
+
+
+üye fonksiyon içinde  nitelenmemiş ismin aranması : unqualified namelookup
+önce kullanıldığı blok içinde (kullanıldığı yere kadar)
+(bulunamaz ise) kapsayan bloklarda
+(bulunamaz ise) class definition içinde 
+(bulunamaz ise) global scope'da aranır 
+
+
+
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+:: x   => unary prefix operator
+
+değişkeni global isim anında arıyor.
+
+
+int x = 10;
+int main()
+{
+	int x = 45;
+	x += ::x;   // soldaki x nitelenmeden kullanıldığı için önce blokta aranacak bulunacak, sağdaki x değişkeni ise global isim alanında aranacak
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+void func()
+{
+	int func = 0;  // sentax hatası olmaz,  int func blok scope'da
+	çünkü func() ismi de global isim alanındadır.  
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+void func()
+{
+	int func = 0;  
+	
+	func(); // önce blokta aranır. int func bulur.    ?? neden globale bakmıo ???
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+// recursive çağrı yapmak isteseydim
+void func()  // global isim alanı
+{
+	int func = 0;
+	
+	::func();   // doğru, global isim alanında arar, ve bulur
+}
+
+
+int x = 120;
+
+int main()
+{
+	int x = x;  // tanımsız davranış, yerel x'e çöp değeriyle ilk değer    //verdiğimizden
+	int x = ::x; // doğru, yerel x'e global x ile ilk değer vermek
+}
+
+
+
+// alttakileri h. file'a koymada sorun var mı ?  (iyi olup olması değil)
+
+int x = 10;  // yanlış, ODR ihlali
+
+static int y = 10;  // yanlışlık yok, static olarak tanımlanan değişkenler internal linkage'da, her değişken ayrı bir değer olur çakışmaz,  fakat tercih edilmez
+
+namespace {  // unnamed namespace, static int y = 10;  yerine kullanılır
+	int t = 40;
+}
+
+inline int z = 10;  // hata yok, inline variable, linker bir tane görür
+
+
+
+// alttakileri h. file koymada sorun var mı ?  (iyi olup olması değil)
+
+const int x = 10;   // hata yok, global const nesneler internal linkage'da, herbir değişken ayrı bir değer olur.
+
+*-----------------------------------------------------------------------------------------------------
+
+kendin denemek istersen
+
+ali.h
+const int x = 10;
+void foo();
+
+ali.cpp
+#include "ali.h"
+#include <iostream>
+
+void foo()
+{
+	std::cout << "&x = " <<   &x   <<   "\n";
+}
+
+main.cpp
+#include "ali.h"
+#include <iostream>
+
+int main()
+{
+	foo();
+	std::cout << "&x = " <<   &x   <<   "\n";  // foo ile burada yazılan adres farklı  // ise bunlar ayrı değişkenler , iç bağlantıda, demekki bunlar ayrı değişkenler
+}
+
+eğer yukarıdaki x değişkeni 
+constexpr int x = 10;   //olsa herhangi farklılık olmaz, x'ler ayrı değişkenler
+inline int x = 10;  // bu durumda x'ler aynı değişkendir.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
+Sınıflar (Class)
+
+C++ multiparadyma programlama dilidir,  sadece OOP değil
+
+sınıfları kullandık diye nesne yönelimli program yaptık anlamına gelmiyor
+Paradigmadaki yaklaşım önemli
+
+
+class declaration (forward decleration) :  
+ class Myclass;  // incomplete type
+
+class definition:
+class Myclass{
+
+}   // complete type
+
+empty class: sınıfın hiçbir member'i olmayabilir
+
+class members : anablok içinde tanımlananlara denir
+1) data member (veri elemanı)
+2) member function (üye fonksiyonu, metod)
+3) type member - nested type -member type (tür elemanı)
+	tanımı sınıfın içinde yapılan türlere type member denir.
+	
+class Myclass{
+	int mx ; // data member
+	void func(int); // member function
+	class Nested{  // type member
+	
+	};
+	typedef int Word;  // type member
+};
+	
+
+
+data member
+	static data member : daha önce öğrenilenle ilgisi yok
+	non-static data member
+	
+class Myclass{
+	int x;  // her oluşturulan Myclass nesnesinin int x elemanı var
+	// x değişkeni Myclass nesnesinin içinde bulunur !!!
+	static int s;  // sınıf nesnesinin içinde değil, sınıf başına tek
+}; 
+
+object, instance
+instantiate
+
+class Myclass{
+	int x;
+	int y;
+	int z;
+};
+
+sizeof(MyClass)  = 12; // 4*3 = 12 byte
+
+class Myclass{
+	int x;
+	int y;
+	int z;
+	static int a;
+	static int b;
+	static double c;
+};
+sizeof(MyClass)  = 12; // 4*3 = 12 byte !!!
+static elemanlar instance'ın değil class'ın elemanıdır !!!
+
+*-----------------------------------------------------------------------------------------------------
+
+class scope: bildirimi sınıf tanımı içinde yapılan (bir istisna hariç) isimler sınıfın elemanıdır ve bu isimler tüm isimlerde olduğu gibi bir kapsamı vardır.
+
+namespace scope
+class scope
+block scope
+function scope
+function prototype scope
+
+bir ismin bir sınıfın tanımı içinde aranması için şu koşullar gereklidir:
+
+1) isim nokta operatörünün (member selection) dot operatorunun
+	sağ operandı olarak kullanılmış ise
+2) isim ok operatörünün (member selection) arrow operatorunun
+	sağ operandı olarak kullanılmış ise
+3) isim scope resolution operatörünün sağ operandı olarak kullanılmış ise
+	(sol operandı bir sınıf ismi ise)
+
+x.y
+ptr -> a
+Myclass::a
+
+
+*-----------------------------------------------------------------------------------------------------
+
+data member
+	static data member : daha önce öğrenilenle ilgisi yok
+	non-static data member
+	
+member function
+	static member function
+	non-static member function
+
+class Myclass{
+public: 
+	void func(int);  // member function
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+int main()
+{
+	int* ptr;
+	ptr  // lvalue
+	int x = 10;
+	
+	&x // ifade türü int* türü, value kategorisi pr value expression'dır
+}
+
+
+pointer başka pointer değişken başkadır.
+pointer genel olarak adres anlamında kullanılan bir terim
+bir adres ifadesi lvalue veya rvalue expression olabilir !!
+
+void function  // geri dönüş değeri yok, void function'dır.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public: 
+	void func();  // member function
+};
+
+int main()
+{
+	Myclass m;
+	
+	m.func();  // derleyici m nesnenin adresini bu fonksiyonun bildirimde gösterilmeyen
+	 // gizli parametre değişkenine argüman olarak geçiyor. 
+	// c'de karşılığı func(&m), üye fonksiyon yerine global fonk. olacaktı.
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+C'de
+
+struct Fighter{
+		///
+		///
+		
+}
+
+// bir savaşçı diğer savaşcıya saldıracak
+void attack_enemy(Fighter *p, Fighter *);
+
+attack(&myfighter, &yourfighter) ; // kim kime saldırıyor ?? nebileyim ben
+// koddan doğrudan anlaşılmaz
+
+C++'da
+
+myfighter.attack(yourfighter);   // daha belirgin
+
+
+*-----------------------------------------------------------------------------------------------------
+
+name lookup
+context control
+access control (private, public vs. en son kontroldür)
+
+
+access control  (C'de yok)
+sınıfın her elemanına erişim kontrolü
+
+
+public : erişimde kısıtlama yok (açık)
+private :  sadece kendi kodlarının kullanabileceği, sınıfın client'ına kapalı - kısıtlı
+protected :  tıpkı private gibi, client'lara kapalı, kalıtım ile inheritance ile ulaşılabilir
+
+kalıtımdan bahsetmezsek private = protected
+
+class Myclass{
+	int mx;  // default private'dır  // struct'da tam tersi
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class ve object farkı
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void foo();
+	void func(int);
+private:
+	int a, b, c;
+};
+
+int main()
+{
+	Myclass m;
+	Myclass* pm = &m;
+	
+	m.foo();
+	pm->foo();
+	(*pm).foo();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func(int);
+private:
+	void func(double);  // overload
+};
+
+int main()
+{
+	Myclass m;
+	
+	m.func(1.3); //  sentax hatası 
+	önce namelookup yapıldı function overload olduğu anlaşıldı, 
+	private'daki func'a gidildi.
+	sonra diğer context kontrol, en son access control yapıldı.
+	Erişilmiş olan fonksiyonun access kontrolü yapıldı, private olduğundan 
+	sentax hatası oldu
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+global fonksiyon kullanmak kötü birşey değil !!!!
+
+bir üye fonksiyonun cpp dosyasında tanımlanmasıyla sınıfın içinde tanımlanması 
+aynı şey değil !!!
+
+class Myclass{
+public:
+	void func(double);
+	
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+multiple inclusion guard
+
+#ifndef MYCLASS_H
+#define MYCLASS_H
+
+class Myclass {
+public:
+	void set(int a, int b);  // fonksiyonların bildiriminde a ve b yazmana gerek yok
+	// default argüman tanımda olursa bildirimde olmamalı, 
+	void setin (int a, int b = 0);
+
+private:
+	int m_x, m_y;
+	int a_, b_, c_;  
+};
+
+#endif
+
+*-----------------------------------------------------------------------------------------------------
+
+ Myclass.h
+
+class Myclass {
+public:
+	void set(int , int );  
+
+private:
+	int m_x, m_y;
+	
+};
+
+Myclass.cpp
+#include "myclass.h"
+
+#define PUBLIC
+#define PRIVATE
+#define PROTECTED
+
+PUBLIC void Myclass::set(int x, int y)  // derleyici görmez, cpp'de göstermek için     
+ {                                                                      //       kullanılabilir
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+otomotiv => misra standardı
+
+C++ core_guideliness
+
+https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
+
+
+*-----------------------------------------------------------------------------------------------------
+
+ Myclass.h
+
+class Myclass {
+public:
+	void set(int , int );  
+
+private:
+	int m_x, m_y;
+	
+};
+
+Myclass.cpp
+#include "myclass.h"
+
+// 3) global isim alanında aranır
+void foo()  // global isim alanı
+{  // 2) a 1. aranan blokta bulunamazsa ikinci kapsayan blokta aranır
+	
+	{  // 1 ) a buraya kadar aranır bulunursa isim arama biter ve bir daha başlamaz
+		a  
+	}
+}
+
+
+
+void Myclass::set(int x, int y)  // üye fonksiyon
+{
+	a  // önce bloklarda bulunamazsa enclosing kapsayan bloklarda aranacak
+	// bulunamazsa class scope'da aranacak bulunamazsa global scope'da aranır
+}
+
+
+global bir fonksiyon içerisinde nitelenmeden kullanılan isimlerin aranmasıyla üye fonksiyonların nitelenmeden kullanılan isimlerin aranması farklıdır !!!
+
+üye fonksiyon içinde  nitelenmemiş ismin aranması : unqualified namelookup
+önce kullanıldığı blok içinde (kullanıldığı yere kadar)
+(bulunamaz ise) kapsayan bloklarda
+(bulunamaz ise) class definition içinde 
+(bulunamaz ise) global scope'da aranır 
+
+
+class A
+{
+public:
+	void foo();
+private:
+	// int x;  // 2) x sonra burada
+};
+
+int x = 10;  // 3) x sonra burada aranır
+
+void A::foo()
+{
+	// int x = 20;  // 1) x önce burada
+	
+	int ival = x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+Maskelemeyi aşmanın yolları:
+
+void A::foo()
+{
+	 A::x;  // isim doğrudan class scope'da aranır !! blokta veya global isim alanında aranmaz  // fakat m_x olarak tanımlarsak maskeleme olmaz zaten
+	
+	::x; // global namespace'de aranır
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Aynı class'tan oluşturulan nesneler birbirlerinin private fonksiyon ve private verilerine
+erişebilirler !!!  bunun sentaks hatası olduğunu düşünen çok kişi varmış
+
+class A
+{
+public:
+	void foo(A);
+private:
+	int m_x;  
+};
+
+A ga;
+
+void A::foo(A pa)
+{
+	A ax;
+	pa.m_x;
+	m_x = 5;
+	ax.m_x = 10;
+	ga.m_x;
+}
+
+*-----------------------------------------------------------------------------------------------------
+
