@@ -1,0 +1,933 @@
+
+
+İçerik :
+
+const overloading
+semantic vs sentax
+mutable
+const correctness
+chaining
+this pointer
+inline expansion
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+Özet:
+
+üye fonksiyonlar assembly katmanında bir farklılık taşımaz, dil katmanında bir farklılık taşır.
+
+Üye fonksiyon : tanımı cpp dosyasında
+
+üye fonksiyonun sınıfın içerisinde tanımlanması ayrı bir sentax özelliği   =>> sınıfın inline fonksiyonları
+
+
+yanlış :  cpp'de üye fonksiyonun implemente edildiği yerde class'ın private bölümüne erişim var. Ama bu fonksiyon hangi nesne için çağrıldıysa onun private elemanlarına erişebiliyorum
+doğru: aynı türden her nesnenin private bölümüne erişebiliriz.  !!!!
+
+
+void func(Data &);  // mutator , nesneyi değiştiren
+void(const Data&)  // accessor, nesneyi değiştirmeyecek
+
+
+sentax açısından const fonksiyon kullanılırsa: 
+derleyici gizli parametreyi Myclass *p ====>   const Myclass *p       yapar !!!
+
+const üye fonksiyon sınıfın veri elemanlarına sadece okumak için erişebilir
+
+1. sınıfın const üye fonksiyonları  (hangi nesne için çağırılmışlarsa)
+o nesnenin veri elemanlarını değiştiremezler
+
+2. const Myclass  ===> sadece const üye fonksiyon
+non-const Myclass  ===> const üye fonksiyon
+const Myclass  XXXXX  non-const üye fonksiyon
+
+	 T* 'dan const T*'a dönüşüm var.
+	const  T* 'den T*'a dönüşüm yok.
+
+
+const overloading
+	pratik olarak:
+	const nesne için const üye fonksiyon
+	const olmayan nesne için const olmayan üye fonksiyon çağırılır.
+
+
+3.  Bir sınıfın const üye fonksiyonu sınıfın non-const üye fonksiyonunu çağıramaz 
+
+
+Semantic (anlam) nedir?
+
+sınıf içerden dışarıya oluşturmak en büyük hata 
+sınıf dışarıdan içeriye tasarlanır.
+O sınıfı kullanacak onların alacağı hizmetleri belirlenir.
+
+mutable :  semantic sentaks uyuşmazlığı durumunda kullanılır
+
+const correctness : const olması gereken herşey const olacak, birtane bile istisna olmayacak
+
+this (pointer,hangi nesne için çağrılmışssa o nesnenin adresi )
+
+keyword'tür, sınıfın non-static üye fonksiyonları içinde kullanılabilir. 
+global fonksiyonda kullanılamaz.
+
+
+chaining (zincirleme)
+
+	Myclass& func();   // hangi nesne için çağrılmışssa o nesnenin adresini döndürsün
+	Myclass& foo();
+	Myclass& bar();
+	m.func().foo().bar();
+
+
+this pointer'ı pr value expression olduğu için this pointer'ının değerini  
+fonksiyon içerisinde değiştirmezsiniz !
+
+asla ve asla const bir nesneyi tür değiştirme operatörleri ile  kullanmayın (const_cast)
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+
+
+nesne programlama sunan birçok dilde global fonksiyon kavramı yok.
+
+üye fonksiyonlar assembly katmanında bir farklılık taşımaz, dil katmanında bir farklılık taşır. Amaç burada fonksiyonun ismini class scope'a alarak bir erişim kontrolü sağlamak, programcının daha yüksek bir algı seviyesiyle program yazmasını sağlamaktır. 
+
+
+Üye fonksiyon : tanımı cpp dosyasında
+
+üye fonksiyonun sınıfın içerisinde tanımlanması ayrı bir sentax özelliği   =>> sınıfın inline fonksiyonları
+
+java, C#'da sınıftaki üye fonksiyon tanımları class'ın içerisinde yapılır, C++ 'da anlamı farklı oluyor. 
+
+h file içerisinde tanımlanmayan fonksiyon cpp'de tanımlanamaz, sentax hatası
+
+ *-----------------------------------------------------------------------------------------------------
+
+Önceki derste bahsedilen diğer önemli  yanlış anlaşılan bir konu: 
+yanlış :  cpp'de üye fonksiyonun implemente edildiği yerde class'ın private bölümüne erişim var. Ama bu fonksiyon hangi nesne için çağrıldıysa onun private elemanlarına erişebiliyorum
+doğru: aynı türden her nesnenin private bölümüne erişebiliriz.  !!!!
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class A
+{
+public:
+	void set(int);
+private:
+	int m_x;  
+};
+
+void A::set(int val)
+{
+	m_x = val;
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+mutable (değiştirilebilir), immutable (değiştirilemez)
+
+struct Data{
+	int a,  b,  c;
+}
+
+void func(Data &);   // mutator , nesneyi değiştiren
+void(const Data&);  // accessor, nesneyi değiştirmeyecek
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+
+const üye fonksiyonlar:
+
+
+
+class Myclass
+{
+public:
+	void func(M y c l a s s * p, int);    
+	// M y c l a s s  gizli parametredir, bu aslında görünürde yok fakat derleyiciye göre var.
+	// gizli olmasa const olup olmamasına bakacaktık 
+	// üye fonksiyonlar için:
+	// 1) non-const fonksiyonlar
+	// 2) const üye fonksiyonlar
+private:
+	int m_x;  
+};
+
+
+class Myclass
+{
+public:
+	void func(int);  // const olmayan üye fonksiyon 
+	void foo()const;   // const üye fonksiyon  // sınıfın veri elemanlarını değiştiremez
+private:
+	int m_x;  
+};
+
+
+sentax açısından üye fonksiyonda const kullanılırsa: 
+derleyici gizli parametreyi Myclass *p ====>   const Myclass *p       yapar !!!
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass
+{
+public:
+	void func();
+	void foo();  
+private:
+	int m_x;  
+};
+
+// cpp
+
+void Myclass::func()
+{
+	m_x = 10; 
+}
+
+derleyici bakışı açısından: 
+
+void Myclass::func(M y c l a s s *p)  // gizli parametre
+{
+	p->m_x = 10; 
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+
+const üye fonksiyon sınıfın veri elemanlarına sadece okumak için erişebilir
+
+// h
+class Myclass
+{
+public:
+	void func();
+	void foo()const;  
+private:
+	int m_x;  
+};
+
+
+// cpp
+void Myclass::foo()const  // sınıfın veri elemanlarını değiştiremez
+{
+	m_x = 10;   // sınıfın veri elemanlarına sadece okumak için erişebilir
+}
+
+derleyici bakışı açısından: 
+
+void Myclass::foo(const M y c l a s s *p)    // gizli parametre
+{
+	p->m_x = 10;    //sentax hatası
+	auto val = m_x;  // doğru
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+1. sınıfın const üye fonksiyonları  (hangi nesne için çağırılmışlarsa)
+o nesnenin veri elemanlarını değiştiremezler
+
+sebebi: const T*'dan T*'a dönüşüm yok
+
+
+class Myclass
+{
+public:
+	void foo();  =>  derleyiciye göre gizli parametre değişkeni void foo(Myclass* );
+private:
+	int m_x;  
+};
+
+int main()
+{
+	const Myclass x;  // x değişmeyeceğim diyor
+	x.foo();   // hatalı => derleyici sınıf nesnesinin adresini üye fonksiyonun gizli 
+	 // parametre  değişkenine kopyalar foo(Myclass *  =  const Myclass *) ,  
+	// Myclass* p = &x;   // const'tan normale dönüşüm yok , sentax hatası
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+
+class Myclass
+{
+public:
+	void foo()const;  
+private:
+	int m_x;  
+};
+
+void Myclass::foo()const
+{
+	m_x = 10;  // hatalı 
+	// derleyici  ptr->mx = 10;
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass
+{
+public:
+	void foo()const;  
+private:
+	int m_x;  
+};
+
+void Myclass::foo()const    // benim yorum: const üye fonksiyon, class'in üye değişkenlerini değiştiremez
+{
+	Myclass a;
+	
+	a.m_x = 23; // hata yok
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+2.  const olmayan ya da const olan bir sınıf nesnesi ile sınıfın const üye fonksiyonları çağırılabilirler. 
+Ancak const bir sınıf nesnesi ile sadece sınıfın const üye fonksiyonları çağırılabilir.
+Ancak const bir sınıf nesnesi ile sınıfın non-const üye fonksiyonları çağırılması geçersizdir.
+
+özet:
+const Myclass  ===> sadece const üye fonksiyon
+non-const Myclass  ===> const üye fonksiyon
+const Myclass  XXXXX  non-const üye fonksiyon
+
+
+ T* 'dan const T*'a dönüşüm var.
+const  T* 'den T*'a dönüşüm yok.
+
+class Myclass
+{
+public:
+	void foo()const;  
+private:
+	int m_x;  
+};
+
+int main()
+{
+	Myclass m;
+	const Myclass cm;
+	m.foo();   // doğru
+	cm.foo();   // doğru
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+const overloading 
+
+class Myclass
+{
+public:
+	void foo()const;  
+	void foo();   // overload
+private:
+	int m_x;  
+};
+
+int main()
+{
+	const Myclass cm;
+	Myclass m;
+	
+	cm.foo();   // void Myclass::foo()const çağırılır
+	m.foo();  // void Myclass::foo() çağırılır
+}
+
+pratik olarak:
+const nesne için const üye fonksiyon
+const olmayan nesne için const olmayan üye fonksiyon çağırılır.
+
+o zaman:
+öyle durumlar olacak ki
+biz const sınıf nesneleri için ayrı kodun
+const olmayan sınıf nesneler için ayrı kodun çalışmasını isteyeceğiz
+
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+const overloading
+
+int main()
+{
+	std::vector<int> vec{1,2,5,7,9};
+	
+	int a = vec.back(); // geri dönüş değeri referans
+	std::cout << "a: " <<  a << "\n";
+	vec.back() = 777;  // vektördeki son eleman 777 oldu.
+}
+
+
+int main()
+{
+	const std::vector<int> cvec{1,2,5,7,9};
+	std::vector<int> vec{1,2,5,7,9};
+
+	vec.back() = 10;  
+	cvec.back() = 20;  // sentax hatası
+	// nasıl sağladılar ? biri const diğeri const olmayan üye fonksiyon
+	
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func();
+	void foo();
+};
+
+void Myclass::func()     //  Myclass::func(M y c l a s s * p)  gizli anlamında
+{
+	foo();
+}
+
+void Myclass::foo()
+{
+
+}
+
+// önce namelookup yapılır, foo ismi aranır, niteleme olmadığına göre
+class scope içinde arar.  Yukarıda class içerisinde bulur. 
+foo'nun sınıfın non-static üye fonksiyonu olduğunu öğrenir. 
+çağıran fonksiyon hangi nesne için çağrılmışssa (M y c l a s s * p
+için gizli olarak çağrılır.) derleyici bu fonksiyonu da aynı adresle çağırır.
+
+özet: sınıfın bir non-static üye fonksiyonu içinde sınıfın başka bir üye fonksiyonu çağırıldığında aslında çağaran fonksiyon hangi nesne için çağırılmışssa çağrılan fonksiyon aynı nesne için çağırılmış olur. 
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func();
+};
+
+void Myclass::func(int x) 
+{
+	
+}
+
+void Myclass::func()
+{
+	func(10);   // func ismi blokta bulunamazsa class scope'da aranacak, func() bulunacak
+	//  isim arama biter. Class scope global scope'u maskeledi.
+	//  sentax hatası olur. Parametresi olmayan fonksiyona parametresiz argüman
+	// gönderiyorsun hatası
+	
+	func();  // class'taki func() çağrılır, recursive fonk çağrısı olur.
+	// func'ın kendi kendini çağırması
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func();
+	void func(int);
+};
+
+void Myclass::func(int x) 
+{
+	
+}
+
+void Myclass::func()
+{
+	func(); // recursive
+	func(10);  // not recursive
+	::func(4); // global fonksiyon, unary operator
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+
+3.  Bir sınıfın const üye fonksiyonu sınıfın non-const üye fonksiyonunu çağıramaz 
+
+class Myclass{
+public:
+	void func();
+	void foo()const;
+};
+
+void Myclass::func()  gizli parametre => Myclass*
+{
+	foo();  // okay,  gizli parametre => const Myclass*
+}  //  Myclass* =  const Myclass*  ???
+
+void Myclass::foo()const    gizli parametre => const Myclass*
+{
+	func();  // sentax hatası , gizli parametre =>  Myclass*
+}  //  const Myclass*  = Myclass*  ???
+
+ *-----------------------------------------------------------------------------------------------------
+
+void func(const std::map<int, int>& pmap)
+{
+	auto val = pmap[12];  // sentaks hatası, pmap sınıfın const olmayan üye fonksiyonu
+	// const bir nesne ile sınıfın const olmayan  bir elemanına çağrı yapılmış
+	auto val = pmap.at(12);  // çağırılan sınıfın const üye fonksiyonu
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+genellikle semantic ile sentaks karıştırılıyor
+
+semantic nedir ?
+
+sınıfı const üye mi const olmayan üye mi yapmalıyım?
+eğer sınıfın elemanlarını değiştirmeyeceksem const üye fonksiyon olmalı
+cevap: yanlış
+
+üye fonksiyonunun const olup olmaması sınıfın veri elemanları ile ilgisi yok
+
+sınıf nesnesi bir soyutlama
+sınıf nesnesini değiştirip değiştirmemesi, ama bu elemanları değiştirmesi değil 
+elemanlarını değiştirmez, ama pointer'ın gösterdiği nesneyi değiştirir.
+
+
+sınıf içerden dışarıya oluşturmak en büyük hata 
+sınıf dışarıdan içeriye tasarlanır.
+O sınıfı kullanacak onların alacağı hizmetleri belirlenir.
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Fighter{
+
+public : 
+	void tellname();  // const olsun mu ?  
+	// cevap belli değil, 
+	// tellname çağırıldıktan sonra savaşçı aynı savaşcı mı 
+	// onda bir durum değişlikliği var mı ?
+	// bu durum değişikliğine göre davranışı değişecek mi ?
+	
+// senaryoya göre savaşçılar sıkıştırıldığında üç kere isim söylerse
+// savaşçı öldürülür, bir kere iki kere ismini söylemiş savaşçı aynı state'de değil
+// kesinlikle const olmamalı
+
+// üye fonksiyonunun const olup olmaması problem domain'deki onun 
+// temsil ettiği anlamı niteliği değiştirip değiştirmemesine göre değişir.
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Fighter{
+
+public:
+	void print()const;  
+private:
+	//
+	int m_debug_call_counter{};
+	// üye fonksiyon ne kadar çağırılmış onu tutacak
+	// bu değerin değişmesi fighter'ın state değişmesi anlamına gelmez
+	
+};
+
+void Fighter::print()const
+{
+	++m_debug_call_counter;  // semantic sentaks uyuşmazlığı
+	// semantic : evet bu const üye fonksiyon, ama  m_debug_call_counter'ı değiştirmesi
+	// normal birşey, çünkü Fighter nesnesinin state'i ile hiçbir alakası yok
+	// sentaks : yassak diyo, parametresi const Fighter*
+	// böyle bir pointerin gösterdiği nesnenin elemanını değiştiremez
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+mutable :  semantic sentaks uyuşmazlığı
+
+class Fighter{
+
+public:
+	void print()const;  
+private:
+	//
+	mutable int m_debug_call_counter{};
+};
+
+void Fighter::print()const
+{
+	++m_debug_call_counter;  
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Fighter{
+
+public:
+	mutable int mx;  
+};
+
+int main()
+{
+	const Fighter myfighter;
+	myfighter.mx = 5;
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+const correctness : const olması gereken herşey const olacak, birtane bile istisna olmayacak
+
+class Circle {
+public: 
+	double get_area();  // const yapılmalı !!!
+	// yalancı bir fonsiyon
+	// nesneyi değiştiriyorum diyor !!
+	
+}
+
+void func(const Circle &p)  // üstteki duruma uygun olmaz
+{
+	auto area = p.get_area();  // sentaks hatası, const bir nesne ile sınıfın const 
+	// olmayan bir üye fonksiyonu çağırılır
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+this (pointer,hangi nesne için çağrılmışssa o nesnenin adresi )
+
+keyword'tür, sınıfın non-static üye fonksiyonları içinde kullanılabilir. 
+global fonksiyonda kullanılamaz.
+
+class Myclass {
+public: 
+	void func();
+private: 
+	int mx, my;
+};
+
+void Myclass::foo()  // gizli parametre değişkeni var ama ihtiyacım olmadı
+{
+	std::cout << "foo cagirildi this = " << this << "\n";
+	
+	this->mx = 10;  // aynı olanlar 
+	mx = 10;  
+	Myclass::mx = 10;
+	
+}
+
+void Myclass::func()  // gizli parametre değişkeni var ama ihtiyacım olmadı
+{
+	std::cout << "func cagirildi this = " << this << "\n";
+	foo();
+}
+
+int main()
+{
+	Myclass m;
+	std::cout << "&m =  " << &m<< "\n";
+	m.func();
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+SORU: Üye elemanların nesnenin elemanlarına ulaşımı varken neden this pointer'ına
+ihtiyaç duyulur ?
+
+void Myclass::foo()  // gizli parametre değişkeni var ama ihtiyacım olmadı
+{
+	std::cout << "foo cagirildi this = " << this << "\n";
+	
+	int mx = 20;  // yeni değişken, 
+	mx = 10; // bu mx'i maskelerdi
+	this -> mx = 10;  // maskelemeyi aşmak için this kullanılır
+	Myclass::mx = 10;
+}
+
+this'in sürekli kullanımı çok çirkin !!!
+
+
+class Myclass {
+public: 
+	void func();
+	void foo();
+private: 
+	int mx, my;
+};
+
+void gf1(Myclass *);  // bu global fonksiyon, Myclass nesnesinin adresini ister
+void gf2(Myclass &);
+
+void Myclass::foo()
+{
+	 // burada gf'ye çağrı yap
+	gf1(this);  // this olmasa bu çağrı yapılamaz, çünkü pointer gizli
+	*this;  =>  this bir pointer ise gösterdiği nesne *this'dir
+	// diğer dillerde this direk gösterdiği class, C++'da pointer
+	gf2(*this);
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+this neden referans yerine pointer olarak tasarlanmış ?
+tarihsel süreç, tasarım
+
+ *-----------------------------------------------------------------------------------------------------
+
+chaining (zincirleme)
+
+class Myclass {
+public: 
+	Myclass& func();   // hangi nesne için çağrılmışsa o nesnenin adresini döndürsün
+	Myclass& foo();
+	Myclass& bar();
+private: 
+	int mx, my;
+};
+
+Myclass&  Myclass::func()
+{
+	std::cout << "Myclass::func cagrildi\n";
+	// code
+	return *this;
+}
+
+int main()
+{
+	Myclass m;
+	m.func().foo().bar();
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+int main(){
+
+	int x = 10;
+	double dval = 3.4;
+	long lval = 3L;
+	
+	std::cout << x << dval << lval;  //
+	std::cout.operator <<(x).operator << (dval).operator(lval);
+	
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Ostream{
+public:
+	Ostream& operator << (int);
+	Ostream& operator << (double);
+	Ostream& operator << (long);
+}
+
+Ostream& Ostream::operator <<(int x)
+{
+	// code
+	return *this;
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	Myclass* foo()
+	{
+		return this;
+	}
+	void func();
+}
+
+int main{
+	Myclass m;
+	m.foo()->func();  // chaining
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+// aynı nesne ise adresleri aynı olmalı 
+
+class A{
+
+ public :
+	void func(const A&);
+}
+
+void A::func(const &A a)
+{
+	if(this ==  &a){
+		std::cout << "gelen nesne ayni nesne\n";
+	}
+	else {
+		std::cout << "gelen nesne farkli nesne \n";
+	}
+}
+
+int main()
+{
+	A ax;
+	A bx;
+	
+	ax.func(ax);
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+this :  oluşturduğu ifade pr value'dur.
+*this : lvalue
+
+void A::func()
+{
+	A a;
+	this = &a;  // hatalı
+	*this = a;  // doğru
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+this pointer'ı pr value expression olduğu için this pointer'ının değerini  
+fonksiyon içerisinde değiştirmezsiniz !
+
+void A::func()
+{
+	A a;
+	this = &a;  // hatalı
+}
+
+ *-----------------------------------------------------------------------------------------------------
+
+class A{
+
+	public:
+		void func()const;
+		void foo();
+};
+
+void A::func()const
+{
+	this->foo();  // sentax hatası,
+	this; // const T*
+}
+
+void A::foo()
+{
+	this;  // T*
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class A{
+
+	public:
+		A *func()const;
+};
+
+A* A::func()const
+{
+	//
+	return this;  // sentax hatası,  çünkü döndürdüğü nesnede const T*'dan T*'a dönüşüm
+}
+
+olması gereken:
+
+class A{
+
+	public:
+		const A *func()const;
+};
+
+const A* A::func()const
+{
+	//
+	return this; 
+}
+
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+class A{
+
+	public:
+		A& *func()const;
+};
+
+A& A::func()const
+{
+	//
+	return *this;  // sentax hatası
+}
+
+olması gereken:
+
+class A{
+
+	public:
+		const A& *func()const;
+};
+
+const A& A::func()const
+{
+	//
+	return *this;  // sentax hatası
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+asla ve asla const bir nesneyi tür değiştirme operatörleri ile  kullanmayın (const_cast)
+
+ *-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+	public:
+	     void foo(int);
+	private:
+		int x;  // int m_x;  // bunu kullan
+		
+}
+
+void Myclass::foo(int x)
+{
+	x = x;  // self assignment , parametre değişkenine kendi değerini atama
+	// kodun bir anlamı yok !!
+	this-> x = x;  // çok gereksiz !!, böyle kod yazma
+	m_x = x;  // bunu kullan !!
+}
+
+
+ *-----------------------------------------------------------------------------------------------------
+
+yanlış ===>  bir fonksiyonun bir tane return deyimi olmalı !!
+geri dönüş değeri tutan değişken tutacakmışız, onu değiştirip bir yerde döndürecekmişiz
+dünyanın en abuk saptaması :)
+
+ *-----------------------------------------------------------------------------------------------------
+
+inline fonksiyonlar
+=================
+
+inline expansion: derleyicilerin gerçekleştirdiği en fayda sağlayan optimizasyon tekniklerinden biridir. Derleyici bir noktada bir fonk'nun çağırıldığını görür. Derleyici normalde fonk. giriş çıkış , argümanların kopyalanması vs. gibi işler yapar
+fonksiyonun derlenmiş kodunu yerleştireyim diyor.
+şart: a) fonksiyonun tanımını görmeli
+b) verim açısından bir fayda sağlanacak mı ?
+c) teknik olarak mümkün mü ?
+
+inline derleyiciye bir öneri , fonksiyonu inline yapmak zorunda değil
+
+inline int func(int x)  
+{
+	return x*x  + 5;
+}
+
+
