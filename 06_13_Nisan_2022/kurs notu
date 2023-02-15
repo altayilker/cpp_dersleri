@@ -1,0 +1,496 @@
+
+13 Nisan 2022
+
+
+İçerik:
+
+type_cast operators
+	1)  static_cast
+	2) const_cast
+	3)  reinterpret_cast
+	4)  dynamic_cast
+	
+Fonksiyon delete edilmesi
+
+ENUM
+
+ENUM Class
+
+scoped enum : enum class
+
+Derleyici süreçleri : 
+	1) namelookup
+	2)  context kontrol
+	3)  access kontrol
+
+isim nitelemesi (qualified name)
+4 tane var
+	1)  scope resolution operator ::
+
+
+
+*------------------------------------------------------------------------------------------------
+
+
+void func(int&);
+void func(const int&);
+void func(int&&);
+
+soru : üstte kaç tane overload var ?  3
+
+int main(){
+	int x = 20;
+	func(x);  //  void func(int&) çağırılır,  2. 'si const overloading'e girer, 3. viable değil
+
+	const int  cx{123};  
+	func(cx);  //   void func(const int&) çağırılır
+	
+	func(34);  // void func(int&&) kazanır
+}
+
+
+endl neden kullanmamalıyız ??
+standart çıkış akımının buffer'ini flash etmek (fiziksel olarak dosyaya yazılmamış bellek alanına -buffer yazılmış byte'ların fiilen dosyaya yazılması) istemiyorum. Çünkü bunun bir maliyeti var. 
+
+*------------------------------------------------------------------------------------------------
+
+
+bugünkü konumuz :
+type-cast operators (tür değiştirme operatörleri)
+enum / enum class
+
+
+type-cast operators (tür değiştirme operatörleri)
+
+(target type) operand
+
+implicit (örtülü dönüşüm) : açıkça bir kod yazmadan derleyicinin durumdan vazife çıkartarak yaptığı dönüşüm
+explicit (açıkça, kod yazarak dönüşüm)
+
+temiz C++ kodunda C'den gelen tür dönüşümünün kullanılmasını pek istenmiyor.
+
+static_cast
+const_cast
+reinterpret_cast 
+dynamic cast => runtime polymorphism ile ilgili
+
+
+static_cast:    It does things like implicit conversions between types (such as int to float, or pointer to void*)
+
+int main()
+{
+	const int x{324};
+	int* ip = (int*) &x;
+	*ip = 456;
+}
+tanımsız davranış, const engelini aşmak için yapılmış
+
+char* Strchr(const char* p, int c)  
+{    
+	// neden const char* çünkü aldığım adresteki değişkeni değiştirmeme sözünü veriyorum        
+        // bunun bir mutator olmadığını vurguluyorum
+	// Accessor and mutator functions (a.k.a. set and get functions) provide a direct way to change or just access
+     //    private variables.
+}    // geri dönüş değeri char*, diyorsunuz ki valla sahibi ben değilim, sahibi karar versin
+
+
+
+const_cast :  const'luğu kaldırmak demek örneğin 
+char* Strchr(const char* p, int c) 
+}
+	return (char *) p;  // const_cast
+}
+
+reinterpret_cast : nesnenin türünün dikkate almadan byte'larını başka bir türden nesne olarak kullanmak
+
+genelde char olarak 
+
+int main(){
+	int x = 235455;
+	char* p = &x; // C++'da error
+	char* p =(char*)&x;   // isteyerek kullanım
+}
+
+ne kadar az dönüşüm o kadar kodlama riski !!!
+en büyük risk reinterpret_cast, sonra const_cast, 
+
+
+<> : angular bracket
+static_cast <int> (dval) 
+
+int x = 10;
+int y = 20;
+double d1 = x/y;     // bölme işlemi int olarak yapılır, d1'e 0 ile ilk değer vermiş olunur
+double d2 = static_cast<double> x/y;    // bölme işlemi double olarak yapılır, d2 = 0.5 olur.
+
+int ival = dval;  // sentaks hatası değil, double'ın ondalık kısmı kaybolur, tanımsız davranış olabilir, int sayı sınırlarını aşıyorsa tanımsız olur. 
+int ival{dval} ; // C++ 'da narrowing conversion, sentax hatası olacaktı.
+
+*------------------------------------------------------------------------------------------------
+
+int x =10;
+void* vp = &x;  ?????
+
+int *p = static_cast<int*> (vp);
+
+*------------------------------------------------------------------------------------------------
+
+enum Color {red, blue, green};
+
+int ival = 2;
+Color c = ival;  // C++ sentax hatası, tersi sentax hatası değil (C++ gençlik hatası)
+Color c = static_cast<Color> (ival);
+
+*------------------------------------------------------------------------------------------------
+
+enum Color {red, blue, green};
+enum Nec {alfa, beta, gama};
+
+Color c = blue;
+Nec nec = blue;  // sentax hatası
+Nec nec = static_cast<Nec> (blue);
+
+*------------------------------------------------------------------------------------------------
+
+enum Color {red, blue, green};
+
+Color  red;
+++red;  // sentax hatası, C++ enum nesneler ++ operatörünün operandı olamaz !!!
+
+*------------------------------------------------------------------------------------------------
+
+int x = 10;
+const int* cp = &x;
+
+int* ptr = const_cast<int *> (cp); 
+
+*------------------------------------------------------------------------------------------------
+
+volatile objeler için de const_cast kullanılır !!
+
+*------------------------------------------------------------------------------------------------
+
+reinterpret_cast : 
+- It is used to convert a pointer of some data type into a pointer of another data type, even if the data types before and after conversion are different.
+
+Syntax : 
+data_type *var_name =    reinterpret_cast <data_type *>(pointer_variable);
+
+veri olarak diyelim:
+int, int, int  => char'a çevirmek için
+
+double dval{ };
+ifs.read(reinterpret_cast  <char *>  (& dval) ,sizeof(deval));
+
+*------------------------------------------------------------------------------------------------
+
+int ival{};
+const  int* iptr = &ival;
+char* cp = reinterpret_cast<char* > (iptr);  // yapmazsınız, tek bir dönüşüm yok, int*'dan char*'a ve const dönüşümü var.
+
+*------------------------------------------------------------------------------------------------
+
+int ival{};
+const  int* iptr = &ival;
+char* cp = reinterpret_cast<char* > (const_cast<int*>  (iptr));
+veya
+char* cp = const_cast<char*> (reinterpret_cast <const char*> (iptr));
+
+*------------------------------------------------------------------------------------------------
+
+[[nodiscard]]  // attribute  
+
+derleyici bir fonksiyonun geri dönüş değeri kullanılmadıysa uyarı vermesi sağlanabilir 
+
+[[nodiscard]]
+int foo();
+
+int main(){
+	foo();  // derleyici fonksiyonun geri dönüş değeri kullanılmazsa hata verir
+}
+
+*------------------------------------------------------------------------------------------------
+
+fonksiyonun delete edilmesi :
+
+new-delete ile karıştırma !!
+
+void func(int) = delete;
+// bu fonksiyon var, derleyici ricamız eğer bu fonksiyona çağrı yapılırsa bunu sentax hatası olarak bildir
+
+
+void func(double);
+void func(int );
+void func(long ) = delete;
+
+func(1.2); // double çağırılır 
+func(1.2f ); // double çağrılır 
+func(10L);  // sentax hatası verir
+
+*------------------------------------------------------------------------------------------------
+
+mülakat sorusu : öyle bir foo fonsiyonu olsun sadece legal olarak int ile çağrılabilsin ?
+
+void func(int);
+void func(double) = delete;
+
+bunu bütün türler için yapmak zor 
+
+void func(int);
+template <typename T>
+void func(T) = delete;
+
+C++ 23'de 
+"really" anahtar sözcüğü var
+void func(really int);  // sadece int argüman kabul eder !!
+
+*------------------------------------------------------------------------------------------------
+
+ENUM:
+
+enum Color {red, blue, green};
+
+Color myColor{blue};
+myColor = 1; // hatalı, aritmetik türlerden enum türüne dönüşüm yok
+
+
+Color myColor{blue};
+int ival{2}
+myColor = static_cast<Color> (ival);
+
+
+*------------------------------------------------------------------------------------------------
+
+Color myColor{blue};
+int ival;
+ival = myColor;  // legal, tehlikeli, bu yüzden enum class eklendi !!!
+
+*------------------------------------------------------------------------------------------------
+
+enum Color{red, blue = 7623473244u, green};  //taşan büyük bir sabitte derleyici kendisi seçecek underlied type
+int ival = myColor;  // geçerli
+myColor = ival;  // geçerli değil !!
+
+*------------------------------------------------------------------------------------------------
+
+enum Color{red, blue = 7623473244u, green};  
+enum Color;
+void func(){
+	Color myColor;
+}
+
+C ==> enum türünü int olarak kabul etmiş, C++ => int olma garantisi yok
+
+
+*------------------------------------------------------------------------------------------------
+
+enum Color{red, blue, green};  // scope'u türün kendi scope'u, enum Color nerde visible ise blue, green isimleri de orada visible'dır
+
+int main()
+{
+	enum Color{red, blue, green};
+	auto x = red;
+}
+
+void foo()
+{
+	green;  // green visible değil !!!
+}
+
+
+*------------------------------------------------------------------------------------------------
+
+enum ScreenColor{Red, Magenta, Brown};
+enum TrafficLight{Red, Yellow, Green};  // enum scope'unda kaynaklı, Red isim çakışması
+
+class Screen{
+	public:
+		enum ScreenColor {Red, Magenta, Brown};    // class scope ile enum'ları ayırmak
+}
+
+*------------------------------------------------------------------------------------------------
+
+
+Çakışan enum'ları Namespace ile ayırmak
+
+namespace Neco {
+	enum ScreenColor{Red, Magenta, Brown};
+}
+
+
+*------------------------------------------------------------------------------------------------
+
+scoped enum (kapsamlandırılmış enum)  // class değil, C++ class'ın class olmayan tür nitelemesi var !!
+
+enum class Color{Red, Yellow, Green};
+enum class TrafficLight{Red, Yellow, Green};  // Red isim çakışması olmaz   // class değil
+
+int main(){
+	auto c =  red;  // sentax hatası
+	auto c = Color::red;
+	Color c = Color::green;
+	TrafficLight tl = TrafficLight::green;
+}
+
+*------------------------------------------------------------------------------------------------
+
+enum class Color{Red, Yellow, Green};
+
+int main(){
+	Color mycolor { Color::green};
+	int ival = mycolor;  // sentax hatası, enum class hata verdirdi, sadece enum olsa derleyici hata vermez
+}
+
+int main(){
+	Color mycolor { Color::green};
+	int ival = static_cast<int> mycolor;  // bilerek yapıyorsak, derleyici hata üretmez
+}
+
+*------------------------------------------------------------------------------------------------
+
+enum class Color{Red, Yellow, Green};
+
+int main(){
+	const char* const pcolors[] = {"red", "blue", "green"};
+	
+	Color myColor;
+	
+	pcolors[myColor]; // derleyici hata verir, burada int'e dönüşüm yok
+	pcolors[static_cast<int> (myColor)];
+}
+// Necati hoca esas burada using gerekir diyor !!!!, C++20'de öneri kabul edildi.
+// kontrollü gevşetme
+
+*------------------------------------------------------------------------------------------------
+
+enum class Color{Red, Yellow, Green};
+
+void func(){
+	using enum Color;  // dikkat ! using kullanılınca, enum class Color olmaz !!
+	
+	auto c1 = red;
+	auto c2 = brown;
+}
+
+*------------------------------------------------------------------------------------------------
+
+C++20'de
+
+namespace neco{
+	enum class Color{Red, Yellow, Green};
+}
+
+void func(){
+	using enum neco::Color;  // dikkat ! using kullanılınca, enum class Color olmaz !!
+	
+	auto c1 = red;
+	auto c2 = brown;
+}
+
+*------------------------------------------------------------------------------------------------
+
+enum class Color{red, yellow, green};
+
+void func(){
+	using Color::red, Color::green;
+	auto c1 = red;
+	auto c2 = green;
+}
+
+*------------------------------------------------------------------------------------------------
+
+enum => aritmetik tür'e otomatik dönüşüm var  // C++ gençlik hatası
+enum class => aritmetik tür'e otomatik dönüşüm yok,  bilerek dönüşüm yapmak istiyorsak static_cast'i kullanıyoruz
+
+*------------------------------------------------------------------------------------------------
+
+özet : enum class veya using kullanın, isim çakışması olmaz
+
+*------------------------------------------------------------------------------------------------
+
+namelookup:     (çok iyi anlaşılmalı)
+
+derleyicinin bir ismin hangi varlığa karşılık geldiğini anlama sürecidir. Namelookup herşeyin başıdır. İlk önce yapılır.
+
+C++ dilinde (istisna olmadan) bir ismin aranıp bulunamaması sentax hatasıdır.
+
+Derleyici süreçleri  (C++ mülakatlarında sorulur !!)
+1) name lookup (hangi tokenların isim olduğunu anlaması )
+2)context kontrol (fonsiyon olup olmadığı )
+3) access kontrol 
+
+*------------------------------------------------------------------------------------------------
+
+int func(int);
+
+int main()
+{
+	int func;  // func bulundu !! arama devam etmez !!   derleyici hata verir.
+	
+	func(10);  // func arama başladı
+}
+
+*------------------------------------------------------------------------------------------------
+
+name lookup:
+1) isim arama süreci aranan ismin bulunmasıyla sona erer. (bir daha devam etmez)
+2)  isim arama dilin karmaşık kurallarınca belirlenen bir sırayla yapılır. 
+
+name lookup 2 kuralını bozen şeyler var
+scope resolution operatör ::
+::x  => x'i global isim alanında arar. 
+
+*------------------------------------------------------------------------------------------------
+
+int x = 10;  // dördüncü olarak global isim alanında aranacak
+
+void func()
+{
+	// üçüncü olarak bu blok içerisinde arayacak 
+	// code
+	if(1){  // ikinci olarak bu blok içerisinde arayacak 
+		//code
+		if(1){
+			x = 5;  // ilk önce bu blok için x'i arayacak
+		}
+	}
+}
+
+*------------------------------------------------------------------------------------------------
+
+bu konuyu bilmeyen önce kodu çözümleyecek sonra ismi arayacak gibi sanılır.
+Halbuki tam tersi !!!
+
+int main()
+{
+	int x( ); // 2.  burada x'in bir fonksiyon olduğunu anladı,
+	x = 5;   // 1. x 'i arama başlattı, 3. context kontrol yapılır.
+}
+
+*------------------------------------------------------------------------------------------------
+
+ isim nitelenmesi (qualified name) :  ismin bazı operatörlerin operandı olarak kullanılması 
+
+4 tane var, biri scope resolution operatör
+
+scope resolution operatör: 
+
+int foo();
+
+int main(){
+	int foo = 6;
+	:: foo();  // global isim alanında ara
+}
+
+*------------------------------------------------------------------------------------------------
+
+int x = 10;
+
+int main(){
+	int x = 45;
+	x += ::x;  // global isim alanında ara
+}
+
+*------------------------------------------------------------------------------------------------
+
+
