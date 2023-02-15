@@ -1,0 +1,635 @@
+
+İçerik:   
+
+
+*-----------------------------------------------------------------------------------------------------
+*---------------------------------  ÖZET BAŞLANGIÇ ------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+sınıfların static üye fonksiyonları
+
+*-----------------------------------------------------------------------------------------------------
+*----------------------------------------  ÖZET BİTİŞ --------------------------------------------
+*-----------------------------------------------------------------------------------------------------
+
+sınıfın static veri elemanları sınıfın elemanları ama instance'ın elemanları değil. Sınıf başına static eleman bir tane.
+Assembly düzeyinden bakıldığında global değişkenlerden başka birşey değil. 
+Farkı :
+	1) class scope'a girer
+	2) isim arama kuralı değişik
+	3) access control'a dahil olur
+
+Global değişkenlerin biraz islah edilmiş hali.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	static int x;  // declaration
+	// yer ayırmaz.
+};
+
+int main()
+{
+	Myclass::x = 50;  // hata verir   ?????
+	Myclass m;
+	m.x = 30; // buna bakan static olduğunu anlamaz, ama legal   // hata verir   ?????
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	static int x;  
+};
+
+int main()
+{
+	Myclass::x = 50; // hata verir   ?????
+	// tanımı bulunmalı
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+static anahtar sözcüğü bildirimde olacak tanımda olmayacak !!!
+// myclass.h
+class Myclass{
+public:
+	static int x;  // decleration
+};
+
+//myclass.cpp
+int Myclass::x;  // definition, static bildirimi olmamalı !!
+// default init. edilse dahi önce zero init. edilmesi garanti altında.
+
+int main()
+{
+	std::cout << Myclass::x << "\n";
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+There can not be multiple copies of same static variables for different objects. Also because of this reason static variables can not be initialized using constructors.
+a static variable inside a class should be initialized explicitly by the user using the class name and scope resolution operator outside the class as shown below:
+
+// myclass.h
+class Myclass{
+public:
+	static int x;  // decleration
+};
+
+//myclass.cpp
+int Myclass::x{10}  
+
+int main()
+{
+	std::cout << Myclass::x << "\n";
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ 17'den önce sınıfı içinde değer vermek için 
+
+// const olacak
+// integral type (tam sayı)olacak
+
+// myclass.h
+class Myclass{
+public:
+	const static int x = 10;  // legal
+};
+
+// myclass.h
+class Myclass{
+public:
+	const static double x = 1.0;  // illegal
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// myclass.h
+
+enum Color{black, white}
+class Myclass{
+public:
+	const static Color  x = black;  //  ok
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+C++ 17 ile gelen değişiklik 
+sınıfın static elemanları inline sözcüğü ile sınıf içinde tanımlanabilir.
+
+class Myclass{
+public:
+	inline static int x = 5;  //  const. veya tam sayı olması zorunlu değil !!
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	inline static int x; 
+};
+
+inline static Myclass::int x;  // yanlış
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func()
+	{
+		x = 5;
+	}
+private:
+	static int x; //
+};
+
+zaten bildiğimiz üzere private static elemana client kodlar doğrudan erişemeyecek. Üye fonksiyon erişebilir.
+
+
+*-----------------------------------------------------------------------------------------------------
+
+soru:
+
+class Myclass{
+public:
+	void func()const  // const ne anlamda 
+	{     
+		// bu fonk.'nun this göstericisi const Myclass*
+		x = 5; // static üye fonksiyonu değiştirmek sorun olur mu ?
+		cevap : geçerli, const üye fonk. sınıfın static veri elemanını değiştirebilirler.
+	}
+private:
+	static int x; //
+};
+
+// constructor init. list : sınıfın non-static elemanlarını init. eder. 
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	Myclass() : x{10}   // yanlış !!!!
+	{     
+		// non-static elemanları init eder
+	}
+private:
+	static int x;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+std::ios_base : ileride öğreneceğiz
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func()
+	{
+		x = 10;
+		Myclass::x = 10;
+		this->x = 10;
+		// hiçbirinde hata yok
+	}
+
+private:
+	static int x;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+public:
+	void func()
+	{
+		double x ;   
+		x = 10; // static veri ismi yerel değişken tarafından gizlenir. Name-masking (name-hiding)
+	}
+private:
+	static int x;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+complete type
+incomplete type nedir ?
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec;
+
+class Myclass{
+private:
+	static Nec nec; // nec sınıfı incomplete type olmasına rağmen static olarak tanımlanırsa sorun olmaz
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Nec;
+
+class Myclass{
+private:
+	inline static Nec nec; // hata, incomplete type
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Data{
+	Data& r;
+	Data *ptr; 
+	// kendi türünden elemanı olamaz ama pointer, referans olabilir ????
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Data{
+	Data dx; // sentaks hatası ????
+	static Data dx;  // ok
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+sınıfların static üye fonksiyonları:
+
+Tıpkı global fonksiyonlar gibi this pointer'ı olmayan çağırılmaları için sınıf instance'ı gerekmeyen fonksiyonlardır. 
+instance ile değil class ile iş yaparlar.
+
+class Data{
+
+public:
+	void func();
+	static void func()  // this pointer'ı yok
+	{
+		mx = 5; // name-lookup hatası yok !!  fakat ortada bir sınıf nesnesi yok çünkü this yok. sentax hatası
+	}
+private:
+	int mx, my;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+class Data{
+
+public:
+	static void func()
+	{
+		Data data;
+		data.mx  = 10;
+	}
+private:
+	int mx, my;
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+// data.h
+class Data{
+
+public:
+	static void foo();
+private:
+	int mx, my;
+};
+
+// data.cpp
+void Data::foo()   // static anahtarı kullanılmamalı
+{
+
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+//myclass.h
+class Myclass{
+public:
+	void foo();
+	static void func();
+};
+
+//myclass.cpp
+#define STATIC 
+// kimisi bunu kullanıyor !!! koda bakan anlasın diye kullanılabilir.
+birşeye eşitlenmediği için derleyici bunu atlar
+
+#define PRIVATE
+
+void Myclass::foo()
+{
+}
+
+STATIC void Myclass::func()
+{
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+//myclass.h
+class Myclass{
+public:
+	void foo()
+	{
+		func(); // ok
+	}
+private:
+	static void func()
+	{
+		// foo();  // isim arama açısından problem yok, this pointer'ı olmadığından sentax hatası
+	}
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+//myclass.h
+class Myclass{
+public:
+	void foo()
+	{
+
+	}
+	static void func()
+	{
+		x = 5; // sınıfın static üye fonk. sınıfın static üyelerini kullanabilir
+	}
+	static int x;
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+static void func()const  // yanlış !!!
+
+const gizli pointer parametresini 
+niteler. static fonk.'nun böyle bir parametresi olmadığından yanlıştır.
+
+*-----------------------------------------------------------------------------------------------------
+
+soru:
+
+//myclass.h
+class Myclass{
+public:
+	static int x;
+	static int foo(int x, int y);
+};
+
+// myclass.cpp
+int foo();
+
+// int Myclass::x = foo(); //static veri elemanına ilk değer veren ifadede isim nitelenmemişse foo() ilk önce class scope'da aranır. class scope diğer ismi gizledi. 
+
+
+*-----------------------------------------------------------------------------------------------------
+
+Dikkat !!
+sınıfın static veri elemanına ilk değer veren ifadedeki isim (nitelenmemişse)  önce class scope'da aranır. 
+
+*-----------------------------------------------------------------------------------------------------
+
+mülakat sorusu :
+
+//myclass.h
+class Myclass{
+public:
+	static int x;
+	static int foo()
+	{
+		return 5;
+	}
+};
+
+//myclass.cpp
+int foo()
+{
+	return 1;
+}
+	
+int Myclass::x = foo();
+// int Myclass::x = ::foo(); // böyle olsa cevap 1 olur
+
+int main()
+{
+	std::cout << "Myclass::x = " << Myclass::x << "\n";
+}
+
+// cevap 5;
+
+
+*-----------------------------------------------------------------------------------------------------
+
+asla asla move constructor'ı delete etmeyin  !!!!
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	Myclass() = default;
+	Myclass(const Myclass&);
+	// move const. is not declared
+};
+
+int main()
+{
+	Myclass mx;
+	
+	Myclass my = std::move(mx);
+	// taşıma işlemi yapılmaz copy yapılır,
+	ama sentax hatası değil
+}
+
+taşıma gereken her yerde taşıma değil copy yapılacak !!! çünkü move const. yok. Taşımadan bir avantaj elde edilmeyecekse taşımaya gerek yok. Gayet doğal bir durum.
+
+*-----------------------------------------------------------------------------------------------------
+
+class Myclass{
+
+public:
+	Myclass() = default;
+	Myclass(const Myclass&);
+	Myclass(Myclass&&) =delete;
+	// move  const. delete edilirse
+	move çağırmak sentax hatası !!!
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+öyle sınıflar var ki copy'e kapatmak ama move semantik ile kullanmak istiyorsun. Thread sınıfı böyle.
+
+#include <thread>
+
+void foo();
+
+int main()
+{
+	std::thread th1{ foo};
+	std::thread th2{ th1}; // sentax hata, copy const. delete edilmiş
+	
+	std::thread th2{ std::move(th1)}; 
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+
+std::ofstream open_write_file (const std::string& filename)
+{
+	std::ofstream ofs{ filename};
+	// ofs lvalue'dur
+	if(!ofs){
+		throw std::runtime_error{filename + " cannot be created" };
+	}
+	
+	return ofs;
+}
+
+int main()
+{
+	auto ofs =  open_write_file("necati");
+	// sentax hatası yok
+}
+
+// ofstream sınıfı copy'a kapalı move'a açık
+
+*-----------------------------------------------------------------------------------------------------
+
+non-copyable & non-movable class
+
+class Myclass{
+public:
+	Myclass(const Myclass&) = delete;
+	Myclass& operator = (const Myclass&) = delete;
+	
+	Myclass()
+	{
+		++live_count;
+		++lived_count;
+	}
+	
+	~ Myclass()
+	{
+		--live_count;
+	}
+	
+	static int get_live_count()
+	{ 
+	// const olsun mu olmasın mı ?
+	// static üye fonks. const. olamaz
+	
+	}
+	
+private:
+	inline static int live_count{};
+	// sadece üye fonksiyonlar kullanabilir
+	inline static int lived_count{};
+};
+
+*-----------------------------------------------------------------------------------------------------
+
+sınıfın nesneleri sınıfın bütün nesnelere erişebilecekler. Hayattaki bir nesne diğer bütün nesnelere  erişebilmeli !!!
+Nesneye erişmek için adresine ihtiyacımız var. Bir tane container'da Fighter nesnelerinin adreslerini tutacağız ve static olacak.  ask_help container'a erişip diğer nesnelere erişebilecek !!
+
+soru:
+
+class Fighter{
+
+public:
+	void ask_help()
+	{
+		
+	}
+};
+
+int main()
+{
+	Fighter f1{"oguzhan}, f2{"mustafa"};
+	
+	Fighter *p1 = new Fighter("suleyman");
+	
+	Fighter *p2 = new Fighter("emre");
+	Fighter f3{"sofiya"};
+	
+	p1->ask_help();
+}
+
+*-----------------------------------------------------------------------------------------------------
+
+cevap:
+
+class Fighter{
+
+public:
+	Fighter(const std::string& name) : m_name{name}
+	 {
+		m_vec.push_back(this);
+	}
+	
+	~Fighter()  // this pointer'ını vector'dan silecek
+	{
+		std::erase(n_vec, this);
+	}
+	
+	void ask_help() // container'ı dolaşacak
+	{
+		std::cout << "ben korkusuz savasci " << m_name << "dusmanlar sardi etrafimi\n";
+		
+		// range based for loop
+		for(auto ptr : m_vec){
+			if(ptr != this){
+				std::cout << ptr->m_name << " " ;
+			}
+		}
+		std::cout << "yardima kosun \n";
+	}
+	
+private:
+	std::string m_name;
+	inline static std::vector<Fighter*> m_vec;
+};
+
+// cpp dosyasında vector sınıfınında tanımını yapsa idik
+// std::vector<Fighter*> Fighter::m_vec;
+// default init olacak, size'i sıfır olacak
+// onun yerine inline'da yapabiliriz, o zaman birtanıma ihtiyaç duymayız
+	
+int main()
+{
+	Fighter f1{"oguzhan}, f2{"mustafa"};
+	
+	Fighter *p1 = new Fighter("suleyman");
+	
+	Fighter *p2 = new Fighter("emre");
+	delete p2;
+	Fighter f3{"sofiya"};
+	
+	p1->ask_help();
+}
+
+
+*-----------------------------------------------------------------------------------------------------
+
+static : global nesne gibi düşün !!
+inline : bildirimi header file'da yapıp tanımı cpp'de yapmaya bir alternatif, one definition rule'ı ihlal etmez
+
+*-----------------------------------------------------------------------------------------------------
+
+named constructor : aslında const. değil, ama amacı bir nesneyi oluşturmak, instance ile alakası yok
+
+https://www.geeksforgeeks.org/can-constructor-private-cpp/
+
+class Complex{
+
+public:
+	Complex(double r, double i);
+	Complex(double distance, double angle);
+};
+
+
+*-----------------------------------------------------------------------------------------------------
+
+
